@@ -116,7 +116,7 @@ export function AddRecordModal({
     setSaved(false);
 
     const validation = createRecordSchema.safeParse({
-      operatorName,
+      collaboratorId: operatorName,
       clientName,
       amountInCents,
       activated,
@@ -125,8 +125,9 @@ export function AddRecordModal({
     if (!validation.success) {
       const nextErrors: FieldErrors = {};
       validation.error.issues.forEach((issue) => {
-        const field = issue.path[0] as keyof FieldErrors | undefined;
-        if (field) nextErrors[field] = issue.message;
+        const field = issue.path[0] as string;
+        if (field === "collaboratorId") nextErrors.operatorName = issue.message;
+        else if (field === "clientName" || field === "amountInCents") nextErrors[field] = issue.message;
       });
       setErrors(nextErrors);
       return;
