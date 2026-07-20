@@ -388,7 +388,9 @@ export function AdminPanel({
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           {u.role === "MANAGER" && u.is_primary && (
-                            <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" title="Gerente Principal" />
+                            <span aria-label="Gerente Principal">
+                              <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" />
+                            </span>
                           )}
                           <span className="truncate font-bold text-sm text-zinc-950">{u.name || u.username}</span>
                           <span className={`shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-bold ${roleColor[u.role] ?? "bg-zinc-100"}`}>{roleLabel[u.role] ?? u.role}</span>

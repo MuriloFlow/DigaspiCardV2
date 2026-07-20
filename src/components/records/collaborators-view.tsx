@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  Search, Users, CreditCard, ChevronRight, Trash2, Edit3,
+  Search, Users, ChevronRight, Trash2, Edit3,
   GitMerge, Loader2, AlertTriangle, Check, X, ArrowLeft,
-  Timer, Calendar, UserCheck, UserMinus, RotateCcw
+  Timer, Calendar, UserCheck, UserMinus, RotateCcw, Plus, Building
 } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,127 @@ import { formatCurrency, formatInteger, formatTime } from "@/lib/utils/format";
 import { toDateKey, formatLongDate } from "@/lib/utils/format";
 import type { OperatorRecord, Collaborator } from "@/lib/records/types";
 import { cn } from "@/lib/utils/cn";
+
+type Store = { id: string; name: string };
+
+// ─── Modal de Criação de Colaborador ─────────────────────────────────────────
+function CreateCollaboratorModal({
+  stores,
+  isGlobalAdmin,
+  userStoreId,
+  onClose,
+  onCreated,
+}: {
+  stores: Store[];
+  isGlobalAdmin: boolean;
+  userStoreId?: string | null;
+  onClose: () => void;
+  onCreated: (name: string, storeId: string) => Promise<void>;
+}) {
+  const [name, setName] = useState("");
+  const [storeId, setStoreId] = useState(isGlobalAdmin ? "" : (userStoreId ?? ""));
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) { setError("Nome é obrigatório."); return; }
+    if (!storeId) { setError("Selecione a unidade."); return; }
+    setIsLoading(true);
+    setError("");
+    try {
+      await onCreated(name.trim(), storeId);
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao criar.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const selectedStore = stores.find(s => s.id === storeId);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ opacity: 0, y: 40, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 40, scale: 0.97 }}
+        transition={{ type: "spring", damping: 28, stiffness: 380 }}
+        className="relative w-full max-w-md rounded-[2rem] border border-zinc-200 bg-white p-7 shadow-2xl"
+      >
+        <button onClick={onClose} className="absolute right-5 top-5 rounded-xl p-2 text-zinc-400 hover:bg-zinc-100 transition">
+          <X className="size-5" />
+        </button>
+
+        <div className="mb-6">
+          <div className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-zinc-950">
+            <Plus className="size-6 text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-zinc-950">Novo Colaborador</h2>
+          <p className="mt-1 text-sm text-zinc-500">Preencha os dados para cadastrar na equipe.</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-zinc-600 uppercase tracking-wide">Nome do Colaborador</label>
+            <input
+              required autoFocus
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+              placeholder="Ex: João Silva"
+            />
+          </div>
+
+          {isGlobalAdmin ? (
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-zinc-600 uppercase tracking-wide">Unidade (Loja)</label>
+              <select
+                required
+                value={storeId}
+                onChange={e => setStoreId(e.target.value)}
+                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+              >
+                <option value="">Selecione a unidade...</option>
+                {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+          ) : (
+            selectedStore && (
+              <div className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                <Building className="size-4 shrink-0 text-zinc-400" />
+                <div>
+                  <p className="text-xs font-semibold text-zinc-500">Unidade vinculada</p>
+                  <p className="text-sm font-semibold text-zinc-950">{selectedStore.name}</p>
+                </div>
+              </div>
+            )
+          )}
+
+          {error && (
+            <p className="rounded-xl bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-700">{error}</p>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-zinc-200 px-4 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50">
+              Cancelar
+            </button>
+            <button type="submit" disabled={isLoading} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50">
+              {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+              Cadastrar
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
 
 async function apiRequest(body: Record<string, unknown>) {
   const res = await fetch("/api/collaborators", {
@@ -28,10 +149,12 @@ async function apiRequest(body: Record<string, unknown>) {
   return res.json();
 }
 
-export function CollaboratorsView() {
+export function CollaboratorsView({ isGlobalAdmin, userStoreId }: { isGlobalAdmin?: boolean; userStoreId?: string | null }) {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   
   // Filtros e Busca
   const [search, setSearch] = useState("");
@@ -53,10 +176,17 @@ export function CollaboratorsView() {
   const loadCollaborators = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch("/api/collaborators", { cache: "no-store" });
-      if (!res.ok) throw new Error("Erro ao carregar.");
-      const d = (await res.json()) as { collaborators: Collaborator[] };
+      const [collabRes, storesRes] = await Promise.all([
+        fetch("/api/collaborators", { cache: "no-store" }),
+        fetch("/api/stores", { cache: "no-store" }),
+      ]);
+      if (!collabRes.ok) throw new Error("Erro ao carregar colaboradores.");
+      const d = (await collabRes.json()) as { collaborators: Collaborator[] };
       setCollaborators(d.collaborators);
+      if (storesRes.ok) {
+        const sd = (await storesRes.json()) as { stores: Store[] };
+        setStores(sd.stores ?? []);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro.");
     } finally {
@@ -65,6 +195,12 @@ export function CollaboratorsView() {
   }, []);
 
   useEffect(() => { void loadCollaborators(); }, [loadCollaborators]);
+
+  async function handleCreateCollaborator(name: string, storeId: string) {
+    const d = (await apiRequest({ action: "create", name, storeId })) as { collaborators: Collaborator[] };
+    setCollaborators(d.collaborators);
+    showSuccess(`Colaborador "${name}" cadastrado com sucesso.`);
+  }
 
   const loadRecords = useCallback(async (collabId: string) => {
     setLoadingRecords(true);
@@ -378,23 +514,10 @@ export function CollaboratorsView() {
               Ordenação: {sortOrder === "AZ" ? "A-Z" : "Z-A"}
             </button>
             <button
-              onClick={() => {
-                const name = window.prompt("Nome do novo colaborador:");
-                if (name?.trim()) {
-                  setActionLoading("create");
-                  apiRequest({ action: "create", name: name.trim() })
-                    .then((d: any) => {
-                      setCollaborators(d.collaborators);
-                      showSuccess("Colaborador registrado com sucesso.");
-                    })
-                    .catch(e => setError(e instanceof Error ? e.message : "Erro."))
-                    .finally(() => setActionLoading(null));
-                }
-              }}
-              disabled={actionLoading === "create"}
-              className="inline-flex flex-1 h-9 items-center justify-center rounded-2xl bg-zinc-950 px-4 text-xs font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-75"
+              onClick={() => setCreateModalOpen(true)}
+              className="inline-flex flex-1 h-9 items-center justify-center gap-1.5 rounded-2xl bg-zinc-950 px-4 text-xs font-semibold text-white transition hover:bg-zinc-800"
             >
-              {actionLoading === "create" ? "Criando..." : "Novo Colaborador"}
+              <Plus className="size-3.5" /> Novo Colaborador
             </button>
           </div>
         </div>
@@ -542,6 +665,18 @@ export function CollaboratorsView() {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {createModalOpen && (
+          <CreateCollaboratorModal
+            stores={stores}
+            isGlobalAdmin={isGlobalAdmin ?? false}
+            userStoreId={userStoreId}
+            onClose={() => setCreateModalOpen(false)}
+            onCreated={handleCreateCollaborator}
+          />
+        )}
+      </AnimatePresence>
     </PageContainer>
   );
 }
