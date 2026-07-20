@@ -82,8 +82,8 @@ export function OperatorPieChart({
         </div>
       </div>
 
-      <div className="mt-5 grid gap-2 sm:grid-cols-2">
-        {operators.slice(0, 6).map((operator) => (
+      <div className="mt-5 grid max-h-[140px] gap-2 overflow-y-auto pr-1 sm:grid-cols-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-200">
+        {operators.map((operator) => (
           <div
             key={operator.operatorName}
             className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-100 bg-zinc-50/80 px-3 py-2.5"

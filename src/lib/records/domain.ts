@@ -59,10 +59,39 @@ export function aggregateByOperator(records: OperatorRecord[]) {
       if (right.count !== left.count) {
         return right.count - left.count;
       }
-
       return right.totalInCents - left.totalInCents;
     });
 }
+
+export function aggregateByStore(records: OperatorRecord[]) {
+  const totals = new Map<string, { count: number; totalInCents: number }>();
+
+  records.forEach((record) => {
+    const storeName = record.storeName || "Unidade Desconhecida";
+    const current = totals.get(storeName) ?? { count: 0, totalInCents: 0 };
+    totals.set(storeName, {
+      count: current.count + 1,
+      totalInCents: current.totalInCents + record.amountInCents,
+    });
+  });
+
+  const totalCards = records.length;
+
+  return Array.from(totals.entries())
+    .map<OperatorSummary>(([storeName, total], index) => ({
+      operatorName: storeName, // Usamos operatorName no pie chart/ranking
+      count: total.count,
+      totalInCents: total.totalInCents,
+      averageInCents: Math.round(total.totalInCents / total.count),
+      percentage: totalCards ? (total.count / totalCards) * 100 : 0,
+      color: getOperatorColor(storeName, index),
+    }))
+    .sort((left, right) => {
+      if (right.count !== left.count) return right.count - left.count;
+      return right.totalInCents - left.totalInCents;
+    });
+}
+
 
 export function buildDashboardSummary(
   records: OperatorRecord[],

@@ -25,6 +25,7 @@ function toOperatorRecord(row: DbRecord): OperatorRecord {
     amountInCents: row.amount_in_cents,
     activated: row.activated,
     createdAt: row.created_at,
+    storeName: (row as any).stores?.name,
   };
 }
 
@@ -37,7 +38,7 @@ function toOperatorRecord(row: DbRecord): OperatorRecord {
 export async function listRecords(storeId?: string | null): Promise<OperatorRecord[]> {
   let query = supabaseAdmin
     .from("records")
-    .select("*")
+    .select("*, stores(name)")
     .order("created_at", { ascending: false });
 
   if (storeId) {

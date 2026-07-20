@@ -17,6 +17,7 @@ export type OperatorRecord = {
   amountInCents: number;
   activated: boolean;
   createdAt: string;
+  storeName?: string;
 };
 
 export type OperatorSummary = {

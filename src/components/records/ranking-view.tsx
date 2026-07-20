@@ -6,47 +6,35 @@ import { Crown, Medal, RefreshCw, Trophy } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { useRecords } from "@/components/providers/records-provider";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
-import { aggregateByOperator } from "@/lib/records/domain";
+import { useAuth } from "@/components/providers/auth-provider";
+import { aggregateByOperator, aggregateByStore } from "@/lib/records/domain";
+import type { OperatorSummary } from "@/lib/records/types";
 import { formatCurrency, formatInteger } from "@/lib/utils/format";
 
 const medals = ["🥇", "🥈", "🥉"];
 
-export function RankingView() {
-  const { records, isLoading, error, refresh } = useRecords();
-  const ranking = useMemo(() => aggregateByOperator(records), [records]);
+function RankList({ title, subtitle, ranking, itemName }: { title: string; subtitle: string; ranking: OperatorSummary[]; itemName: string }) {
   const topThree = ranking.slice(0, 3);
   const remaining = ranking.slice(3);
   const leaderCount = ranking[0]?.count ?? 1;
 
-  if (isLoading) {
+  if (!ranking.length) {
     return (
-      <PageContainer>
-        <DashboardSkeleton />
-      </PageContainer>
+      <div className="mt-8 mb-12 rounded-[1.5rem] border border-dashed border-zinc-300 bg-white px-5 py-10 text-center">
+        <Medal aria-hidden="true" className="mx-auto size-8 text-zinc-400" />
+        <p className="mt-3 text-sm font-medium text-zinc-500">
+          Nenhum {itemName} ranqueado ainda.
+        </p>
+      </div>
     );
   }
 
   return (
-    <PageContainer>
-      <PageHeader
-        eyebrow="Ranking"
-        title="Melhores operadores"
-        description="Classificacao por quantidade de cartoes registrados, com valor total como criterio secundario."
-      />
-
-      {error ? (
-        <div className="mb-5 flex flex-col gap-3 rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 sm:flex-row sm:items-center sm:justify-between">
-          <span>{error}</span>
-          <button
-            type="button"
-            onClick={refresh}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-3 py-2 text-rose-700 shadow-sm transition hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30"
-          >
-            <RefreshCw aria-hidden="true" className="size-4" />
-            Atualizar
-          </button>
-        </div>
-      ) : null}
+    <div className="mb-12">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-zinc-950">{title}</h2>
+        <p className="text-sm text-zinc-500 mt-1">{subtitle}</p>
+      </div>
 
       <section className="grid gap-4 lg:grid-cols-3">
         {topThree.map((operator, index) => (
@@ -67,11 +55,11 @@ export function RankingView() {
               </div>
             </div>
 
-            <h2 className="text-2xl font-semibold text-zinc-950">
+            <h3 className="text-2xl font-semibold text-zinc-950 truncate" title={operator.operatorName}>
               {operator.operatorName}
-            </h2>
+            </h3>
             <p className="mt-2 text-sm text-zinc-500">
-              {formatInteger(operator.count)} cartoes registrados
+              {formatInteger(operator.count)} cartões registrados
             </p>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
@@ -82,7 +70,7 @@ export function RankingView() {
                 </p>
               </div>
               <div className="rounded-2xl bg-zinc-50 p-3">
-                <p className="text-xs font-medium text-zinc-500">Media</p>
+                <p className="text-xs font-medium text-zinc-500">Média</p>
                 <p className="mt-1 text-base font-semibold text-zinc-950">
                   {formatCurrency(operator.averageInCents)}
                 </p>
@@ -102,22 +90,18 @@ export function RankingView() {
         ))}
       </section>
 
-      <section className="mt-8">
-        <div className="mb-4 flex items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase text-zinc-500">
-              Lista geral
-            </p>
-            <h2 className="mt-1 text-2xl font-semibold text-zinc-950">
-              Demais operadores
-            </h2>
+      {remaining.length > 0 && (
+        <section className="mt-8">
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase text-zinc-500">Lista geral</p>
+              <h3 className="mt-1 text-xl font-semibold text-zinc-950">Demais posições</h3>
+            </div>
+            <div className="flex size-11 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-600">
+              <Trophy aria-hidden="true" className="size-5" />
+            </div>
           </div>
-          <div className="flex size-11 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-600">
-            <Trophy aria-hidden="true" className="size-5" />
-          </div>
-        </div>
 
-        {remaining.length ? (
           <div className="grid gap-3">
             {remaining.map((operator, index) => (
               <article
@@ -135,12 +119,12 @@ export function RankingView() {
                         className="size-2.5 rounded-full"
                         style={{ backgroundColor: operator.color }}
                       />
-                      <h3 className="truncate text-base font-semibold text-zinc-950">
+                      <h4 className="truncate text-base font-semibold text-zinc-950" title={operator.operatorName}>
                         {operator.operatorName}
-                      </h3>
+                      </h4>
                     </div>
                     <p className="mt-1 text-sm text-zinc-500">
-                      {formatInteger(operator.count)} cartoes
+                      {formatInteger(operator.count)} cartões
                     </p>
                   </div>
                 </div>
@@ -153,9 +137,7 @@ export function RankingView() {
                     </p>
                   </div>
                   <div className="rounded-2xl bg-zinc-50 px-3 py-2">
-                    <p className="text-xs font-medium text-zinc-500">
-                      Participacao
-                    </p>
+                    <p className="text-xs font-medium text-zinc-500">Participação</p>
                     <p className="text-sm font-semibold text-zinc-950">
                       {operator.percentage.toFixed(0)}%
                     </p>
@@ -164,21 +146,73 @@ export function RankingView() {
               </article>
             ))}
           </div>
-        ) : (
-          <div className="rounded-[1.5rem] border border-zinc-200 bg-white px-5 py-10 text-center text-sm font-medium text-zinc-500">
-            O ranking completo aparece conforme novos operadores registram.
-          </div>
-        )}
-      </section>
+        </section>
+      )}
+    </div>
+  );
+}
 
-      {!ranking.length ? (
-        <div className="mt-8 rounded-[1.5rem] border border-dashed border-zinc-300 bg-white px-5 py-10 text-center">
-          <Medal aria-hidden="true" className="mx-auto size-8 text-zinc-400" />
-          <p className="mt-3 text-sm font-medium text-zinc-500">
-            Nenhum operador ranqueado ainda.
-          </p>
+export function RankingView() {
+  const { records, isLoading, error, refresh } = useRecords();
+  const { user } = useAuth();
+  const isGlobalAdmin = user?.role === "GLOBAL_ADMIN";
+  
+  const operatorRanking = useMemo(() => aggregateByOperator(records), [records]);
+  const storeRanking = useMemo(() => aggregateByStore(records), [records]);
+
+  if (isLoading) {
+    return (
+      <PageContainer>
+        <DashboardSkeleton />
+      </PageContainer>
+    );
+  }
+
+  return (
+    <PageContainer>
+      <PageHeader
+        eyebrow="Ranking"
+        title="Melhores desempenhos"
+        description="Classificação por quantidade de cartões registrados, com valor total como critério secundário."
+      />
+
+      {error ? (
+        <div className="mb-5 flex flex-col gap-3 rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 sm:flex-row sm:items-center sm:justify-between">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={refresh}
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-3 py-2 text-rose-700 shadow-sm transition hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30"
+          >
+            <RefreshCw aria-hidden="true" className="size-4" />
+            Atualizar
+          </button>
         </div>
       ) : null}
+
+      {isGlobalAdmin ? (
+        <>
+          <RankList 
+            title="Rank de Lojas" 
+            subtitle="As unidades com melhor desempenho na rede." 
+            ranking={storeRanking} 
+            itemName="loja" 
+          />
+          <RankList 
+            title="Rank de Operadores" 
+            subtitle="Os funcionários com mais registros consolidados." 
+            ranking={operatorRanking} 
+            itemName="operador" 
+          />
+        </>
+      ) : (
+        <RankList 
+          title="Melhores Operadores" 
+          subtitle="Os funcionários com mais registros nesta unidade." 
+          ranking={operatorRanking} 
+          itemName="operador" 
+        />
+      )}
     </PageContainer>
   );
 }

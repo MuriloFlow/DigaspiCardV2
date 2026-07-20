@@ -107,8 +107,13 @@ export function RecordCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h3 className="truncate text-sm font-semibold text-zinc-950">
+                <h3 className="truncate text-sm font-semibold text-zinc-950 flex items-center gap-2">
                   {record.operatorName}
+                  {user?.role === "GLOBAL_ADMIN" && record.storeName && (
+                    <span className="text-xs font-medium text-zinc-500 px-1.5 py-0.5 bg-zinc-100 rounded-md">
+                      {record.storeName}
+                    </span>
+                  )}
                 </h3>
                 <p className="mt-1 truncate text-sm text-zinc-500">
                   {record.clientName}

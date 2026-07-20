@@ -14,9 +14,11 @@ import { AddRecordModal } from "./add-record-modal";
 import { RecordCard } from "./record-card";
 import {
   aggregateByOperator,
+  aggregateByStore,
   getRecentRecords,
 } from "@/lib/records/domain";
 import { formatCurrency, formatInteger, toDateKey } from "@/lib/utils/format";
+import { Target } from "lucide-react";
 
 export function HomeView() {
   const {
@@ -36,10 +38,24 @@ export function HomeView() {
   // Lógica de Reset às 00:00: Filtrar apenas registros de hoje para o gráfico
   const todayKey = toDateKey(new Date().toISOString());
   const todayRecords = useMemo(() => records.filter(r => toDateKey(r.createdAt) === todayKey), [records, todayKey]);
-  const todayOperators = useMemo(() => aggregateByOperator(todayRecords), [todayRecords]);
+  const todayOperators = useMemo(() => {
+    return isGlobalAdmin ? aggregateByStore(todayRecords) : aggregateByOperator(todayRecords);
+  }, [todayRecords, isGlobalAdmin]);
   const todayCardsCount = todayRecords.length;
 
-  const recentRecords = useMemo(() => getRecentRecords(records, 6), [records]);
+  const dailyGoal = useMemo(() => {
+    if (records.length === 0) return 5;
+    // Pega a data do registro mais antigo e calcula os dias totais de uso do sistema
+    const oldestDate = new Date(records[records.length - 1].createdAt);
+    const msDiff = Date.now() - oldestDate.getTime();
+    const daysSinceFirst = Math.max(1, Math.ceil(msDiff / (1000 * 60 * 60 * 24)));
+    
+    // Média diária do período todo + 15% de meta de crescimento
+    const avgDaily = records.length / daysSinceFirst;
+    return Math.max(1, Math.ceil(avgDaily * 1.15));
+  }, [records]);
+
+  const recentRecords = useMemo(() => getRecentRecords(records, 5), [records]);
 
   function showSuccess(operatorName: string) {
     setSuccessMessage(`Registro de ${operatorName} salvo.`);
@@ -109,25 +125,25 @@ export function HomeView() {
 
         <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
           <MetricCard
-            label="Valor total"
+            label="Meta do Dia"
+            value={`${formatInteger(todayCardsCount)} / ${formatInteger(dailyGoal)}`}
+            detail={todayCardsCount >= dailyGoal ? "Meta atingida! 🎉" : `${Math.round((todayCardsCount / dailyGoal) * 100)}% concluída`}
+            icon={Target}
+            tone={todayCardsCount >= dailyGoal ? "green" : "blue"}
+          />
+          <MetricCard
+            label="Valor total da rede"
             value={formatCurrency(summary.totalAmountInCents)}
             detail="Volume histórico"
             icon={CreditCard}
             tone="dark"
           />
           <MetricCard
-            label="Operadores"
-            value={formatInteger(summary.operatorCount)}
-            detail="Com registros ativos"
-            icon={Users}
-            tone="blue"
-          />
-          <MetricCard
-            label="Lider atual"
+            label={isGlobalAdmin ? "Loja Destaque" : "Líder Atual"}
             value={summary.topOperator?.operatorName ?? "Sem dados"}
             detail={
               summary.topOperator
-                ? `${formatInteger(summary.topOperator.count)} cartoes`
+                ? `${formatInteger(summary.topOperator.count)} cartões`
                 : "Aguardando registros"
             }
             icon={TrendingUp}
