@@ -63,6 +63,7 @@ export type Collaborator = {
   name: string;
   isActive: boolean;
   mergedIntoId: string | null;
+  storeId?: string | null;
   createdAt: string;
   recordCount?: number;
   totalInCents?: number;

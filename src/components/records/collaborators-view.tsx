@@ -232,6 +232,8 @@ export function CollaboratorsView({ isGlobalAdmin, userStoreId }: { isGlobalAdmi
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [optionsModalOpen, setOptionsModalOpen] = useState(false);
   
+  const [selectedStoreIdView, setSelectedStoreIdView] = useState<string | null>(isGlobalAdmin ? null : (userStoreId || null));
+  
   // Filtros e Busca
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ACTIVE");
@@ -300,6 +302,11 @@ export function CollaboratorsView({ isGlobalAdmin, userStoreId }: { isGlobalAdmi
       result = result.filter((c) => c.name.toLowerCase().includes(q));
     }
     
+    // Store Filter
+    if (selectedStoreIdView) {
+      result = result.filter((c) => c.storeId === selectedStoreIdView);
+    }
+    
     // Sorting
     result = [...result].sort((a, b) => {
       const cmp = a.name.localeCompare(b.name);
@@ -307,7 +314,7 @@ export function CollaboratorsView({ isGlobalAdmin, userStoreId }: { isGlobalAdmi
     });
     
     return result;
-  }, [collaborators, search, statusFilter, sortOrder]);
+  }, [collaborators, search, statusFilter, sortOrder, selectedStoreIdView]);
 
   const activeCount = collaborators.filter(c => c.isActive).length;
   const selectedCollab = collaborators.find((c) => c.id === selectedId);
@@ -595,9 +602,46 @@ export function CollaboratorsView({ isGlobalAdmin, userStoreId }: { isGlobalAdmi
         <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{error}</div>
       )}
 
-      {/* Painel de Gestão: Header Consolidado */}
-      <section className="mb-8 grid gap-6 rounded-[2rem] border border-zinc-200/80 bg-white p-6 shadow-sm lg:grid-cols-[1fr_auto]">
-        <div className="grid gap-6 sm:grid-cols-2">
+      {isGlobalAdmin && !selectedStoreIdView ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {stores.map(store => {
+            const storeCollabs = collaborators.filter(c => c.storeId === store.id);
+            const activeCollabs = storeCollabs.filter(c => c.isActive).length;
+            return (
+              <div 
+                key={store.id} 
+                onClick={() => setSelectedStoreIdView(store.id)}
+                className="group cursor-pointer rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.02)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_48px_rgba(15,23,42,0.06)]"
+              >
+                <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500 transition group-hover:bg-zinc-950 group-hover:text-white">
+                  <Building className="size-6" />
+                </div>
+                <h3 className="mb-1 text-xl font-bold text-zinc-950">{store.name}</h3>
+                <p className="text-sm font-medium text-zinc-500">{storeCollabs.length} funcionários registrados</p>
+                <div className="mt-5 flex items-center gap-2">
+                  <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700">
+                    <span className="size-1.5 rounded-full bg-emerald-500"></span>
+                    {activeCollabs} Ativos
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <>
+          {isGlobalAdmin && (
+            <button 
+              onClick={() => setSelectedStoreIdView(null)} 
+              className="mb-6 flex items-center gap-2 rounded-xl bg-zinc-100 px-4 py-2 text-sm font-bold text-zinc-500 transition hover:bg-zinc-200 hover:text-zinc-950 w-fit"
+            >
+              <ArrowLeft className="size-4" /> Voltar para Unidades
+            </button>
+          )}
+
+          {/* Painel de Gestão: Header Consolidado */}
+          <section className="mb-8 grid gap-6 rounded-[2rem] border border-zinc-200/80 bg-white p-6 shadow-sm lg:grid-cols-[1fr_auto]">
+            <div className="grid gap-6 sm:grid-cols-2">
           <div>
             <div className="flex items-center gap-2 text-zinc-500">
               <Users className="size-5" />
@@ -779,6 +823,8 @@ export function CollaboratorsView({ isGlobalAdmin, userStoreId }: { isGlobalAdmi
           </div>
         )}
       </div>
+      </>
+      )}
 
       <AnimatePresence>
         {createModalOpen && (
