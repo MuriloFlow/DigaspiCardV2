@@ -14,6 +14,7 @@ import { formatCurrency, formatInteger, formatTime } from "@/lib/utils/format";
 import { toDateKey, formatLongDate } from "@/lib/utils/format";
 import type { OperatorRecord, Collaborator } from "@/lib/records/types";
 import { cn } from "@/lib/utils/cn";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 type Store = { id: string; name: string };
 
@@ -102,16 +103,13 @@ function CreateCollaboratorModal({
                 <p className="text-xs font-medium text-amber-700">Nenhuma unidade cadastrada. Crie uma primeiro.</p>
               </div>
             ) : (
-              <select
-                required
+              <CustomSelect
                 value={storeId}
-                onChange={e => setStoreId(e.target.value)}
+                onChange={setStoreId}
+                placeholder="Selecione a unidade..."
                 disabled={!isGlobalAdmin && !!userStoreId}
-                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-500"
-              >
-                <option value="">Selecione a unidade...</option>
-                {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+                options={stores.map(s => ({ value: s.id, label: s.name }))}
+              />
             )}
           </div>
 

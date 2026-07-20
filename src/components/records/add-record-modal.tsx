@@ -13,6 +13,7 @@ import {
   parseCurrencyInput,
 } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 type FieldErrors = Partial<
   Record<"operatorName" | "clientName" | "amountInCents", string>
@@ -49,40 +50,32 @@ export function AddRecordModal({
   const [errors, setErrors] = useState<FieldErrors>({});
   const [apiError, setApiError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [similarNames, setSimilarNames] = useState<SimilarResult[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [collaborators, setCollaborators] = useState<{ value: string; label: string }[]>([]);
+  const [isLoadingCollaborators, setIsLoadingCollaborators] = useState(false);
 
   const amountInCents = useMemo(() => parseCurrencyInput(amount), [amount]);
 
-  // Smart name detection
   useEffect(() => {
-    if (!operatorName.trim() || operatorName.trim().length < 3) {
-      setSimilarNames([]);
-      return;
+    if (open && collaborators.length === 0) {
+      setIsLoadingCollaborators(true);
+      fetch("/api/collaborators")
+        .then(r => r.json())
+        .then(d => {
+          if (d.collaborators) {
+            // Filtra para pegar apenas os funcionários ativos
+            const activeEmployees = (d.collaborators as { name: string; username: string; role: string; is_active: boolean }[])
+              .filter(c => c.is_active && c.role === "EMPLOYEE")
+              .map(c => ({
+                value: c.name || c.username,
+                label: c.name || c.username
+              }));
+            setCollaborators(activeEmployees);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setIsLoadingCollaborators(false));
     }
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch("/api/collaborators", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "similar", name: operatorName }),
-        });
-        if (res.ok) {
-          const data = (await res.json()) as { results: SimilarResult[] };
-          setSimilarNames(data.results.slice(0, 3));
-        }
-      } catch {
-        // silent fail
-      }
-    }, 500);
-
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [operatorName]);
+  }, [open, collaborators.length]);
 
   useEffect(() => {
     if (!open) return;
@@ -105,7 +98,6 @@ export function AddRecordModal({
         setErrors({});
         setApiError(null);
         setSaved(false);
-        setSimilarNames([]);
       }, 0);
       return () => window.clearTimeout(timeout);
     }
@@ -199,42 +191,15 @@ export function AddRecordModal({
 
             <form onSubmit={handleSubmit} className="grid gap-5 px-6 py-6">
               <label className="grid gap-2">
-                <span className="text-sm font-semibold text-zinc-800">Nome do Operador</span>
-                <span className={cn(
-                  "flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10",
-                  errors.operatorName ? "border-rose-300" : "border-zinc-200",
-                )}>
-                  <UserRound aria-hidden="true" className="size-5 shrink-0 text-zinc-400" />
-                  <input ref={firstInputRef} value={operatorName}
-                    onChange={(event) => setOperatorName(event.target.value)}
-                    placeholder="Ex: Marina Costa"
-                    className="min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
-                    autoComplete="name" />
-                </span>
+                <span className="text-sm font-semibold text-zinc-800">Nome do Funcionário</span>
+                <CustomSelect
+                  options={collaborators}
+                  value={operatorName}
+                  onChange={setOperatorName}
+                  placeholder={isLoadingCollaborators ? "Carregando funcionários..." : "Selecione o funcionário"}
+                  disabled={isLoadingCollaborators}
+                />
                 <FieldError>{errors.operatorName}</FieldError>
-
-                {/* Smart name suggestion */}
-                <AnimatePresence>
-                  {similarNames.length > 0 && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
-                      <div className="flex items-center gap-2 text-xs font-medium text-amber-700">
-                        <AlertTriangle className="size-3.5" />
-                        Nome similar encontrado:
-                      </div>
-                      <div className="mt-2 grid gap-1">
-                        {similarNames.map((s) => (
-                          <button key={s.id} type="button"
-                            onClick={() => { setOperatorName(s.name); setSimilarNames([]); }}
-                            className="flex items-center gap-2 rounded-lg bg-white px-2 py-1.5 text-left text-xs font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50">
-                            <Check className="size-3 text-emerald-500" />
-                            Usar &quot;{s.name}&quot; ({Math.round(s.similarity * 100)}% similar)
-                          </button>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </label>
 
               <label className="grid gap-2">

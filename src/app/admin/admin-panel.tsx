@@ -8,6 +8,7 @@ import {
   CreditCard, ChevronRight, Edit2, X, Star, Eye, EyeOff,
   ShieldCheck, ShieldOff, ArrowLeft, BarChart2,
 } from "lucide-react";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 type Store = { id: string; name: string };
 type AppUser = {
@@ -112,18 +113,22 @@ function EditUserModal({
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-zinc-600">Nível de Acesso</label>
-            <select value={role} onChange={e => setRole(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-zinc-950">
-              {Object.entries(roleLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
+            <CustomSelect
+              value={role}
+              onChange={setRole}
+              options={Object.entries(roleLabel).map(([k, v]) => ({ value: k, label: v }))}
+            />
           </div>
 
           {role !== "GLOBAL_ADMIN" && (
             <div>
               <label className="mb-1 block text-xs font-semibold text-zinc-600">Unidade (Loja)</label>
-              <select value={storeId} onChange={e => setStoreId(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-zinc-950">
-                <option value="">Sem loja vinculada</option>
-                {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              <CustomSelect
+                value={storeId}
+                onChange={setStoreId}
+                placeholder="Sem loja vinculada"
+                options={stores.map(s => ({ value: s.id, label: s.name }))}
+              />
             </div>
           )}
 
@@ -586,19 +591,25 @@ export function AdminPanel({
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-zinc-600">Nível de Acesso</label>
-                  <select value={role} onChange={e => setRole(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-zinc-950">
-                    <option value="EMPLOYEE">Funcionário Operacional</option>
-                    <option value="MANAGER">Gerente de Unidade</option>
-                    <option value="GLOBAL_ADMIN">Admin Global</option>
-                  </select>
+                  <CustomSelect
+                    value={role}
+                    onChange={setRole}
+                    options={[
+                      { value: "EMPLOYEE", label: "Funcionário Operacional" },
+                      { value: "MANAGER", label: "Gerente de Unidade" },
+                      { value: "GLOBAL_ADMIN", label: "Admin Global" },
+                    ]}
+                  />
                 </div>
                 {role !== "GLOBAL_ADMIN" && (
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-zinc-600">Unidade</label>
-                    <select required value={storeId} onChange={e => setStoreId(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-zinc-950">
-                      <option value="">Selecione...</option>
-                      {initialData.stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
+                    <CustomSelect
+                      value={storeId}
+                      onChange={setStoreId}
+                      placeholder="Selecione..."
+                      options={initialData.stores.map(s => ({ value: s.id, label: s.name }))}
+                    />
                   </div>
                 )}
                 <button disabled={isUserLoading} type="submit" className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50">
