@@ -92,30 +92,28 @@ function CreateCollaboratorModal({
             />
           </div>
 
-          {isGlobalAdmin ? (
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-zinc-600 uppercase tracking-wide">Unidade (Loja)</label>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-zinc-600 uppercase tracking-wide">
+              Unidade (Loja)
+            </label>
+            {stores.length === 0 ? (
+              <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <Building className="size-4 shrink-0 text-amber-500" />
+                <p className="text-xs font-medium text-amber-700">Nenhuma unidade cadastrada. Crie uma primeiro.</p>
+              </div>
+            ) : (
               <select
                 required
                 value={storeId}
                 onChange={e => setStoreId(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                disabled={!isGlobalAdmin && !!userStoreId}
+                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-500"
               >
                 <option value="">Selecione a unidade...</option>
                 {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
-            </div>
-          ) : (
-            selectedStore && (
-              <div className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                <Building className="size-4 shrink-0 text-zinc-400" />
-                <div>
-                  <p className="text-xs font-semibold text-zinc-500">Unidade vinculada</p>
-                  <p className="text-sm font-semibold text-zinc-950">{selectedStore.name}</p>
-                </div>
-              </div>
-            )
-          )}
+            )}
+          </div>
 
           {error && (
             <p className="rounded-xl bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-700">{error}</p>
