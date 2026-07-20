@@ -37,9 +37,9 @@ export function OperatorPieChart({
             <PieChart>
               <Tooltip
                 cursor={false}
-                formatter={(value) => [
-                  `${formatInteger(Number(value))} cartoes`,
-                  "Registros",
+                formatter={(value, name) => [
+                  `${formatInteger(Number(value))} cartões`,
+                  String(name),
                 ]}
                 contentStyle={{
                   borderRadius: 18,
