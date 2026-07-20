@@ -6,7 +6,7 @@ import { createStore, updateStore, createUser, updateUser, toggleUserActive } fr
 import {
   Building, Users, Key, Save, Loader2, Plus, TrendingUp,
   CreditCard, ChevronRight, Edit2, X, Star, Eye, EyeOff,
-  ShieldCheck, ShieldOff, ArrowLeft, BarChart2, CheckCircle2
+  ShieldCheck, ShieldOff, ArrowLeft, BarChart2, CheckCircle2, Search
 } from "lucide-react";
 import { CustomSelect } from "@/components/ui/custom-select";
 
@@ -370,7 +370,19 @@ function CreateStoreModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="mb-1 block text-xs font-semibold text-zinc-600">Nome da Unidade</label>
-            <input required value={storeName} onChange={e => setStoreName(e.target.value)} className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-zinc-950" placeholder="Ex: Digaspi 42" />
+            <input required value={storeName} onChange={e => {
+              const newName = e.target.value;
+              setStoreName(newName);
+              const match = newName.match(/\d+/);
+              if (match) {
+                setOpUsername(`operacao.${match[0]}`);
+                setOpPassword(`lojadigaspi`);
+              } else {
+                const slug = newName.toLowerCase().replace(/\s+/g, '');
+                setOpUsername(`operacao.${slug}`);
+                setOpPassword(`loja${slug}`);
+              }
+            }} className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-zinc-950" placeholder="Ex: Digaspi 42" />
           </div>
           <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-4">
             <h4 className="mb-3 text-sm font-bold text-zinc-950">Conta Genérica de Operadores</h4>
@@ -471,7 +483,7 @@ function EditStoreModal({
               <div>
                 <label className="mb-1 block text-xs font-semibold text-zinc-600">Nova Senha</label>
                 <div className="relative">
-                  <input type={showPwd ? "text" : "password"} value={opPassword} onChange={e => setOpPassword(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 pr-10 text-sm outline-none transition focus:border-zinc-950" placeholder="Deixe vazio p/ manter" />
+                  <input type={showPwd ? "text" : "password"} value={opPassword} onChange={e => setOpPassword(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 pr-10 text-sm outline-none transition focus:border-zinc-950" placeholder={storeUser ? "•••••••• (Mantida)" : "Deixe vazio p/ manter"} />
                   <button type="button" onClick={() => setShowPwd(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400">
                     {showPwd ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
@@ -520,6 +532,7 @@ export function AdminPanel({
     cardsThisMonth: number;
   } | null>(null);
   const [storeMetricsLoading, setStoreMetricsLoading] = useState(false);
+  const [storeSearch, setStoreSearch] = useState("");
 
   async function openStoreDetail(storeId: string) {
     setSelectedStoreId(storeId);
@@ -887,7 +900,7 @@ export function AdminPanel({
                 <h3 className="flex items-center gap-2 text-lg font-bold text-zinc-950">
                   <Building className="size-5" /> Unidades da Rede
                 </h3>
-                <p className="mt-1 text-sm text-zinc-500">Gerencie as lojas e suas contas operacionais</p>
+                <p className="mt-1 text-sm text-zinc-500">Gerencie as lojas e unidades</p>
               </div>
               <button
                 onClick={() => setCreateStoreModalOpen(true)}
@@ -898,12 +911,20 @@ export function AdminPanel({
             </div>
 
             <div className="rounded-[1.75rem] border border-zinc-100 bg-white p-7 shadow-[0_8px_32px_rgba(15,23,42,0.03)]">
-              <h3 className="mb-5 flex items-center gap-3 text-lg font-extrabold text-zinc-950">
-                <div className="flex size-10 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-700"><Building className="size-5" /></div>
-                Lista de Unidades ({stores.length})
-              </h3>
+              <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="flex items-center gap-3 text-lg font-extrabold text-zinc-950">
+                  <div className="flex size-10 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-700"><Building className="size-5" /></div>
+                  Lista de Unidades ({stores.length})
+                </h3>
+                <div className="flex w-full items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 sm:max-w-xs transition-colors focus-within:border-zinc-400">
+                  <Search className="size-4 text-zinc-400" />
+                  <input value={storeSearch} onChange={e => setStoreSearch(e.target.value)} placeholder="Pesquisar por unidade..." className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-400 text-zinc-950" />
+                  {storeSearch && <button onClick={() => setStoreSearch("")} className="text-zinc-400 hover:text-zinc-600"><X className="size-4" /></button>}
+                </div>
+              </div>
+
               <ul className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
-                {stores.map(s => {
+                {stores.filter(s => s.name.toLowerCase().includes(storeSearch.toLowerCase())).map(s => {
                   const opUser = users.find(u => u.store_id === s.id && u.role === "EMPLOYEE");
                   return (
                     <li key={s.id} className="group flex items-center justify-between rounded-[1.25rem] border border-zinc-100 bg-zinc-50/50 px-5 py-4 transition-all hover:bg-zinc-50 hover:shadow-sm">
