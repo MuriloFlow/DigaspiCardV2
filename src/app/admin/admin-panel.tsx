@@ -682,7 +682,7 @@ export function AdminPanel({
                 <h3 className="flex items-center gap-2 text-lg font-bold text-zinc-950">
                   <Key className="size-5" /> Contas e Acessos
                 </h3>
-                <p className="mt-1 text-sm text-zinc-500">Gerencie o acesso de gestores e administradores globais da plataforma.</p>
+                <p className="mt-1 text-sm text-zinc-500">Gerencie o acesso de gestores</p>
               </div>
               <button
                 onClick={() => setCreateUserModalOpen(true)}
