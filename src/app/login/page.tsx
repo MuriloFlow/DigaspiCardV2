@@ -89,10 +89,8 @@ export default function LoginPage() {
       </div>
 
       {/* Right Panel - Formulário de Login */}
-      <div className="flex w-full lg:w-1/2 flex-col items-center justify-center bg-zinc-50 px-4 py-12 sm:px-6 lg:px-8 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-zinc-200/20 pointer-events-none" />
-        
-        <div className="w-full max-w-sm relative z-10">
+      <div className="flex w-full lg:w-1/2 flex-col items-center justify-center bg-white px-4 py-12 sm:px-6 lg:px-8 relative">
+        <div className="w-full max-w-[360px] relative z-10">
           {/* Header versão Mobile (Oculto no Desktop, mostra a logo e infos básicas) */}
           <div className="lg:hidden mb-10">
             <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-zinc-950 shadow-lg">
@@ -102,19 +100,19 @@ export default function LoginPage() {
             <p className="mt-1 text-sm font-medium text-zinc-500">Sistema operacional Digaspi</p>
           </div>
 
-          <div className="hidden lg:block mb-10">
-            <h2 className="text-[1.75rem] font-bold text-zinc-950 tracking-tight">Acesso ao Painel</h2>
-            <p className="mt-1.5 text-sm font-medium text-zinc-500">Insira suas credenciais para continuar.</p>
+          <div className="hidden lg:block mb-12 text-center">
+            <h2 className="text-[1.85rem] font-bold text-zinc-950 tracking-[-0.02em]">Acesso ao Painel</h2>
+            <p className="mt-2 text-[15px] text-zinc-500">Insira suas credenciais para continuar.</p>
           </div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+            transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
           >
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="mb-2 block text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
+                <label className="mb-2 block text-xs font-semibold text-zinc-700">
                   Usuário
                 </label>
                 <input
@@ -122,13 +120,13 @@ export default function LoginPage() {
                   type="text"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  className="w-full rounded-[1rem] border border-zinc-200 bg-white px-4 py-3.5 text-sm font-medium text-zinc-950 outline-none transition-all focus:border-zinc-900 focus:ring-[3px] focus:ring-zinc-900/10 placeholder:text-zinc-400 shadow-sm"
+                  className="w-full rounded-[0.85rem] border border-zinc-200/80 bg-zinc-50/50 px-4 py-3.5 text-[15px] text-zinc-950 outline-none transition-all focus:border-zinc-900 focus:bg-white focus:ring-[3px] focus:ring-zinc-900/10 placeholder:text-zinc-400"
                   placeholder="Ex: operacao.41"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
+                <label className="mb-2 block text-xs font-semibold text-zinc-700">
                   Senha
                 </label>
                 <input
@@ -136,7 +134,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full rounded-[1rem] border border-zinc-200 bg-white px-4 py-3.5 text-sm font-medium text-zinc-950 outline-none transition-all focus:border-zinc-900 focus:ring-[3px] focus:ring-zinc-900/10 placeholder:text-zinc-400 shadow-sm"
+                  className="w-full rounded-[0.85rem] border border-zinc-200/80 bg-zinc-50/50 px-4 py-3.5 text-[15px] text-zinc-950 outline-none transition-all focus:border-zinc-900 focus:bg-white focus:ring-[3px] focus:ring-zinc-900/10 placeholder:text-zinc-400"
                   placeholder="••••••••"
                 />
               </div>
@@ -155,17 +153,20 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="group flex w-full items-center justify-center gap-2 rounded-[1rem] bg-zinc-950 px-4 py-4 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all hover:bg-zinc-800 hover:shadow-lg hover:shadow-zinc-900/20 active:scale-[0.98] disabled:opacity-50"
+                  className="group relative flex w-full items-center justify-center gap-2 rounded-[0.85rem] bg-zinc-950 px-4 py-3.5 text-[15px] font-medium text-white transition-all hover:bg-zinc-800 hover:shadow-md hover:shadow-zinc-900/10 active:scale-[0.98] disabled:opacity-50 overflow-hidden"
                 >
-                  {isLoading ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />}
-                  Entrar
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+                  <span className="relative z-10 flex items-center gap-2">
+                    {isLoading ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />}
+                    Continuar
+                  </span>
                 </button>
               </div>
             </form>
           </motion.div>
 
-          <div className="mt-12 text-center lg:text-left">
-            <p className="text-xs font-medium text-zinc-400">
+          <div className="mt-16 text-center">
+            <p className="text-[13px] font-medium text-zinc-400">
               © {new Date().getFullYear()} Digaspi. Todos os direitos reservados.
             </p>
           </div>
