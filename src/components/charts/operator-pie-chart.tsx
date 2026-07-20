@@ -58,8 +58,7 @@ export function OperatorPieChart({
                 isAnimationActive
                 animationDuration={900}
                 animationEasing="ease-out"
-                stroke="rgba(255,255,255,0.96)"
-                strokeWidth={4}
+                stroke="none"
               >
                 {operators.map((operator) => (
                   <Cell key={operator.operatorName} fill={operator.color} />
