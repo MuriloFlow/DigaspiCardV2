@@ -42,12 +42,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#070709] px-4 overflow-hidden selection:bg-orange-500/30 selection:text-orange-200 font-sans">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#070709] px-4 overflow-hidden selection:bg-[#6387FB]/30 selection:text-[#B19FFC] font-sans">
       
       {/* Background Ambient Glows (Vibe do Screenshot) */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="absolute top-[10%] h-[500px] w-[500px] rounded-full bg-gradient-to-b from-orange-500/20 to-transparent blur-[120px]" />
-        <div className="absolute top-[30%] h-[300px] w-[300px] rounded-full bg-amber-500/15 blur-[100px]" />
+        <div className="absolute top-[10%] h-[500px] w-[500px] rounded-full bg-gradient-to-b from-[#3C44F9]/20 to-transparent blur-[120px]" />
+        <div className="absolute top-[30%] h-[300px] w-[300px] rounded-full bg-[#B19FFC]/10 blur-[100px]" />
       </div>
 
       <AnimatePresence mode="wait">
@@ -65,23 +65,23 @@ export default function LoginPage() {
               transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
               className="mb-8 flex h-36 items-center justify-center"
             >
-              <img src="/lg-sem-fundo.png" alt="Card+ Logo" className="h-full w-auto object-contain drop-shadow-[0_0_30px_rgba(249,115,22,0.3)]" />
+              <img src="/lg-sem-fundo.png" alt="Card+ Logo" className="h-full w-auto object-contain drop-shadow-[0_0_30px_rgba(99,135,251,0.3)]" />
             </motion.div>
             
-            <h1 className="text-4xl font-bold tracking-tight text-white">
+            <h1 className="text-[2.5rem] font-extrabold tracking-[-0.03em] text-white leading-none">
               Card+
             </h1>
-            <p className="mt-3 text-[15px] font-medium text-zinc-400">
+            <p className="mt-4 text-[15px] font-medium text-zinc-400">
               Sistema Operacional Digaspi – 
-              <span className="text-orange-400"> Captação de Cartões para Alta Performance</span>
+              <span className="text-[#B19FFC]"> Captação de Cartões para Alta Performance</span>
             </p>
 
             <div className="mt-16 w-full">
               <button
                 onClick={() => setShowForm(true)}
-                className="group relative w-full rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-400 p-[1px] shadow-[0_0_40px_-10px_rgba(249,115,22,0.5)] transition-all hover:shadow-[0_0_60px_-15px_rgba(249,115,22,0.6)] active:scale-[0.98]"
+                className="group relative w-full rounded-full bg-gradient-to-r from-[#3C44F9] via-[#6387FB] to-[#B19FFC] p-[1px] shadow-[0_0_40px_-10px_rgba(99,135,251,0.5)] transition-all hover:shadow-[0_0_60px_-15px_rgba(99,135,251,0.6)] active:scale-[0.98]"
               >
-                <div className="flex h-14 w-full items-center justify-center rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-400 px-8 font-bold text-[#1a0b02]">
+                <div className="flex h-14 w-full items-center justify-center rounded-full bg-gradient-to-r from-[#3C44F9] via-[#6387FB] to-[#B19FFC] px-8 text-[15px] font-bold text-white tracking-wide">
                   Acessar Conta
                 </div>
               </button>
@@ -97,14 +97,14 @@ export default function LoginPage() {
           >
             <div className="mb-10 text-center">
               <div className="mx-auto mb-6 flex h-24 items-center justify-center">
-                <img src="/lg-sem-fundo.png" alt="Card+ Logo" className="h-full w-auto object-contain drop-shadow-[0_0_20px_rgba(249,115,22,0.2)]" />
+                <img src="/lg-sem-fundo.png" alt="Card+ Logo" className="h-full w-auto object-contain drop-shadow-[0_0_20px_rgba(99,135,251,0.2)]" />
               </div>
-              <h2 className="text-2xl font-bold tracking-tight text-white">Acesso ao Painel</h2>
+              <h2 className="text-[1.5rem] font-bold tracking-tight text-white">Acesso ao Painel</h2>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="mb-2 block text-[13px] font-medium text-zinc-400">
+                <label className="mb-2 block text-[13px] font-medium text-zinc-400 tracking-wide">
                   Usuário
                 </label>
                 <input
@@ -112,13 +112,13 @@ export default function LoginPage() {
                   type="text"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  className="w-full rounded-2xl border border-zinc-800/50 bg-[#121214] px-5 py-4 text-[15px] font-medium text-white shadow-inner outline-none transition-all placeholder:text-zinc-600 focus:border-orange-500/50 focus:bg-[#1a1a1c] focus:ring-4 focus:ring-orange-500/10"
+                  className="w-full rounded-2xl border border-zinc-800/50 bg-[#121214] px-5 py-4 text-[15px] font-medium text-white shadow-inner outline-none transition-all placeholder:text-zinc-600 focus:border-[#6387FB]/50 focus:bg-[#1a1a1c] focus:ring-4 focus:ring-[#6387FB]/10"
                   placeholder="Ex: operacao.41"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-[13px] font-medium text-zinc-400">
+                <label className="mb-2 block text-[13px] font-medium text-zinc-400 tracking-wide">
                   Senha
                 </label>
                 <input
@@ -126,7 +126,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full rounded-2xl border border-zinc-800/50 bg-[#121214] px-5 py-4 text-[15px] font-medium text-white shadow-inner outline-none transition-all placeholder:text-zinc-600 focus:border-orange-500/50 focus:bg-[#1a1a1c] focus:ring-4 focus:ring-orange-500/10"
+                  className="w-full rounded-2xl border border-zinc-800/50 bg-[#121214] px-5 py-4 text-[15px] font-medium text-white shadow-inner outline-none transition-all placeholder:text-zinc-600 focus:border-[#6387FB]/50 focus:bg-[#1a1a1c] focus:ring-4 focus:ring-[#6387FB]/10"
                   placeholder="••••••••"
                 />
               </div>
@@ -137,7 +137,7 @@ export default function LoginPage() {
                 <motion.p 
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
-                  className="rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 text-center text-sm font-medium text-rose-400"
+                  className="rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 text-center text-[13px] font-medium text-rose-400"
                 >
                   {error}
                 </motion.p>
@@ -146,9 +146,9 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full rounded-2xl bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-400 p-[1px] shadow-[0_0_30px_-10px_rgba(249,115,22,0.4)] transition-all hover:shadow-[0_0_50px_-10px_rgba(249,115,22,0.6)] active:scale-[0.98] disabled:opacity-50"
+                className="group relative w-full rounded-2xl bg-gradient-to-r from-[#3C44F9] via-[#6387FB] to-[#B19FFC] p-[1px] shadow-[0_0_30px_-10px_rgba(99,135,251,0.4)] transition-all hover:shadow-[0_0_50px_-10px_rgba(99,135,251,0.6)] active:scale-[0.98] disabled:opacity-50"
               >
-                <div className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-400 font-bold text-[#1a0b02]">
+                <div className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#3C44F9] via-[#6387FB] to-[#B19FFC] text-[15px] font-bold text-white tracking-wide">
                   {isLoading ? <Loader2 className="size-5 animate-spin" /> : "Entrar no Painel"}
                 </div>
               </button>
