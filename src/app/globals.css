@@ -55,3 +55,53 @@ input {
     transform: translateX(100%);
   }
 }
+
+.dark {
+  --background: #0d0d0d;
+  --foreground: #f4f4f5;
+
+  /* Overriding white so that bg-white maps to #0d0d0d */
+  --color-white: #0d0d0d;
+  --color-black: #ffffff;
+
+  /* Inverting Zinc */
+  --color-zinc-50: #141414;
+  --color-zinc-100: #1a1a1a;
+  --color-zinc-200: #262626;
+  --color-zinc-300: #3f3f46;
+  --color-zinc-400: #52525b;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #a1a1aa;
+  --color-zinc-700: #d4d4d8;
+  --color-zinc-800: #e4e4e7;
+  --color-zinc-900: #f4f4f5;
+  --color-zinc-950: #ffffff;
+
+  /* Adjusting colors for contrast */
+  --color-emerald-50: rgba(16, 185, 129, 0.1);
+  --color-emerald-100: rgba(16, 185, 129, 0.15);
+  --color-emerald-700: #10b981;
+
+  --color-rose-50: rgba(244, 63, 94, 0.1);
+  --color-rose-100: rgba(244, 63, 94, 0.15);
+  --color-rose-700: #f43f5e;
+
+  --color-blue-50: rgba(59, 130, 246, 0.1);
+  --color-blue-100: rgba(59, 130, 246, 0.15);
+  --color-blue-700: #3b82f6;
+
+  --color-purple-50: rgba(168, 85, 247, 0.1);
+  --color-purple-100: rgba(168, 85, 247, 0.15);
+  --color-purple-700: #a855f7;
+  
+  --color-amber-50: rgba(245, 158, 11, 0.1);
+  --color-amber-100: rgba(245, 158, 11, 0.15);
+  --color-amber-700: #f59e0b;
+}
+
+.dark body::before {
+  background:
+    linear-gradient(180deg, rgba(13, 13, 13, 0.96), #0d0d0d 38%),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.08), transparent 36%, rgba(16, 185, 129, 0.07));
+}
+

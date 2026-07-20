@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, History, Home, Trophy, Users, LogOut, Building, Settings, UserCircle2 } from "lucide-react";
+import { BarChart3, History, Home, Trophy, Users, LogOut, Building, Settings, UserCircle2, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils/cn";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTheme } from "next-themes";
 
 type NavItem = {
   label: string;
@@ -54,6 +55,7 @@ const items: NavItem[] = [
 export function BottomNavigation() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [showSettings, setShowSettings] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -167,7 +169,25 @@ export function BottomNavigation() {
                   </div>
                 </div>
 
-                <div className="px-2 pb-2">
+                <div className="px-2 pb-2 space-y-1">
+                  <button
+                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Moon className="size-4" />
+                      Tema Escuro
+                    </div>
+                    <div className={cn(
+                      "flex h-5 w-8 cursor-pointer items-center rounded-full p-0.5 transition-colors",
+                      theme === "dark" ? "bg-zinc-950" : "bg-zinc-200"
+                    )}>
+                      <div className={cn(
+                        "size-4 rounded-full bg-white shadow-sm transition-transform",
+                        theme === "dark" ? "translate-x-3" : "translate-x-0"
+                      )} />
+                    </div>
+                  </button>
                   <button
                     onClick={() => { setShowSettings(false); logout(); }}
                     className="flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600 transition hover:bg-rose-100"
