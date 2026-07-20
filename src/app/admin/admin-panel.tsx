@@ -160,6 +160,109 @@ function EditUserModal({
   );
 }
 
+// ─── Modal de Criação de Conta ──────────────────────────────────────────────────
+function CreateUserModal({
+  isOpen, stores, onClose, onCreated
+}: {
+  isOpen: boolean; stores: Store[]; onClose: () => void; onCreated: (payload: any) => Promise<void>
+}) {
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("MANAGER");
+  const [storeId, setStoreId] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!isOpen) return null;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    try {
+      await onCreated({
+        name,
+        username,
+        password_plain: password,
+        role,
+        store_id: role === "GLOBAL_ADMIN" ? null : storeId || null,
+        is_primary: false,
+      });
+      setName(""); setUsername(""); setPassword("");
+      setRole("MANAGER"); setStoreId("");
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao criar.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-zinc-950/20 backdrop-blur-sm" onClick={onClose} />
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative z-10 w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5">
+          <div>
+            <p className="text-xs font-semibold uppercase text-zinc-500">Nova Conta</p>
+            <h2 className="text-xl font-bold text-zinc-950">Criar Usuário</h2>
+          </div>
+          <button onClick={onClose} className="flex size-9 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition">
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-zinc-600">Nome Completo</label>
+            <input required value={name} onChange={e => setName(e.target.value)} className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-zinc-950" placeholder="Nome do usuário" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-zinc-600">Login</label>
+              <input required value={username} onChange={e => setUsername(e.target.value)} className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-zinc-950" placeholder="ex: joao.silva" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-zinc-600">Senha</label>
+              <input required type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-zinc-950" placeholder="••••••••" />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-zinc-600">Nível de Acesso</label>
+            <CustomSelect
+              value={role}
+              onChange={setRole}
+              options={[
+                { value: "MANAGER", label: "Gerente de Unidade" },
+                { value: "GLOBAL_ADMIN", label: "Admin Global" },
+              ]}
+            />
+          </div>
+          {role !== "GLOBAL_ADMIN" && (
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-zinc-600">Unidade (Obrigatório)</label>
+              <CustomSelect
+                value={storeId}
+                onChange={setStoreId}
+                placeholder="Selecione a loja..."
+                options={stores.map(s => ({ value: s.id, label: s.name }))}
+              />
+            </div>
+          )}
+
+          {error && <p className="rounded-xl bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-700">{error}</p>}
+
+          <button disabled={isLoading} type="submit" className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50">
+            {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            Criar Conta
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Painel Principal ──────────────────────────────────────────────────────────
 export function AdminPanel({
   initialData,
@@ -182,6 +285,7 @@ export function AdminPanel({
   const [toggleLoadingId, setToggleLoadingId] = useState<string | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [drawerTab, setDrawerTab] = useState<"OVERVIEW" | "USERS">("OVERVIEW");
+  const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
   const [storeMetrics, setStoreMetrics] = useState<{
     store: { id: string; name: string } | null;
     collaboratorsCount: number;
@@ -571,51 +675,21 @@ export function AdminPanel({
 
         {/* ── USUÁRIOS ─── */}
         {activeTab === "USERS" && (
-          <motion.div key="users" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-6 shadow-sm">
-              <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-zinc-950"><Key className="size-5" /> Nova Conta</h3>
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-zinc-600">Nome Completo</label>
-                  <input required value={name} onChange={e => setName(e.target.value)} className="w-full rounded-xl border border-zinc-200 px-4 py-2.5 text-sm outline-none transition focus:border-zinc-950" placeholder="Nome do usuário" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-zinc-600">Login</label>
-                    <input required value={username} onChange={e => setUsername(e.target.value)} className="w-full rounded-xl border border-zinc-200 px-4 py-2.5 text-sm outline-none transition focus:border-zinc-950" placeholder="ex: joao.silva" />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-zinc-600">Senha</label>
-                    <input required type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full rounded-xl border border-zinc-200 px-4 py-2.5 text-sm outline-none transition focus:border-zinc-950" placeholder="••••••••" />
-                  </div>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-zinc-600">Nível de Acesso</label>
-                  <CustomSelect
-                    value={role}
-                    onChange={setRole}
-                    options={[
-                      { value: "EMPLOYEE", label: "Funcionário Operacional" },
-                      { value: "MANAGER", label: "Gerente de Unidade" },
-                      { value: "GLOBAL_ADMIN", label: "Admin Global" },
-                    ]}
-                  />
-                </div>
-                {role !== "GLOBAL_ADMIN" && (
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-zinc-600">Unidade</label>
-                    <CustomSelect
-                      value={storeId}
-                      onChange={setStoreId}
-                      placeholder="Selecione..."
-                      options={initialData.stores.map(s => ({ value: s.id, label: s.name }))}
-                    />
-                  </div>
-                )}
-                <button disabled={isUserLoading} type="submit" className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50">
-                  {isUserLoading ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Criar Conta
-                </button>
-              </form>
+          <motion.div key="users" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            
+            <div className="mb-6 flex items-center justify-between gap-4 rounded-[1.5rem] border border-zinc-200 bg-white p-6 shadow-sm">
+              <div>
+                <h3 className="flex items-center gap-2 text-lg font-bold text-zinc-950">
+                  <Key className="size-5" /> Contas e Acessos
+                </h3>
+                <p className="mt-1 text-sm text-zinc-500">Gerencie o acesso de gestores e administradores globais da plataforma.</p>
+              </div>
+              <button
+                onClick={() => setCreateUserModalOpen(true)}
+                className="flex items-center gap-2 rounded-xl bg-zinc-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800"
+              >
+                <Plus className="size-4" /> Nova Conta
+              </button>
             </div>
 
             <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-6 shadow-sm">
@@ -675,6 +749,18 @@ export function AdminPanel({
             stores={initialData.stores}
             onClose={() => setEditingUser(null)}
             onSaved={() => alert("Salvo! Recarregue para ver as mudanças.")}
+          />
+        )}
+        {createUserModalOpen && (
+          <CreateUserModal
+            isOpen={createUserModalOpen}
+            stores={initialData.stores}
+            onClose={() => setCreateUserModalOpen(false)}
+            onCreated={async (payload) => {
+              const res = await createUser(payload);
+              if (res.error) throw new Error(res.error);
+              setUsers(res.users!);
+            }}
           />
         )}
       </AnimatePresence>

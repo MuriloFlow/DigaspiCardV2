@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   Search, Users, ChevronRight, Trash2, Edit3,
   GitMerge, Loader2, AlertTriangle, Check, X, ArrowLeft,
-  Timer, Calendar, UserCheck, UserMinus, RotateCcw, Plus, Building
+  Timer, Calendar, UserCheck, UserMinus, RotateCcw, Plus, Building, Edit2, ShieldCheck, ShieldOff, Power
 } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
+import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { getOperatorColor } from "@/lib/records/colors";
 import { formatCurrency, formatInteger, formatTime } from "@/lib/utils/format";
 import { toDateKey, formatLongDate } from "@/lib/utils/format";
@@ -145,12 +146,91 @@ async function apiRequest(body: Record<string, unknown>) {
   return res.json();
 }
 
+// ─── Modal de Opções do Colaborador ──────────────────────────────────────────
+function CollaboratorOptionsModal({
+  collab,
+  isOpen,
+  onClose,
+  onToggleActive,
+  onHardDelete,
+  loadingAction,
+}: {
+  collab: Collaborator | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onToggleActive: () => void;
+  onHardDelete: () => void;
+  loadingAction: string | null;
+}) {
+  if (!isOpen || !collab) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-zinc-950/20 backdrop-blur-sm sm:p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      >
+        <motion.div
+          className="w-full max-w-md overflow-hidden rounded-t-[2rem] sm:rounded-[2rem] bg-white shadow-2xl"
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5">
+            <div>
+              <p className="text-xs font-semibold uppercase text-zinc-500">Opções do Colaborador</p>
+              <h2 className="text-lg font-bold text-zinc-950">{collab.name}</h2>
+            </div>
+            <button onClick={onClose} className="flex size-9 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition">
+              <X className="size-5" />
+            </button>
+          </div>
+          
+          <div className="p-4 space-y-2">
+            <button
+              onClick={onToggleActive}
+              disabled={loadingAction === "toggle-active"}
+              className={`flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm font-semibold transition ${collab.isActive ? "bg-amber-50 text-amber-700 hover:bg-amber-100" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
+            >
+              {loadingAction === "toggle-active" ? <Loader2 className="size-5 animate-spin" /> : collab.isActive ? <ShieldOff className="size-5" /> : <ShieldCheck className="size-5" />}
+              <div>
+                <p>{collab.isActive ? "Inativar Colaborador" : "Reativar Colaborador"}</p>
+                <p className={`text-xs font-medium ${collab.isActive ? "text-amber-600/70" : "text-emerald-600/70"}`}>
+                  {collab.isActive ? "Oculta da lista de registros e painéis." : "Volta a aparecer nas listas de registro."}
+                </p>
+              </div>
+            </button>
+
+            <button
+              onClick={onHardDelete}
+              disabled={loadingAction === "hard-delete"}
+              className="flex w-full items-center gap-3 rounded-xl bg-rose-50 px-4 py-3.5 text-left text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+            >
+              {loadingAction === "hard-delete" ? <Loader2 className="size-5 animate-spin" /> : <Trash2 className="size-5" />}
+              <div>
+                <p>Excluir Funcionário Permanentemente</p>
+                <p className="text-xs font-medium text-rose-600/70">Apenas se não possuir cartões vinculados.</p>
+              </div>
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 export function CollaboratorsView({ isGlobalAdmin, userStoreId }: { isGlobalAdmin?: boolean; userStoreId?: string | null }) {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [optionsModalOpen, setOptionsModalOpen] = useState(false);
   
   // Filtros e Busca
   const [search, setSearch] = useState("");
@@ -294,6 +374,33 @@ export function CollaboratorsView({ isGlobalAdmin, userStoreId }: { isGlobalAdmi
       setRecords((prev) => prev.filter((r) => r.id !== recordId));
       setConfirmDeleteRecordId(null);
       showSuccess("Registro deletado.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Erro."); }
+    finally { setActionLoading(null); }
+  }
+
+  async function handleToggleActive() {
+    if (!selectedId || !selectedCollab) return;
+    setActionLoading("toggle-active");
+    try {
+      const res = await apiRequest({ action: "toggle-active", id: selectedId, isActive: !selectedCollab.isActive });
+      const d = res as { collaborators: Collaborator[] };
+      setCollaborators(d.collaborators);
+      showSuccess(selectedCollab.isActive ? "Colaborador inativado." : "Colaborador reativado.");
+      setOptionsModalOpen(false);
+    } catch (e) { setError(e instanceof Error ? e.message : "Erro."); }
+    finally { setActionLoading(null); }
+  }
+
+  async function handleHardDelete() {
+    if (!selectedId) return;
+    setActionLoading("hard-delete");
+    try {
+      const res = await apiRequest({ action: "hard-delete", id: selectedId });
+      const d = res as { collaborators: Collaborator[] };
+      setCollaborators(d.collaborators);
+      showSuccess("Colaborador excluído.");
+      setSelectedId(null);
+      setOptionsModalOpen(false);
     } catch (e) { setError(e instanceof Error ? e.message : "Erro."); }
     finally { setActionLoading(null); }
   }
@@ -451,6 +558,17 @@ export function CollaboratorsView({ isGlobalAdmin, userStoreId }: { isGlobalAdmi
             })}
           </div>
         )}
+
+        <FloatingActionButton onClick={() => setOptionsModalOpen(true)} icon={<Edit2 className="size-6" />} />
+
+        <CollaboratorOptionsModal
+          collab={selectedCollab}
+          isOpen={optionsModalOpen}
+          onClose={() => setOptionsModalOpen(false)}
+          onToggleActive={handleToggleActive}
+          onHardDelete={handleHardDelete}
+          loadingAction={actionLoading}
+        />
       </PageContainer>
     );
   }

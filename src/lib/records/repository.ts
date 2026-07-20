@@ -258,6 +258,29 @@ export async function deleteCollaborator(id: string): Promise<void> {
   if (error) throw new Error(`Erro ao desativar colaborador: ${error.message}`);
 }
 
+export async function toggleCollaboratorActive(id: string, isActive: boolean): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("collaborators")
+    .update({ is_active: isActive })
+    .eq("id", id);
+
+  if (error) throw new Error(`Erro ao alterar status do colaborador: ${error.message}`);
+}
+
+export async function hardDeleteCollaborator(id: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("collaborators")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    if (error.code === '23503') {
+      throw new Error("Não é possível excluir um funcionário que possui cartões registrados. Experimente inativá-lo em vez de excluí-lo.");
+    }
+    throw new Error(`Erro ao excluir colaborador: ${error.message}`);
+  }
+}
+
 export async function findSimilarCollaborators(name: string, storeId?: string | null) {
   const normalized = normalizePersonName(name).toLowerCase();
   let query = supabaseAdmin.from("collaborators").select("id, name").eq("is_active", true);
