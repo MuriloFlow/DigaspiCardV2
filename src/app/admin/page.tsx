@@ -1,7 +1,6 @@
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
-import { getAdminData } from "./actions";
+import { getAdminData, getGlobalMetrics } from "./actions";
 import { AdminPanel } from "./admin-panel";
-import { getGlobalMetrics } from "@/lib/records/repository";
 
 export default async function AdminPage() {
   const [data, metrics] = await Promise.all([
