@@ -6,7 +6,15 @@ import { revalidatePath } from "next/cache";
 
 export async function createStore(name: string) {
   if (!name.trim()) throw new Error("Nome da loja é obrigatório.");
-  const { error } = await supabaseAdmin.from("stores").insert({ name: name.trim() });
+  const { data, error } = await supabaseAdmin.from("stores").insert({ name: name.trim() }).select("id").single();
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin");
+  return data.id;
+}
+
+export async function updateStore(id: string, name: string) {
+  if (!name.trim()) throw new Error("Nome da loja é obrigatório.");
+  const { error } = await supabaseAdmin.from("stores").update({ name: name.trim() }).eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/admin");
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { createStore, createUser, updateUser, toggleUserActive } from "./actions";
+import { createStore, updateStore, createUser, updateUser, toggleUserActive } from "./actions";
 import {
   Building, Users, Key, Save, Loader2, Plus, TrendingUp,
   CreditCard, ChevronRight, Edit2, X, Star, Eye, EyeOff,
@@ -304,6 +304,194 @@ function CreateUserModal({
   );
 }
 
+// ─── Modal de Criação de Unidade ──────────────────────────────────────────────
+function CreateStoreModal({
+  isOpen, onClose, onCreated
+}: {
+  isOpen: boolean; onClose: () => void; onCreated: (storeName: string, opUsername: string, opPassword: string) => Promise<void>
+}) {
+  const [storeName, setStoreName] = useState("");
+  const [opUsername, setOpUsername] = useState("");
+  const [opPassword, setOpPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  if (!isOpen) return null;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    try {
+      await onCreated(storeName, opUsername, opPassword);
+      setIsSuccess(true);
+      setTimeout(() => {
+        setStoreName(""); setOpUsername(""); setOpPassword("");
+        setIsSuccess(false);
+        onClose();
+      }, 1500);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao criar.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  if (isSuccess) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm" />
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative z-10 flex w-full max-w-sm flex-col items-center justify-center rounded-[2rem] bg-white p-8 shadow-2xl text-center">
+          <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
+            <CheckCircle2 className="size-10" />
+          </div>
+          <h2 className="text-xl font-bold text-zinc-950">Unidade Criada</h2>
+          <p className="mt-1 text-sm text-zinc-500">A nova loja já foi adicionada à rede.</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-zinc-950/20 backdrop-blur-sm" onClick={onClose} />
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative z-10 w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5">
+          <div>
+            <p className="text-xs font-semibold uppercase text-zinc-500">Nova Unidade</p>
+            <h2 className="text-xl font-bold text-zinc-950">Adicionar à Rede</h2>
+          </div>
+          <button onClick={onClose} className="flex size-9 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition">
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-zinc-600">Nome da Unidade</label>
+            <input required value={storeName} onChange={e => setStoreName(e.target.value)} className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-zinc-950" placeholder="Ex: Digaspi 42" />
+          </div>
+          <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+            <h4 className="mb-3 text-sm font-bold text-blue-900">Conta Genérica de Operadores</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-blue-700">Login</label>
+                <input required value={opUsername} onChange={e => setOpUsername(e.target.value)} className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500" placeholder="ex: op.loja42" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-blue-700">Senha</label>
+                <input required type="password" value={opPassword} onChange={e => setOpPassword(e.target.value)} className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500" placeholder="••••••••" />
+              </div>
+            </div>
+          </div>
+
+          {error && <p className="rounded-xl bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-700">{error}</p>}
+
+          <button disabled={isLoading} type="submit" className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50">
+            {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            Criar Unidade
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Modal de Edição de Unidade ──────────────────────────────────────────────
+function EditStoreModal({
+  store, storeUser, onClose, onSaved,
+}: { store: Store; storeUser: AppUser | undefined; onClose: () => void; onSaved: (storeId: string, storeName: string, opUsername: string, opPassword?: string) => Promise<void> }) {
+  const [storeName, setStoreName] = useState(store.name);
+  const [opUsername, setOpUsername] = useState(storeUser?.username || "");
+  const [opPassword, setOpPassword] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    try {
+      await onSaved(store.id, storeName, opUsername, opPassword || undefined);
+      setIsSuccess(true);
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao salvar.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  if (isSuccess) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm" />
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative z-10 flex w-full max-w-sm flex-col items-center justify-center rounded-[2rem] bg-white p-8 shadow-2xl text-center">
+          <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
+            <CheckCircle2 className="size-10" />
+          </div>
+          <h2 className="text-xl font-bold text-zinc-950">Unidade Atualizada</h2>
+          <p className="mt-1 text-sm text-zinc-500">As alterações foram salvas com sucesso!</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm" onClick={onClose} />
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="relative w-full max-w-md rounded-[2rem] border border-zinc-200 bg-white p-7 shadow-2xl">
+        <button onClick={onClose} className="absolute right-5 top-5 rounded-xl p-2 text-zinc-400 hover:bg-zinc-100 transition">
+          <X className="size-5" />
+        </button>
+
+        <div className="mb-6">
+          <p className="text-xs font-semibold uppercase text-zinc-500">Editar Unidade</p>
+          <h2 className="mt-1 text-xl font-bold text-zinc-950">{store.name}</h2>
+        </div>
+
+        <form onSubmit={handleSave} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-zinc-600">Nome da Unidade</label>
+            <input required value={storeName} onChange={e => setStoreName(e.target.value)} className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-zinc-950" />
+          </div>
+
+          <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+            <h4 className="mb-3 text-sm font-bold text-blue-900">Conta Genérica de Operadores</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-blue-700">Login</label>
+                <input required value={opUsername} onChange={e => setOpUsername(e.target.value)} className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-blue-700">Nova Senha</label>
+                <div className="relative">
+                  <input type={showPwd ? "text" : "password"} value={opPassword} onChange={e => setOpPassword(e.target.value)} className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 pr-10 text-sm outline-none transition focus:border-blue-500" placeholder="Deixe vazio p/ manter" />
+                  <button type="button" onClick={() => setShowPwd(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400">
+                    {showPwd ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {error && <p className="rounded-xl bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-700">{error}</p>}
+
+          <button disabled={isLoading} type="submit" className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50">
+            {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            Salvar Alterações
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Painel Principal ──────────────────────────────────────────────────────────
 export function AdminPanel({
   initialData,
@@ -313,10 +501,8 @@ export function AdminPanel({
   metrics: GlobalMetrics | null;
 }) {
   const [activeTab, setActiveTab] = useState<"OVERVIEW" | "STORES" | "USERS">("OVERVIEW");
-  const [storeName, setStoreName] = useState("");
-  const [isStoreLoading, setIsStoreLoading] = useState(false);
-  
-  // Limpando estados não utilizados do form antigo
+  const [createStoreModalOpen, setCreateStoreModalOpen] = useState(false);
+  const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   
   const [stores, setStores] = useState(initialData.stores);
@@ -361,20 +547,7 @@ export function AdminPanel({
     }
   }
 
-  async function handleCreateStore(e: React.FormEvent) {
-    e.preventDefault();
-    setIsStoreLoading(true);
-    try {
-      await createStore(storeName);
-      setStoreName("");
-      showToast("Unidade criada com sucesso!");
-      await refreshData();
-    } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : "Erro desconhecido", "error");
-    } finally {
-      setIsStoreLoading(false);
-    }
-  }
+
 
   async function handleToggleActive(u: AppUser) {
     setToggleLoadingId(u.id);
@@ -707,36 +880,51 @@ export function AdminPanel({
 
         {/* ── LOJAS ─── */}
         {activeTab === "STORES" && (
-          <motion.div key="stores" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-6 shadow-sm">
-              <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-zinc-950"><Plus className="size-5" /> Nova Unidade</h3>
-              <form onSubmit={handleCreateStore} className="space-y-4">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-zinc-600">Nome da Unidade</label>
-                  <input required value={storeName} onChange={e => setStoreName(e.target.value)} className="w-full rounded-xl border border-zinc-200 px-4 py-2.5 text-sm outline-none transition focus:border-zinc-950" placeholder="Ex: Digaspi 42" />
-                </div>
-                <button disabled={isStoreLoading} type="submit" className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50">
-                  {isStoreLoading ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Salvar Unidade
-                </button>
-              </form>
+          <motion.div key="stores" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            
+            <div className="mb-6 flex items-center justify-between gap-4 rounded-[1.5rem] border border-zinc-200 bg-white p-6 shadow-sm">
+              <div>
+                <h3 className="flex items-center gap-2 text-lg font-bold text-zinc-950">
+                  <Building className="size-5" /> Unidades da Rede
+                </h3>
+                <p className="mt-1 text-sm text-zinc-500">Gerencie as lojas e suas contas operacionais</p>
+              </div>
+              <button
+                onClick={() => setCreateStoreModalOpen(true)}
+                className="flex items-center gap-2 rounded-xl bg-zinc-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800"
+              >
+                <Plus className="size-4" /> Nova Unidade
+              </button>
             </div>
+
             <div className="rounded-[1.75rem] border border-zinc-100 bg-white p-7 shadow-[0_8px_32px_rgba(15,23,42,0.03)]">
               <h3 className="mb-5 flex items-center gap-3 text-lg font-extrabold text-zinc-950">
                 <div className="flex size-10 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-700"><Building className="size-5" /></div>
-                Unidades da Rede ({stores.length})
+                Lista de Unidades ({stores.length})
               </h3>
-              <ul className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
-                {stores.map(s => (
-                  <li key={s.id} className="group flex items-center justify-between rounded-[1.25rem] border border-zinc-100 bg-zinc-50/50 px-5 py-4 transition-all hover:bg-zinc-50 hover:shadow-sm">
-                    <div className="flex items-center gap-4">
-                      <div className="flex size-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-200">
-                        <Building className="size-4 text-zinc-400 transition group-hover:text-zinc-700" />
+              <ul className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
+                {stores.map(s => {
+                  const opUser = users.find(u => u.store_id === s.id && u.role === "EMPLOYEE");
+                  return (
+                    <li key={s.id} className="group flex items-center justify-between rounded-[1.25rem] border border-zinc-100 bg-zinc-50/50 px-5 py-4 transition-all hover:bg-zinc-50 hover:shadow-sm">
+                      <div className="flex items-center gap-4">
+                        <div className="flex size-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-200">
+                          <Building className="size-4 text-zinc-400 transition group-hover:text-zinc-700" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-bold text-zinc-900 block">{s.name}</span>
+                          <span className="text-xs text-zinc-500 block">Op: {opUser ? `@${opUser.username}` : "Sem conta vinculada"}</span>
+                        </div>
                       </div>
-                      <span className="text-sm font-bold text-zinc-900">{s.name}</span>
-                    </div>
-                    <span className="rounded-lg bg-zinc-200/50 px-2.5 py-1 font-mono text-[10px] font-bold text-zinc-500">{s.id.split("-")[0]}</span>
-                  </li>
-                ))}
+                      <div className="flex items-center gap-3">
+                        <span className="rounded-lg bg-zinc-200/50 px-2.5 py-1 font-mono text-[10px] font-bold text-zinc-500">{s.id.split("-")[0]}</span>
+                        <button onClick={() => setEditingStore(s)} className="flex size-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-blue-50 hover:text-blue-600 transition">
+                          <Edit2 className="size-4" />
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </motion.div>
@@ -829,6 +1017,50 @@ export function AdminPanel({
             onClose={() => setCreateUserModalOpen(false)}
             onCreated={async (payload) => {
               await createUser(payload);
+              await refreshData();
+            }}
+          />
+        )}
+        {createStoreModalOpen && (
+          <CreateStoreModal
+            isOpen={createStoreModalOpen}
+            onClose={() => setCreateStoreModalOpen(false)}
+            onCreated={async (sName, opUsername, opPassword) => {
+              const sid = await createStore(sName);
+              await createUser({
+                name: `Operadores - ${sName}`,
+                username: opUsername,
+                password_plain: opPassword,
+                role: "EMPLOYEE",
+                store_id: sid,
+              });
+              await refreshData();
+            }}
+          />
+        )}
+        {editingStore && (
+          <EditStoreModal
+            store={editingStore}
+            storeUser={users.find(u => u.store_id === editingStore.id && u.role === "EMPLOYEE")}
+            onClose={() => setEditingStore(null)}
+            onSaved={async (sid, sName, opUsername, opPassword) => {
+              await updateStore(sid, sName);
+              const existingOp = users.find(u => u.store_id === sid && u.role === "EMPLOYEE");
+              if (existingOp) {
+                await updateUser({
+                  id: existingOp.id,
+                  username: opUsername,
+                  password_plain: opPassword || undefined,
+                });
+              } else {
+                await createUser({
+                  name: `Operadores - ${sName}`,
+                  username: opUsername,
+                  password_plain: opPassword || "",
+                  role: "EMPLOYEE",
+                  store_id: sid,
+                });
+              }
               await refreshData();
             }}
           />
