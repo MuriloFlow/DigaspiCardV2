@@ -10,7 +10,7 @@ const textField = (label: string) =>
 
 export const createRecordSchema = z
   .object({
-    operatorName: textField("Nome do operador"),
+    collaboratorId: z.string().uuid("Colaborador inválido."),
     clientName: textField("Nome do cliente"),
     amountInCents: z
       .coerce

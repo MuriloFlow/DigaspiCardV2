@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { buildRecordsPayload } from "@/lib/records/domain";
-import { createRecord, listRecords, deleteRecord } from "@/lib/records/repository";
+import { createRecord, listRecords, deleteRecord, updateRecord } from "@/lib/records/repository";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,6 +65,25 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "Nao foi possivel salvar o registro agora." },
       { status: 500, headers: noStoreHeaders },
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    if (!body.id) {
+      return NextResponse.json({ message: "ID não fornecido." }, { status: 400 });
+    }
+    await updateRecord(body.id, { clientName: body.clientName, activated: body.activated });
+    
+    // Atualiza cache e revalida
+    const records = await listRecords();
+    return NextResponse.json({ records, success: true }, { headers: noStoreHeaders });
+  } catch (error) {
+    return NextResponse.json(
+      { message: error instanceof Error ? error.message : "Erro desconhecido." },
+      { status: 400, headers: noStoreHeaders }
     );
   }
 }

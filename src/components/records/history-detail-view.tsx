@@ -134,7 +134,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
 
                   <div className="text-right">
                     <p className="text-base font-semibold text-zinc-950">
-                      {formatCurrency(operator.totalInCents)}
+                      {formatInteger(operator.count)} {operator.count === 1 ? 'cartão' : 'cartões'}
                     </p>
                     <p className="mt-1 text-sm font-medium text-zinc-500">
                       {operator.percentage.toFixed(0)}%

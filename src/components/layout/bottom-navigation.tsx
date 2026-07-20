@@ -2,11 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, History, Home, Trophy, Users } from "lucide-react";
+import { BarChart3, History, Home, Trophy, Users, LogOut } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils/cn";
+import { useAuth } from "@/components/providers/auth-provider";
 
-const items = [
+type NavItem = {
+  label: string;
+  href: string;
+  icon: any;
+  match: (path: string) => boolean;
+  roles?: string[];
+};
+
+const items: NavItem[] = [
   {
     label: "Inicio",
     href: "/",
@@ -24,6 +33,7 @@ const items = [
     href: "/colaboradores",
     icon: Users,
     match: (path: string) => path.startsWith("/colaboradores"),
+    roles: ["GLOBAL_ADMIN", "MANAGER"],
   },
   {
     label: "Ranking",
@@ -35,6 +45,13 @@ const items = [
 
 export function BottomNavigation() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+
+  if (pathname === "/login") return null;
+
+  const visibleItems = items.filter(
+    (item) => !item.roles || (user && item.roles.includes(user.role))
+  );
 
   return (
     <nav
@@ -42,7 +59,7 @@ export function BottomNavigation() {
       className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 sm:bottom-6"
     >
       <div className="flex w-full max-w-lg items-center justify-between gap-1 rounded-[2rem] border border-zinc-200/80 bg-white/95 p-2 shadow-[0_20px_60px_rgba(15,23,42,0.14)] backdrop-blur-xl">
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           const active = item.match(pathname);
           const Icon = item.icon;
 
@@ -84,10 +101,13 @@ export function BottomNavigation() {
             </Link>
           );
         })}
-        <div className="hidden items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-semibold text-zinc-500 lg:flex">
-          <BarChart3 aria-hidden="true" className="size-4" />
-          Live
-        </div>
+        <button
+          onClick={logout}
+          title="Sair"
+          className="ml-1 flex size-12 items-center justify-center rounded-[1.25rem] bg-rose-50 text-rose-600 transition duration-300 hover:bg-rose-100 hover:text-rose-700 sm:size-14 sm:rounded-[1.5rem]"
+        >
+          <LogOut className="size-4 sm:size-5" />
+        </button>
       </div>
     </nav>
   );

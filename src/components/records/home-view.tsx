@@ -15,7 +15,7 @@ import {
   aggregateByOperator,
   getRecentRecords,
 } from "@/lib/records/domain";
-import { formatCurrency, formatInteger } from "@/lib/utils/format";
+import { formatCurrency, formatInteger, toDateKey } from "@/lib/utils/format";
 
 export function HomeView() {
   const {
@@ -30,7 +30,12 @@ export function HomeView() {
   const [modalOpen, setModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const operators = useMemo(() => aggregateByOperator(records), [records]);
+  // Lógica de Reset às 00:00: Filtrar apenas registros de hoje para o gráfico
+  const todayKey = toDateKey(new Date().toISOString());
+  const todayRecords = useMemo(() => records.filter(r => toDateKey(r.createdAt) === todayKey), [records, todayKey]);
+  const todayOperators = useMemo(() => aggregateByOperator(todayRecords), [todayRecords]);
+  const todayCardsCount = todayRecords.length;
+
   const recentRecords = useMemo(() => getRecentRecords(records, 6), [records]);
 
   function showSuccess(operatorName: string) {
@@ -83,9 +88,9 @@ export function HomeView() {
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
         <OperatorPieChart
-          operators={operators}
-          centerLabel="Cartoes"
-          centerValue={formatInteger(summary.totalCards)}
+          operators={todayOperators}
+          centerLabel="Hoje"
+          centerValue={formatInteger(todayCardsCount)}
           className="min-h-[420px]"
         />
 
@@ -93,7 +98,7 @@ export function HomeView() {
           <MetricCard
             label="Valor total"
             value={formatCurrency(summary.totalAmountInCents)}
-            detail="Volume registrado"
+            detail="Volume histórico"
             icon={CreditCard}
             tone="dark"
           />

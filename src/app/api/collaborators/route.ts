@@ -3,8 +3,10 @@ import {
   listCollaborators,
   getCollaboratorRecords,
   mergeCollaborators,
+  unmergeCollaborator,
   renameCollaborator,
   deleteCollaborator,
+  createCollaborator,
   findSimilarCollaborators,
 } from "@/lib/records/repository";
 
@@ -43,6 +45,12 @@ export async function POST(request: Request) {
   const action = body.action as string;
 
   try {
+    if (action === "create") {
+      await createCollaborator(body.name as string);
+      const collaborators = await listCollaborators();
+      return NextResponse.json({ collaborators, success: true }, { headers: noStoreHeaders });
+    }
+
     if (action === "records") {
       const records = await getCollaboratorRecords(body.collaboratorId as string);
       return NextResponse.json({ records }, { headers: noStoreHeaders });
@@ -50,6 +58,12 @@ export async function POST(request: Request) {
 
     if (action === "merge") {
       await mergeCollaborators(body.keepId as string, body.mergeId as string);
+      const collaborators = await listCollaborators();
+      return NextResponse.json({ collaborators, success: true }, { headers: noStoreHeaders });
+    }
+    
+    if (action === "unmerge") {
+      await unmergeCollaborator(body.mergeId as string);
       const collaborators = await listCollaborators();
       return NextResponse.json({ collaborators, success: true }, { headers: noStoreHeaders });
     }

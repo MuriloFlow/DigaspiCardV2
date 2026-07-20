@@ -1,3 +1,14 @@
+export type Role = "EMPLOYEE" | "GLOBAL_ADMIN" | "MANAGER";
+
+export type AppUser = {
+  id: string;
+  username: string;
+  role: Role;
+  name: string | null;
+  isActive: boolean;
+  createdAt: string;
+};
+
 export type OperatorRecord = {
   id: string;
   collaboratorId: string;
@@ -41,7 +52,7 @@ export type RecordsPayload = {
 };
 
 export type CreateRecordPayload = {
-  operatorName: string;
+  collaboratorId: string; // Trocado de operatorName para usar autocomplete
   clientName: string;
   amountInCents: number;
   activated: boolean;
@@ -50,7 +61,22 @@ export type CreateRecordPayload = {
 export type Collaborator = {
   id: string;
   name: string;
-  created_at: string;
+  isActive: boolean;
+  mergedIntoId: string | null;
+  createdAt: string;
   recordCount?: number;
   totalInCents?: number;
+};
+
+export type AuditLog = {
+  id: string;
+  userId: string;
+  userName: string;
+  userRole: Role;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  payload: any;
+  ipAddress: string | null;
+  createdAt: string;
 };
