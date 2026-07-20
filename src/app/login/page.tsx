@@ -43,19 +43,39 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-end bg-zinc-50 px-4 pb-12 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen flex-col items-center bg-zinc-50 px-4 pt-12 pb-24 sm:px-6 lg:px-8">
       {/* Background gradients for premium feel */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-[40%] left-[50%] h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-blue-500/10 blur-3xl" />
         <div className="absolute -bottom-[40%] right-[10%] h-[600px] w-[600px] rounded-full bg-emerald-500/10 blur-3xl" />
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 40, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ type: "spring", damping: 28, stiffness: 380 }}
-        className="w-full max-w-md rounded-[2rem] border border-zinc-200 bg-white p-7 shadow-2xl relative"
-      >
+      <div className="w-full max-w-md flex flex-col flex-1">
+        {/* Header no topo alinhado com o card */}
+        <div className="flex-1">
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          >
+            <div className="mb-4 flex size-20 items-center justify-center">
+              <img src="/lg-sem-fundo.png" alt="Card+ Logo" className="h-full w-full object-contain" />
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-zinc-950">
+              Card+
+            </h1>
+            <p className="mt-2 text-base font-medium text-zinc-500">
+              Sistema de gestão e operacional Digaspi
+            </p>
+          </motion.div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 40, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: "spring", damping: 28, stiffness: 380, delay: 0.1 }}
+          className="w-full rounded-[2rem] bg-white p-7 shadow-[0_24px_80px_rgba(15,23,42,0.1)] relative"
+        >
         <div className="mb-6">
           <div className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-zinc-950">
             <User className="size-6 text-white" />
@@ -110,7 +130,8 @@ export default function LoginPage() {
             </button>
           </div>
         </form>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 }
