@@ -62,7 +62,6 @@ input {
 
   /* Overriding white so that bg-white maps to #0d0d0d */
   --color-white: #0d0d0d;
-  --color-black: #ffffff;
 
   /* Inverting Zinc */
   --color-zinc-50: #141414;

@@ -67,7 +67,7 @@ function EditUserModal({
   if (isSuccess) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm" />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative z-10 flex w-full max-w-sm flex-col items-center justify-center rounded-[2rem] bg-white p-8 shadow-2xl text-center">
           <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
             <CheckCircle2 className="size-10" />
@@ -85,7 +85,7 @@ function EditUserModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
       <motion.div
@@ -228,7 +228,7 @@ function CreateUserModal({
   if (isSuccess) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm" />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative z-10 flex w-full max-w-sm flex-col items-center justify-center rounded-[2rem] bg-white p-8 shadow-2xl text-center">
           <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
             <CheckCircle2 className="size-10" />
@@ -242,7 +242,7 @@ function CreateUserModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-zinc-950/20 backdrop-blur-sm" onClick={onClose} />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative z-10 w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5">
           <div>
@@ -341,7 +341,7 @@ function CreateStoreModal({
   if (isSuccess) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm" />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative z-10 flex w-full max-w-sm flex-col items-center justify-center rounded-[2rem] bg-white p-8 shadow-2xl text-center">
           <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
             <CheckCircle2 className="size-10" />
@@ -355,7 +355,7 @@ function CreateStoreModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-zinc-950/20 backdrop-blur-sm" onClick={onClose} />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative z-10 w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5">
           <div>
@@ -372,16 +372,16 @@ function CreateStoreModal({
             <label className="mb-1 block text-xs font-semibold text-zinc-600">Nome da Unidade</label>
             <input required value={storeName} onChange={e => setStoreName(e.target.value)} className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-zinc-950" placeholder="Ex: Digaspi 42" />
           </div>
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-            <h4 className="mb-3 text-sm font-bold text-blue-900">Conta Genérica de Operadores</h4>
+          <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-4">
+            <h4 className="mb-3 text-sm font-bold text-zinc-950">Conta Genérica de Operadores</h4>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-blue-700">Login</label>
-                <input required value={opUsername} onChange={e => setOpUsername(e.target.value)} className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500" placeholder="ex: op.loja42" />
+                <label className="mb-1 block text-xs font-semibold text-zinc-600">Login</label>
+                <input required value={opUsername} onChange={e => setOpUsername(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-zinc-950" placeholder="ex: op.loja42" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-blue-700">Senha</label>
-                <input required type="password" value={opPassword} onChange={e => setOpPassword(e.target.value)} className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500" placeholder="••••••••" />
+                <label className="mb-1 block text-xs font-semibold text-zinc-600">Senha</label>
+                <input required type="password" value={opPassword} onChange={e => setOpPassword(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-zinc-950" placeholder="••••••••" />
               </div>
             </div>
           </div>
@@ -430,7 +430,7 @@ function EditStoreModal({
   if (isSuccess) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm" />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative z-10 flex w-full max-w-sm flex-col items-center justify-center rounded-[2rem] bg-white p-8 shadow-2xl text-center">
           <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
             <CheckCircle2 className="size-10" />
@@ -444,7 +444,7 @@ function EditStoreModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm" onClick={onClose} />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="relative w-full max-w-md rounded-[2rem] border border-zinc-200 bg-white p-7 shadow-2xl">
         <button onClick={onClose} className="absolute right-5 top-5 rounded-xl p-2 text-zinc-400 hover:bg-zinc-100 transition">
           <X className="size-5" />
@@ -461,18 +461,18 @@ function EditStoreModal({
             <input required value={storeName} onChange={e => setStoreName(e.target.value)} className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-zinc-950" />
           </div>
 
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-            <h4 className="mb-3 text-sm font-bold text-blue-900">Conta Genérica de Operadores</h4>
+          <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-4">
+            <h4 className="mb-3 text-sm font-bold text-zinc-950">Conta Genérica de Operadores</h4>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-blue-700">Login</label>
-                <input required value={opUsername} onChange={e => setOpUsername(e.target.value)} className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500" />
+                <label className="mb-1 block text-xs font-semibold text-zinc-600">Login</label>
+                <input required value={opUsername} onChange={e => setOpUsername(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-zinc-950" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-blue-700">Nova Senha</label>
+                <label className="mb-1 block text-xs font-semibold text-zinc-600">Nova Senha</label>
                 <div className="relative">
-                  <input type={showPwd ? "text" : "password"} value={opPassword} onChange={e => setOpPassword(e.target.value)} className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 pr-10 text-sm outline-none transition focus:border-blue-500" placeholder="Deixe vazio p/ manter" />
-                  <button type="button" onClick={() => setShowPwd(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400">
+                  <input type={showPwd ? "text" : "password"} value={opPassword} onChange={e => setOpPassword(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 pr-10 text-sm outline-none transition focus:border-zinc-950" placeholder="Deixe vazio p/ manter" />
+                  <button type="button" onClick={() => setShowPwd(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400">
                     {showPwd ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
                 </div>
@@ -694,7 +694,7 @@ export function AdminPanel({
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-40 flex justify-end"
             >
-              <div className="absolute inset-0 bg-zinc-950/30 backdrop-blur-sm" onClick={() => setSelectedStoreId(null)} />
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedStoreId(null)} />
               <motion.div
                 initial={{ x: "100%" }}
                 animate={{ x: 0 }}

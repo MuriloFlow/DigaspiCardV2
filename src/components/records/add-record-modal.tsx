@@ -159,7 +159,7 @@ export function AddRecordModal({
         >
           <motion.button
             aria-label="Fechar modal"
-            className="absolute inset-0 bg-zinc-950/24 backdrop-blur-md"
+            className="absolute inset-0 bg-black/60 backdrop-blur-md"
             type="button"
             onClick={() => { if (!isSubmitting) onClose(); }}
           />
