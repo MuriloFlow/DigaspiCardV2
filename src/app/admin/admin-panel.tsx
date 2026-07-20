@@ -6,7 +6,7 @@ import { createStore, createUser, updateUser, toggleUserActive } from "./actions
 import {
   Building, Users, Key, Save, Loader2, Plus, TrendingUp,
   CreditCard, ChevronRight, Edit2, X, Star, Eye, EyeOff,
-  ShieldCheck, ShieldOff, ArrowLeft, BarChart2,
+  ShieldCheck, ShieldOff, ArrowLeft, BarChart2, CheckCircle2
 } from "lucide-react";
 import { CustomSelect } from "@/components/ui/custom-select";
 
@@ -34,6 +34,8 @@ function EditUserModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [isSuccess, setIsSuccess] = useState(false);
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
@@ -48,8 +50,11 @@ function EditUserModal({
         store_id: role === "GLOBAL_ADMIN" ? null : storeId || null,
         is_primary: isPrimary,
       });
-      onSaved();
-      onClose();
+      setIsSuccess(true);
+      setTimeout(() => {
+        onSaved();
+        onClose();
+      }, 1500);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro ao salvar.");
     } finally {
@@ -58,6 +63,21 @@ function EditUserModal({
   }
 
   const roleLabel = { EMPLOYEE: "Funcionário Operacional", MANAGER: "Gerente de Unidade", GLOBAL_ADMIN: "Admin Global (Rede)" };
+
+  if (isSuccess) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm" />
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative z-10 flex w-full max-w-sm flex-col items-center justify-center rounded-[2rem] bg-white p-8 shadow-2xl text-center">
+          <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
+            <CheckCircle2 className="size-10" />
+          </div>
+          <h2 className="text-xl font-bold text-zinc-950">Conta Atualizada</h2>
+          <p className="mt-1 text-sm text-zinc-500">As alterações foram salvas com sucesso!</p>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -174,6 +194,8 @@ function CreateUserModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [isSuccess, setIsSuccess] = useState(false);
+
   if (!isOpen) return null;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -189,14 +211,33 @@ function CreateUserModal({
         store_id: role === "GLOBAL_ADMIN" ? null : storeId || null,
         is_primary: false,
       });
-      setName(""); setUsername(""); setPassword("");
-      setRole("MANAGER"); setStoreId("");
-      onClose();
+      setIsSuccess(true);
+      setTimeout(() => {
+        setName(""); setUsername(""); setPassword("");
+        setRole("MANAGER"); setStoreId("");
+        setIsSuccess(false);
+        onClose();
+      }, 1500);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro ao criar.");
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (isSuccess) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm" />
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative z-10 flex w-full max-w-sm flex-col items-center justify-center rounded-[2rem] bg-white p-8 shadow-2xl text-center">
+          <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
+            <CheckCircle2 className="size-10" />
+          </div>
+          <h2 className="text-xl font-bold text-zinc-950">Conta Criada</h2>
+          <p className="mt-1 text-sm text-zinc-500">O novo usuário já pode acessar o sistema.</p>
+        </motion.div>
+      </div>
+    );
   }
 
   return (
@@ -274,18 +315,18 @@ export function AdminPanel({
   const [activeTab, setActiveTab] = useState<"OVERVIEW" | "STORES" | "USERS">("OVERVIEW");
   const [storeName, setStoreName] = useState("");
   const [isStoreLoading, setIsStoreLoading] = useState(false);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("EMPLOYEE");
-  const [storeId, setStoreId] = useState("");
-  const [isUserLoading, setIsUserLoading] = useState(false);
+  
+  // Limpando estados não utilizados do form antigo
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
+  
+  const [stores, setStores] = useState(initialData.stores);
   const [users, setUsers] = useState(initialData.users);
+  
   const [toggleLoadingId, setToggleLoadingId] = useState<string | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [drawerTab, setDrawerTab] = useState<"OVERVIEW" | "USERS">("OVERVIEW");
   const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [storeMetrics, setStoreMetrics] = useState<{
     store: { id: string; name: string } | null;
     collaboratorsCount: number;
@@ -306,31 +347,32 @@ export function AdminPanel({
     finally { setStoreMetricsLoading(false); }
   }
 
+  function showToast(message: string, type: "success" | "error" = "success") {
+    setToastMsg({ message, type });
+    setTimeout(() => setToastMsg(null), 3000);
+  }
+
+  async function refreshData() {
+    const res = await fetch("/api/admin/users", { cache: "no-store" });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.users) setUsers(d.users);
+      if (d.stores) setStores(d.stores);
+    }
+  }
+
   async function handleCreateStore(e: React.FormEvent) {
     e.preventDefault();
     setIsStoreLoading(true);
     try {
       await createStore(storeName);
       setStoreName("");
-      alert("Loja criada! Recarregue para ver na lista.");
+      showToast("Unidade criada com sucesso!");
+      await refreshData();
     } catch (err: unknown) {
-      alert("Erro: " + (err instanceof Error ? err.message : "Desconhecido"));
+      showToast(err instanceof Error ? err.message : "Erro desconhecido", "error");
     } finally {
       setIsStoreLoading(false);
-    }
-  }
-
-  async function handleCreateUser(e: React.FormEvent) {
-    e.preventDefault();
-    setIsUserLoading(true);
-    try {
-      await createUser({ username, password_plain: password, name, role, store_id: role === "GLOBAL_ADMIN" ? null : storeId });
-      setUsername(""); setPassword(""); setName(""); setStoreId("");
-      alert("Usuário criado! Recarregue para ver na lista.");
-    } catch (err: unknown) {
-      alert("Erro: " + (err instanceof Error ? err.message : "Desconhecido"));
-    } finally {
-      setIsUserLoading(false);
     }
   }
 
@@ -339,8 +381,9 @@ export function AdminPanel({
     try {
       await toggleUserActive(u.id, !u.is_active);
       setUsers(prev => prev.map(x => x.id === u.id ? { ...x, is_active: !x.is_active } : x));
+      showToast(u.is_active ? "Conta desativada temporariamente." : "Conta ativada com sucesso.");
     } catch (err: unknown) {
-      alert("Erro: " + (err instanceof Error ? err.message : "Desconhecido"));
+      showToast(err instanceof Error ? err.message : "Erro desconhecido", "error");
     } finally {
       setToggleLoadingId(null);
     }
@@ -367,6 +410,21 @@ export function AdminPanel({
 
   return (
     <div className="space-y-6">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toastMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: -20, x: "-50%" }}
+            className={`fixed left-1/2 top-4 z-50 flex items-center gap-2 rounded-2xl px-5 py-3 shadow-2xl ${toastMsg.type === "success" ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"}`}
+          >
+            {toastMsg.type === "success" ? <CheckCircle2 className="size-5" /> : <X className="size-5" />}
+            <p className="text-sm font-semibold">{toastMsg.message}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Tabs */}
       <div className="flex gap-1 rounded-2xl bg-zinc-100 p-1 w-fit flex-wrap">
         {tabs.map((tab) => (
@@ -660,9 +718,9 @@ export function AdminPanel({
               </form>
             </div>
             <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-6 shadow-sm">
-              <h3 className="mb-4 text-lg font-bold text-zinc-950">Unidades ({initialData.stores.length})</h3>
+              <h3 className="mb-4 text-lg font-bold text-zinc-950">Unidades ({stores.length})</h3>
               <ul className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
-                {initialData.stores.map(s => (
+                {stores.map(s => (
                   <li key={s.id} className="flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50 px-4 py-3">
                     <div className="flex items-center gap-3"><Building className="size-4 text-zinc-400" /><span className="font-semibold text-zinc-950">{s.name}</span></div>
                     <span className="font-mono text-xs text-zinc-400">{s.id.split("-")[0]}</span>
@@ -746,20 +804,21 @@ export function AdminPanel({
         {editingUser && (
           <EditUserModal
             user={editingUser}
-            stores={initialData.stores}
+            stores={stores}
             onClose={() => setEditingUser(null)}
-            onSaved={() => alert("Salvo! Recarregue para ver as mudanças.")}
+            onSaved={async () => {
+              await refreshData();
+            }}
           />
         )}
         {createUserModalOpen && (
           <CreateUserModal
             isOpen={createUserModalOpen}
-            stores={initialData.stores}
+            stores={stores}
             onClose={() => setCreateUserModalOpen(false)}
             onCreated={async (payload) => {
-              const res = await createUser(payload);
-              if (res.error) throw new Error(res.error);
-              setUsers(res.users!);
+              await createUser(payload);
+              await refreshData();
             }}
           />
         )}
