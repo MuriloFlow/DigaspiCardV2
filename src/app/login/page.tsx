@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "motion/react";
-import { User, Loader2, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
+  const [showForm, setShowForm] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -33,8 +34,6 @@ export default function LoginPage() {
         throw new Error(data.message || "Erro de autenticação.");
       }
 
-      // Sucesso!
-      // Atualiza a página inteira para recarregar o layout do Next.js
       window.location.href = "/";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha no login.");
@@ -43,100 +42,120 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-zinc-50 px-4 pt-12 pb-8 sm:px-6 sm:pb-12 lg:px-8 lg:pb-12">
-      {/* Background gradients for premium feel */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[20%] left-[20%] h-[1000px] w-[1000px] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[120px]" />
-        <div className="absolute bottom-[-20%] right-[-10%] h-[800px] w-[800px] rounded-full bg-emerald-500/10 blur-[120px]" />
-        <div className="absolute top-[40%] right-[30%] h-[600px] w-[600px] rounded-full bg-purple-500/10 blur-[120px]" />
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#070709] px-4 overflow-hidden selection:bg-orange-500/30 selection:text-orange-200 font-sans">
+      
+      {/* Background Ambient Glows (Vibe do Screenshot) */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <div className="absolute top-[10%] h-[500px] w-[500px] rounded-full bg-gradient-to-b from-orange-500/20 to-transparent blur-[120px]" />
+        <div className="absolute top-[30%] h-[300px] w-[300px] rounded-full bg-amber-500/15 blur-[100px]" />
       </div>
 
-      <div className="w-full max-w-md flex flex-col flex-1">
-        {/* Header no topo alinhado com o card */}
-        <div className="flex-1">
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+      <AnimatePresence mode="wait">
+        {!showForm ? (
+          <motion.div
+            key="intro"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, y: -40, scale: 0.95 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="relative z-10 flex w-full max-w-sm flex-col items-center text-center"
           >
-            <div className="mb-6 flex h-28 items-center justify-start">
-              <img src="/lg-sem-fundo.png" alt="Card+ Logo" className="h-full w-auto object-contain" />
-            </div>
-            <h1 className="text-[2rem] font-bold tracking-tight text-zinc-950">
+            <motion.div 
+              animate={{ y: [0, -10, 0] }} 
+              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+              className="mb-8 flex h-36 items-center justify-center"
+            >
+              <img src="/lg-sem-fundo.png" alt="Card+ Logo" className="h-full w-auto object-contain drop-shadow-[0_0_30px_rgba(249,115,22,0.3)]" />
+            </motion.div>
+            
+            <h1 className="text-4xl font-bold tracking-tight text-white">
               Card+
             </h1>
-            <p className="mt-2 text-base font-medium text-zinc-500 max-w-sm">
-              Sistema de gestão e operacional Digaspi
+            <p className="mt-3 text-[15px] font-medium text-zinc-400">
+              Sistema Operacional Digaspi – 
+              <span className="text-orange-400"> Captação de Cartões para Alta Performance</span>
             </p>
+
+            <div className="mt-16 w-full">
+              <button
+                onClick={() => setShowForm(true)}
+                className="group relative w-full rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-400 p-[1px] shadow-[0_0_40px_-10px_rgba(249,115,22,0.5)] transition-all hover:shadow-[0_0_60px_-15px_rgba(249,115,22,0.6)] active:scale-[0.98]"
+              >
+                <div className="flex h-14 w-full items-center justify-center rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-400 px-8 font-bold text-[#1a0b02]">
+                  Acessar Conta
+                </div>
+              </button>
+            </div>
           </motion.div>
-        </div>
+        ) : (
+          <motion.div
+            key="form"
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+            className="relative z-10 w-full max-w-[340px]"
+          >
+            <div className="mb-10 text-center">
+              <div className="mx-auto mb-6 flex h-24 items-center justify-center">
+                <img src="/lg-sem-fundo.png" alt="Card+ Logo" className="h-full w-auto object-contain drop-shadow-[0_0_20px_rgba(249,115,22,0.2)]" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight text-white">Acesso ao Painel</h2>
+            </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 40, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ type: "spring", damping: 28, stiffness: 380, delay: 0.1 }}
-          className="w-full rounded-[2rem] bg-white p-8 shadow-[0_30px_100px_-15px_rgba(15,23,42,0.15)] relative backdrop-blur-3xl border border-zinc-100/50"
-        >
-        <div className="mb-6">
-          <div className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-zinc-950">
-            <User className="size-6 text-white" />
-          </div>
-          <h2 className="text-xl font-bold text-zinc-950">Acesso ao Sistema</h2>
-          <p className="mt-1 text-sm text-zinc-500">Preencha os dados para acessar o painel.</p>
-        </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="mb-2 block text-[13px] font-medium text-zinc-400">
+                  Usuário
+                </label>
+                <input
+                  required autoFocus
+                  type="text"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  className="w-full rounded-2xl border border-zinc-800/50 bg-[#121214] px-5 py-4 text-[15px] font-medium text-white shadow-inner outline-none transition-all placeholder:text-zinc-600 focus:border-orange-500/50 focus:bg-[#1a1a1c] focus:ring-4 focus:ring-orange-500/10"
+                  placeholder="Ex: operacao.41"
+                />
+              </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-2 block text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
-              Usuário
-            </label>
-            <input
-              required autoFocus
-              type="text"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              className="w-full rounded-[1rem] border border-zinc-200/80 bg-zinc-50/50 px-4 py-3.5 text-sm font-medium text-zinc-950 outline-none transition-all focus:border-zinc-900 focus:bg-white focus:ring-[3px] focus:ring-zinc-900/10 placeholder:text-zinc-400"
-              placeholder="Ex: operacao.41"
-            />
-          </div>
+              <div>
+                <label className="mb-2 block text-[13px] font-medium text-zinc-400">
+                  Senha
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full rounded-2xl border border-zinc-800/50 bg-[#121214] px-5 py-4 text-[15px] font-medium text-white shadow-inner outline-none transition-all placeholder:text-zinc-600 focus:border-orange-500/50 focus:bg-[#1a1a1c] focus:ring-4 focus:ring-orange-500/10"
+                  placeholder="••••••••"
+                />
+              </div>
 
-          <div>
-            <label className="mb-2 block text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
-              Senha
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full rounded-[1rem] border border-zinc-200/80 bg-zinc-50/50 px-4 py-3.5 text-sm font-medium text-zinc-950 outline-none transition-all focus:border-zinc-900 focus:bg-white focus:ring-[3px] focus:ring-zinc-900/10 placeholder:text-zinc-400"
-              placeholder="••••••••"
-            />
-          </div>
+              <div className="h-2" />
 
-          {error && (
-            <motion.p 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              className="rounded-[1rem] bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"
-            >
-              {error}
-            </motion.p>
-          )}
+              {error && (
+                <motion.p 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 text-center text-sm font-medium text-rose-400"
+                >
+                  {error}
+                </motion.p>
+              )}
 
-          <div className="flex gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group flex flex-1 items-center justify-center gap-2 rounded-[1rem] bg-zinc-950 px-4 py-4 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all hover:bg-zinc-800 hover:shadow-lg hover:shadow-zinc-900/20 active:scale-[0.98] disabled:opacity-50"
-            >
-              {isLoading ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
-              Entrar
-            </button>
-          </div>
-        </form>
-        </motion.div>
-      </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="group relative w-full rounded-2xl bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-400 p-[1px] shadow-[0_0_30px_-10px_rgba(249,115,22,0.4)] transition-all hover:shadow-[0_0_50px_-10px_rgba(249,115,22,0.6)] active:scale-[0.98] disabled:opacity-50"
+              >
+                <div className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-400 font-bold text-[#1a0b02]">
+                  {isLoading ? <Loader2 className="size-5 animate-spin" /> : "Entrar no Painel"}
+                </div>
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
