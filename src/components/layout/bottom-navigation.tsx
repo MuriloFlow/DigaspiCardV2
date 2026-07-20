@@ -134,11 +134,11 @@ export function BottomNavigation() {
             onClick={() => setShowSettings(!showSettings)}
             title="Configurações"
             className={cn(
-              "ml-1 flex size-12 items-center justify-center rounded-[1.25rem] transition duration-300 sm:size-14 sm:rounded-[1.5rem]",
-              showSettings ? "bg-zinc-200 text-zinc-950" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-950"
+              "group relative ml-1 flex size-12 items-center justify-center rounded-[1.25rem] text-zinc-500 outline-none transition duration-300 hover:text-zinc-950 focus-visible:ring-2 focus-visible:ring-zinc-950/15 sm:size-14 sm:rounded-[1.5rem]",
+              showSettings && "text-zinc-950"
             )}
           >
-            <Settings className="size-4 sm:size-5" />
+            <Settings className="size-4 transition duration-300 group-hover:scale-105 sm:size-5" strokeWidth={showSettings ? 2.35 : 2} />
           </button>
 
           <AnimatePresence>
