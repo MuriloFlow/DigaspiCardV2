@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Operadores | Performance de Cartoes",
-  description: "Dashboard premium para registros e ranking de operadores.",
+  title: "Card+ | Gamificação e Gestão de Performance",
+  description: "Dashboard premium para registros e ranking de operadores na captação de cartões.",
 };
 
 export default async function RootLayout({
