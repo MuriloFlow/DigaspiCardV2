@@ -242,6 +242,7 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
   
   // Filtros e Busca
   const [search, setSearch] = useState("");
+  const [storeSearch, setStoreSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ACTIVE");
   const [sortOrder, setSortOrder] = useState<"AZ" | "ZA">("AZ");
   
@@ -609,8 +610,22 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
       )}
 
       {isGlobalAdmin && !selectedStoreIdView ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {stores.map(store => {
+        <>
+          <div className="mb-6 flex items-center gap-3 rounded-[1.5rem] border border-zinc-200 bg-white px-5 py-4 shadow-[0_4px_24px_rgba(15,23,42,0.02)] transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
+            <Search className="size-5 shrink-0 text-zinc-400" />
+            <input
+              value={storeSearch} onChange={(e) => setStoreSearch(e.target.value)}
+              placeholder="Pesquisar por unidade..."
+              className="min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
+            />
+            {storeSearch && (
+              <button type="button" onClick={() => setStoreSearch("")} className="text-zinc-400 hover:text-zinc-700">
+                <X className="size-5" />
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {stores.filter(s => s.name.toLowerCase().includes(storeSearch.toLowerCase())).map(store => {
             const storeCollabs = collaborators.filter(c => c.storeId === store.id);
             const activeCollabs = storeCollabs.filter(c => c.isActive).length;
             return (
@@ -633,7 +648,13 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
               </div>
             );
           })}
-        </div>
+          </div>
+          {stores.filter(s => s.name.toLowerCase().includes(storeSearch.toLowerCase())).length === 0 && (
+            <div className="rounded-[1.5rem] border border-dashed border-zinc-300 bg-white px-5 py-12 text-center text-sm font-medium text-zinc-500">
+              Nenhuma unidade encontrada.
+            </div>
+          )}
+        </>
       ) : (
         <>
           {isGlobalAdmin && (
