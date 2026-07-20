@@ -7,7 +7,12 @@ import { revalidatePath } from "next/cache";
 export async function createStore(name: string) {
   if (!name.trim()) throw new Error("Nome da loja é obrigatório.");
   const { data, error } = await supabaseAdmin.from("stores").insert({ name: name.trim() }).select("id").single();
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === '23505' || error.message.includes("stores_name_key")) {
+      throw new Error(`A unidade "${name.trim()}" já está registrada na rede.`);
+    }
+    throw new Error(error.message);
+  }
   revalidatePath("/admin");
   return data.id;
 }
@@ -15,7 +20,12 @@ export async function createStore(name: string) {
 export async function updateStore(id: string, name: string) {
   if (!name.trim()) throw new Error("Nome da loja é obrigatório.");
   const { error } = await supabaseAdmin.from("stores").update({ name: name.trim() }).eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === '23505' || error.message.includes("stores_name_key")) {
+      throw new Error(`A unidade "${name.trim()}" já está registrada na rede.`);
+    }
+    throw new Error(error.message);
+  }
   revalidatePath("/admin");
 }
 
@@ -32,7 +42,12 @@ export async function createUser(data: { username: string; password_plain: strin
     store_id: data.store_id || null
   });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === '23505' || error.message.includes("app_users_username_key")) {
+      throw new Error(`O login de usuário "${data.username}" já existe no sistema. Escolha outro.`);
+    }
+    throw new Error(error.message);
+  }
   revalidatePath("/admin");
 }
 
@@ -71,7 +86,12 @@ export async function updateUser(data: {
   }
 
   const { error } = await supabaseAdmin.from("app_users").update(payload).eq("id", data.id);
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === '23505' || error.message.includes("app_users_username_key")) {
+      throw new Error(`O login de usuário "${data.username}" já está sendo usado. Escolha outro.`);
+    }
+    throw new Error(error.message);
+  }
   revalidatePath("/admin");
 }
 
