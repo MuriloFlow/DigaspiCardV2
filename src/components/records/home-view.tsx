@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { CreditCard, RefreshCw, TrendingUp, Users } from "lucide-react";
+import { CreditCard, RefreshCw, TrendingUp, Users, Building } from "lucide-react";
 import { OperatorPieChart } from "@/components/charts/operator-pie-chart";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { useRecords } from "@/components/providers/records-provider";
+import { useAuth } from "@/components/providers/auth-provider";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { MetricCard } from "@/components/ui/metric-card";
@@ -27,6 +28,8 @@ export function HomeView() {
     refresh,
     createRecord,
   } = useRecords();
+  const { user } = useAuth();
+  const isGlobalAdmin = user?.role === "GLOBAL_ADMIN";
   const [modalOpen, setModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -54,10 +57,20 @@ export function HomeView() {
   return (
     <PageContainer>
       <PageHeader
-        eyebrow="Painel operacional"
-        title="Performance de operadores"
-        description="Registros, valores e ranking em uma interface limpa para acompanhamento diario."
+        eyebrow={isGlobalAdmin ? "Visão Consolidada da Rede" : "Painel operacional"}
+        title={isGlobalAdmin ? "Dashboard Global" : "Performance de operadores"}
+        description={isGlobalAdmin
+          ? "Visão agregada de todos os cartões da rede. Para registrar cartões, acesse uma unidade específica."
+          : "Registros, valores e ranking em uma interface limpa para acompanhamento diario."
+        }
       />
+
+      {isGlobalAdmin && (
+        <div className="mb-6 flex items-center gap-3 rounded-[1.5rem] border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700">
+          <Building className="size-4 shrink-0" />
+          <span>Você está no painel de <strong>Administrador Global</strong>. O registro de cartões é feito pelos operadores de cada unidade.</span>
+        </div>
+      )}
 
       {error ? (
         <div className="mb-5 flex flex-col gap-3 rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 sm:flex-row sm:items-center sm:justify-between">
@@ -151,15 +164,18 @@ export function HomeView() {
         )}
       </section>
 
-      <FloatingActionButton onClick={() => setModalOpen(true)} />
-
-      <AddRecordModal
-        open={modalOpen}
-        isSubmitting={isCreating}
-        onClose={() => setModalOpen(false)}
-        onCreate={createRecord}
-        onCreated={(record) => showSuccess(record.operatorName)}
-      />
+      {!isGlobalAdmin && (
+        <>
+          <FloatingActionButton onClick={() => setModalOpen(true)} />
+          <AddRecordModal
+            open={modalOpen}
+            isSubmitting={isCreating}
+            onClose={() => setModalOpen(false)}
+            onCreate={createRecord}
+            onCreated={(record) => showSuccess(record.operatorName)}
+          />
+        </>
+      )}
     </PageContainer>
   );
 }
