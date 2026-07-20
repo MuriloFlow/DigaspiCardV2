@@ -61,7 +61,7 @@ export default function LoginPage() {
         <div className="rounded-[2.5rem] border border-zinc-200/80 bg-white/80 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-10">
           <div className="text-center">
             <div className="mx-auto mb-6 flex size-20 items-center justify-center">
-              <img src="/logo.svg" alt="Card+ Logo" className="h-full w-full object-contain" />
+              <img src="/logov2.png" alt="Card+ Logo" className="h-full w-full object-contain" />
             </div>
             <h2 className="text-3xl font-bold tracking-tight text-zinc-950">
               Card+
