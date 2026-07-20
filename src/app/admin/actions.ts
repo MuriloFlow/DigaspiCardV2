@@ -30,8 +30,47 @@ export async function createUser(data: { username: string; password_plain: strin
 
 export async function getAdminData() {
   const { data: stores } = await supabaseAdmin.from("stores").select("*").order("name");
-  const { data: users } = await supabaseAdmin.from("app_users").select("id, username, role, name, is_active, store_id").order("username");
+  const { data: users } = await supabaseAdmin
+    .from("app_users")
+    .select("id, username, role, name, is_active, store_id, is_primary")
+    .order("username");
   return { stores: stores || [], users: users || [] };
+}
+
+export async function updateUser(data: {
+  id: string;
+  name?: string;
+  username?: string;
+  password_plain?: string;
+  role?: string;
+  store_id?: string | null;
+  is_active?: boolean;
+  is_primary?: boolean;
+}) {
+  if (!data.id) throw new Error("ID do usuário é obrigatório.");
+
+  const payload: Record<string, unknown> = {};
+  if (data.name !== undefined) payload.name = data.name;
+  if (data.username !== undefined) payload.username = data.username.trim();
+  if (data.role !== undefined) payload.role = data.role;
+  if (data.store_id !== undefined) payload.store_id = data.store_id || null;
+  if (data.is_active !== undefined) payload.is_active = data.is_active;
+  if (data.is_primary !== undefined) payload.is_primary = data.is_primary;
+
+  // Só re-hasha a senha se uma nova for enviada
+  if (data.password_plain && data.password_plain.trim().length > 0) {
+    payload.password_hash = await bcrypt.hash(data.password_plain.trim(), 10);
+  }
+
+  const { error } = await supabaseAdmin.from("app_users").update(payload).eq("id", data.id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin");
+}
+
+export async function toggleUserActive(id: string, is_active: boolean) {
+  const { error } = await supabaseAdmin.from("app_users").update({ is_active }).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin");
 }
 
 export async function getGlobalMetrics() {

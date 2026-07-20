@@ -38,6 +38,7 @@ create table if not exists app_users (
   role text not null check (role in ('EMPLOYEE', 'MANAGER', 'GLOBAL_ADMIN')),
   name text,
   is_active boolean default true not null,
+  is_primary boolean default false not null,  -- Gerente Principal da unidade
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );
