@@ -16,6 +16,7 @@ import { toDateKey, formatLongDate } from "@/lib/utils/format";
 import type { OperatorRecord, Collaborator } from "@/lib/records/types";
 import { cn } from "@/lib/utils/cn";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { useAuth } from "@/components/providers/auth-provider";
 
 type Store = { id: string; name: string };
 
@@ -224,7 +225,12 @@ function CollaboratorOptionsModal({
   );
 }
 
-export function CollaboratorsView({ isGlobalAdmin, userStoreId }: { isGlobalAdmin?: boolean; userStoreId?: string | null }) {
+export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?: string | null }) {
+  const { user } = useAuth();
+  
+  const isGlobalAdmin = props.isGlobalAdmin ?? user?.role === "GLOBAL_ADMIN";
+  const userStoreId = props.userStoreId ?? (user as any)?.store_id ?? null;
+
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(true);
