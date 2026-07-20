@@ -133,7 +133,7 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "Erro na operação." },
-      { status: 500, headers: noStore },
+      { status: 400, headers: noStore },
     );
   }
 }

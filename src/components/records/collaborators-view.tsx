@@ -712,9 +712,9 @@ export function CollaboratorsView({ isGlobalAdmin, userStoreId }: { isGlobalAdmi
                 </div>
               </div>
 
-              <AnimatePresence>
+              <AnimatePresence mode="wait">
                 {isRenaming && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                  <motion.div key={`rename-${collab.id}`} initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden border-t border-zinc-100">
                     <div className="flex items-center gap-3 p-4">
                       <input value={renameName} onChange={(e) => setRenameName(e.target.value)}
@@ -732,7 +732,7 @@ export function CollaboratorsView({ isGlobalAdmin, userStoreId }: { isGlobalAdmi
                 )}
 
                 {isMergeSource && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                  <motion.div key={`merge-${collab.id}`} initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden border-t border-zinc-100">
                     <div className="p-4 bg-blue-50/50">
                       <p className="mb-3 text-xs font-semibold text-blue-800">Selecione o perfil principal para unificar os registros de "{collab.name}":</p>
@@ -754,7 +754,7 @@ export function CollaboratorsView({ isGlobalAdmin, userStoreId }: { isGlobalAdmi
                 )}
 
                 {isConfirmingDelete && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                  <motion.div key={`delete-${collab.id}`} initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden border-t border-amber-100">
                     <div className="flex items-center gap-3 bg-amber-50 p-4">
                       <AlertTriangle className="size-4 shrink-0 text-amber-600" />
