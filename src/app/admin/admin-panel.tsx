@@ -667,13 +667,16 @@ export function AdminPanel({
                           ) : (
                             <ul className="space-y-2">
                               {employees.map(u => (
-                                <li key={u.id} className={`flex items-center gap-3 rounded-xl border px-3 py-3 ${u.is_active ? "border-zinc-100 bg-white" : "border-zinc-200 bg-zinc-50 opacity-60"}`}>
-                                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100">
-                                    <span className="text-sm font-bold text-zinc-600">{(u.name || u.username).charAt(0).toUpperCase()}</span>
+                                <li key={u.id} className={`group flex items-center gap-4 rounded-[1.25rem] border p-4 transition-all duration-300 ${u.is_active ? "border-zinc-100 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.02)] hover:border-zinc-200 hover:shadow-[0_8px_32px_rgba(15,23,42,0.05)]" : "border-zinc-100 bg-zinc-50/50 opacity-70"}`}>
+                                  <div className="flex size-11 shrink-0 items-center justify-center rounded-[1rem] bg-zinc-100/80 text-zinc-600 ring-1 ring-zinc-200">
+                                    <span className="text-sm font-extrabold">{(u.name || u.username).charAt(0).toUpperCase()}</span>
                                   </div>
                                   <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-semibold text-zinc-950">{u.name || u.username}</p>
-                                    <p className="text-xs text-zinc-500">@{u.username}{!u.is_active ? " · Inativo" : ""}</p>
+                                    <p className="truncate text-sm font-extrabold text-zinc-950">{u.name || u.username}</p>
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-[11px] font-medium text-zinc-500">@{u.username}</p>
+                                      {!u.is_active && <span className="rounded-md bg-rose-100 px-1.5 py-0.5 text-[9px] font-bold text-rose-700 uppercase tracking-wide">Inativo</span>}
+                                    </div>
                                   </div>
                                   <div className="flex shrink-0 items-center gap-1">
                                     <button
@@ -717,13 +720,21 @@ export function AdminPanel({
                 </button>
               </form>
             </div>
-            <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-6 shadow-sm">
-              <h3 className="mb-4 text-lg font-bold text-zinc-950">Unidades ({stores.length})</h3>
+            <div className="rounded-[1.75rem] border border-zinc-100 bg-white p-7 shadow-[0_8px_32px_rgba(15,23,42,0.03)]">
+              <h3 className="mb-5 flex items-center gap-3 text-lg font-extrabold text-zinc-950">
+                <div className="flex size-10 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-700"><Building className="size-5" /></div>
+                Unidades da Rede ({stores.length})
+              </h3>
               <ul className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
                 {stores.map(s => (
-                  <li key={s.id} className="flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50 px-4 py-3">
-                    <div className="flex items-center gap-3"><Building className="size-4 text-zinc-400" /><span className="font-semibold text-zinc-950">{s.name}</span></div>
-                    <span className="font-mono text-xs text-zinc-400">{s.id.split("-")[0]}</span>
+                  <li key={s.id} className="group flex items-center justify-between rounded-[1.25rem] border border-zinc-100 bg-zinc-50/50 px-5 py-4 transition-all hover:bg-zinc-50 hover:shadow-sm">
+                    <div className="flex items-center gap-4">
+                      <div className="flex size-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-200">
+                        <Building className="size-4 text-zinc-400 transition group-hover:text-zinc-700" />
+                      </div>
+                      <span className="text-sm font-bold text-zinc-900">{s.name}</span>
+                    </div>
+                    <span className="rounded-lg bg-zinc-200/50 px-2.5 py-1 font-mono text-[10px] font-bold text-zinc-500">{s.id.split("-")[0]}</span>
                   </li>
                 ))}
               </ul>
