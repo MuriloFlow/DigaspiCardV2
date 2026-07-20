@@ -43,11 +43,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-zinc-50 px-4 pt-12 pb-24 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen flex-col items-center bg-zinc-50 px-4 pt-12 pb-8 sm:px-6 sm:pb-12 lg:px-8 lg:pb-12">
       {/* Background gradients for premium feel */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-[40%] left-[50%] h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-blue-500/10 blur-3xl" />
-        <div className="absolute -bottom-[40%] right-[10%] h-[600px] w-[600px] rounded-full bg-emerald-500/10 blur-3xl" />
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[20%] left-[20%] h-[1000px] w-[1000px] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[120px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] h-[800px] w-[800px] rounded-full bg-emerald-500/10 blur-[120px]" />
+        <div className="absolute top-[40%] right-[30%] h-[600px] w-[600px] rounded-full bg-purple-500/10 blur-[120px]" />
       </div>
 
       <div className="w-full max-w-md flex flex-col flex-1">
@@ -58,13 +59,13 @@ export default function LoginPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
-            <div className="mb-4 flex size-20 items-center justify-center">
-              <img src="/lg-sem-fundo.png" alt="Card+ Logo" className="h-full w-full object-contain" />
+            <div className="mb-5 flex size-[88px] items-center justify-center">
+              <img src="/lg-sem-fundo.png" alt="Card+ Logo" className="h-full w-full object-contain drop-shadow-sm" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-950">
+            <h1 className="text-[2rem] font-bold tracking-tight text-zinc-950">
               Card+
             </h1>
-            <p className="mt-2 text-base font-medium text-zinc-500">
+            <p className="mt-2 text-base font-medium text-zinc-500 max-w-sm">
               Sistema de gestão e operacional Digaspi
             </p>
           </motion.div>
@@ -74,7 +75,7 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 40, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: "spring", damping: 28, stiffness: 380, delay: 0.1 }}
-          className="w-full rounded-[2rem] bg-white p-7 shadow-[0_24px_80px_rgba(15,23,42,0.1)] relative"
+          className="w-full rounded-[2rem] bg-white p-8 shadow-[0_30px_100px_-15px_rgba(15,23,42,0.15)] relative backdrop-blur-3xl border border-zinc-100/50"
         >
         <div className="mb-6">
           <div className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-zinc-950">
@@ -86,7 +87,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-zinc-600 uppercase tracking-wide">
+            <label className="mb-2 block text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
               Usuário
             </label>
             <input
@@ -94,13 +95,13 @@ export default function LoginPage() {
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition bg-transparent text-zinc-950 focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10 placeholder:text-zinc-400"
+              className="w-full rounded-[1rem] border border-zinc-200/80 bg-zinc-50/50 px-4 py-3.5 text-sm font-medium text-zinc-950 outline-none transition-all focus:border-zinc-900 focus:bg-white focus:ring-[3px] focus:ring-zinc-900/10 placeholder:text-zinc-400"
               placeholder="Ex: operacao.41"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-zinc-600 uppercase tracking-wide">
+            <label className="mb-2 block text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
               Senha
             </label>
             <input
@@ -108,22 +109,26 @@ export default function LoginPage() {
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition bg-transparent text-zinc-950 focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10 placeholder:text-zinc-400"
+              className="w-full rounded-[1rem] border border-zinc-200/80 bg-zinc-50/50 px-4 py-3.5 text-sm font-medium text-zinc-950 outline-none transition-all focus:border-zinc-900 focus:bg-white focus:ring-[3px] focus:ring-zinc-900/10 placeholder:text-zinc-400"
               placeholder="••••••••"
             />
           </div>
 
           {error && (
-            <p className="rounded-xl bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-700">
+            <motion.p 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="rounded-[1rem] bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"
+            >
               {error}
-            </p>
+            </motion.p>
           )}
 
-          <div className="flex gap-3 pt-1">
+          <div className="flex gap-3 pt-2">
             <button
               type="submit"
               disabled={isLoading}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50"
+              className="group flex flex-1 items-center justify-center gap-2 rounded-[1rem] bg-zinc-950 px-4 py-4 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all hover:bg-zinc-800 hover:shadow-lg hover:shadow-zinc-900/20 active:scale-[0.98] disabled:opacity-50"
             >
               {isLoading ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
               Entrar
