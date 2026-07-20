@@ -176,6 +176,7 @@ export function AdminPanel({
   const [users, setUsers] = useState(initialData.users);
   const [toggleLoadingId, setToggleLoadingId] = useState<string | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  const [drawerTab, setDrawerTab] = useState<"OVERVIEW" | "USERS">("OVERVIEW");
   const [storeMetrics, setStoreMetrics] = useState<{
     store: { id: string; name: string } | null;
     collaboratorsCount: number;
@@ -186,6 +187,7 @@ export function AdminPanel({
 
   async function openStoreDetail(storeId: string) {
     setSelectedStoreId(storeId);
+    setDrawerTab("OVERVIEW");
     setStoreMetrics(null);
     setStoreMetricsLoading(true);
     try {
@@ -332,19 +334,24 @@ export function AdminPanel({
           </motion.div>
         )}
 
-        {/* ── DETALHE DA LOJA ─── */}
+        {/* ── DETALHE DA LOJA (DRAWER) ─── */}
         {activeTab === "OVERVIEW" && selectedStoreId && (() => {
           const store = initialData.stores.find(s => s.id === selectedStoreId);
           const storeUsers = users.filter(u => u.store_id === selectedStoreId);
-          const primaryManager = storeUsers.find(u => u.role === "MANAGER" && u.is_primary);
-          const anyManager = storeUsers.find(u => u.role === "MANAGER");
-          const manager = primaryManager || anyManager;
+          const managers = storeUsers.filter(u => u.role === "MANAGER");
+          const employees = storeUsers.filter(u => u.role === "EMPLOYEE");
+          const primaryManager = managers.find(u => u.is_primary);
+          const manager = primaryManager || managers[0];
+
+          const rl: Record<string, string> = { GLOBAL_ADMIN: "Admin", MANAGER: "Gerente", EMPLOYEE: "Funcionário" };
+          const rc: Record<string, string> = { GLOBAL_ADMIN: "bg-purple-100 text-purple-700", MANAGER: "bg-blue-100 text-blue-700", EMPLOYEE: "bg-zinc-100 text-zinc-600" };
+
           return (
             <motion.div
               key="store-detail"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="fixed inset-0 z-40 flex justify-end"
             >
               <div className="absolute inset-0 bg-zinc-950/30 backdrop-blur-sm" onClick={() => setSelectedStoreId(null)} />
@@ -353,89 +360,175 @@ export function AdminPanel({
                 animate={{ x: 0 }}
                 exit={{ x: "100%" }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                className="relative z-10 flex h-full w-full max-w-md flex-col overflow-y-auto bg-white shadow-2xl"
+                className="relative z-10 flex h-full w-full max-w-md flex-col bg-white shadow-2xl"
               >
-                {/* Header */}
-                <div className="flex items-center gap-4 border-b border-zinc-100 px-6 py-5">
-                  <button onClick={() => setSelectedStoreId(null)} className="flex size-9 items-center justify-center rounded-xl hover:bg-zinc-100 transition">
-                    <ArrowLeft className="size-5 text-zinc-600" />
-                  </button>
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-zinc-500">Detalhes da Unidade</p>
-                    <h2 className="text-lg font-bold text-zinc-950">{store?.name}</h2>
+                {/* Header fixo */}
+                <div className="shrink-0 border-b border-zinc-100">
+                  <div className="flex items-center gap-3 px-5 py-4">
+                    <button onClick={() => setSelectedStoreId(null)} className="flex size-9 shrink-0 items-center justify-center rounded-xl hover:bg-zinc-100 transition">
+                      <ArrowLeft className="size-5 text-zinc-600" />
+                    </button>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Unidade</p>
+                      <h2 className="truncate text-base font-bold text-zinc-950">{store?.name}</h2>
+                    </div>
+                  </div>
+
+                  {/* Tabs internas */}
+                  <div className="flex gap-1 px-5 pb-3">
+                    {(["OVERVIEW", "USERS"] as const).map(tab => (
+                      <button
+                        key={tab}
+                        onClick={() => setDrawerTab(tab)}
+                        className={`rounded-xl px-4 py-1.5 text-xs font-semibold transition ${
+                          drawerTab === tab ? "bg-zinc-950 text-white" : "text-zinc-500 hover:bg-zinc-100"
+                        }`}
+                      >
+                        {tab === "OVERVIEW" ? "Visão Geral" : `Funcionários (${storeUsers.length})`}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                {/* Métricas */}
-                <div className="p-6 space-y-4">
-                  {storeMetricsLoading ? (
-                    <div className="flex items-center justify-center py-10">
-                      <Loader2 className="size-6 animate-spin text-zinc-400" />
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { label: "Cartões Hoje", value: storeMetrics?.cardsToday ?? 0, icon: CreditCard, color: "bg-emerald-500" },
-                        { label: "Cartões no Mês", value: storeMetrics?.cardsThisMonth ?? 0, icon: BarChart2, color: "bg-blue-500" },
-                        { label: "Colaboradores", value: storeMetrics?.collaboratorsCount ?? 0, icon: Users, color: "bg-purple-500" },
-                        { label: "Usuários", value: storeUsers.length, icon: Key, color: "bg-orange-500" },
-                      ].map(card => (
-                        <div key={card.label} className="rounded-[1.25rem] border border-zinc-200 bg-zinc-50 p-4">
-                          <div className={`mb-2 flex size-8 items-center justify-center rounded-xl ${card.color}`}>
-                            <card.icon className="size-4 text-white" />
+                {/* Conteúdo rolável */}
+                <div className="flex-1 overflow-y-auto">
+                  <AnimatePresence mode="wait">
+                    {/* ── ABA: VISÃO GERAL ── */}
+                    {drawerTab === "OVERVIEW" && (
+                      <motion.div key="dov" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4 p-5">
+                        {/* Métricas */}
+                        {storeMetricsLoading ? (
+                          <div className="flex items-center justify-center py-10">
+                            <Loader2 className="size-6 animate-spin text-zinc-400" />
                           </div>
-                          <p className="text-2xl font-bold text-zinc-950">{card.value}</p>
-                          <p className="text-xs font-medium text-zinc-500">{card.label}</p>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-3">
+                            {[
+                              { label: "Cartões Hoje", value: storeMetrics?.cardsToday ?? 0, icon: CreditCard, color: "bg-emerald-500" },
+                              { label: "Cartões no Mês", value: storeMetrics?.cardsThisMonth ?? 0, icon: BarChart2, color: "bg-blue-500" },
+                              { label: "Colaboradores", value: storeMetrics?.collaboratorsCount ?? 0, icon: Users, color: "bg-purple-500" },
+                              { label: "Usuários Vinculados", value: storeUsers.length, icon: Key, color: "bg-orange-500" },
+                            ].map(card => (
+                              <div key={card.label} className="rounded-[1.25rem] border border-zinc-200 bg-zinc-50 p-4">
+                                <div className={`mb-2 flex size-8 items-center justify-center rounded-xl ${card.color}`}>
+                                  <card.icon className="size-4 text-white" />
+                                </div>
+                                <p className="text-2xl font-bold text-zinc-950">{card.value}</p>
+                                <p className="text-xs font-medium text-zinc-500">{card.label}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Gerente Principal */}
+                        <div className="rounded-[1.25rem] border border-zinc-200 bg-zinc-50 px-4 py-3">
+                          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Gerente Responsável</p>
+                          {manager ? (
+                            <div className="flex items-center gap-2">
+                              {primaryManager && <Star className="size-3.5 fill-amber-400 text-amber-400" />}
+                              <p className="font-semibold text-zinc-950">{manager.name || manager.username}</p>
+                              <span className="rounded-lg bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                                {primaryManager ? "Principal" : "Gerente"}
+                              </span>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-zinc-500">Sem gerente definido</p>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  )}
 
-                  {/* Gerente */}
-                  <div className="rounded-[1.25rem] border border-zinc-200 bg-zinc-50 px-4 py-3">
-                    <p className="mb-1 text-xs font-semibold uppercase text-zinc-500">Gerente Responsável</p>
-                    {manager ? (
-                      <div className="flex items-center gap-2">
-                        {primaryManager && <Star className="size-3.5 fill-amber-400 text-amber-400" />}
-                        <p className="font-semibold text-zinc-950">{manager.name || manager.username}</p>
-                        <span className="rounded-lg bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">{primaryManager ? "Principal" : "Gerente"}</span>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-zinc-500">Sem gerente definido</p>
+                        <button
+                          onClick={() => setDrawerTab("USERS")}
+                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 py-3 text-sm font-bold text-white transition hover:bg-zinc-800"
+                        >
+                          <Users className="size-4" /> Ver Funcionários ({storeUsers.length})
+                        </button>
+                      </motion.div>
                     )}
-                  </div>
 
-                  {/* Usuários da Loja */}
-                  <div>
-                    <p className="mb-3 text-xs font-semibold uppercase text-zinc-500">Usuários desta Unidade</p>
-                    <ul className="space-y-2">
-                      {storeUsers.map(u => {
-                        const rl = { GLOBAL_ADMIN: "Admin", MANAGER: "Gerente", EMPLOYEE: "Funcionário" };
-                        const rc = { GLOBAL_ADMIN: "bg-purple-100 text-purple-700", MANAGER: "bg-blue-100 text-blue-700", EMPLOYEE: "bg-zinc-100 text-zinc-600" };
-                        return (
-                          <li key={u.id} className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white px-3 py-2.5">
-                            <div>
-                              <p className="text-sm font-semibold text-zinc-950">{u.name || u.username}</p>
-                              <p className="text-xs text-zinc-500">@{u.username}</p>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className={`rounded-lg px-2 py-0.5 text-[10px] font-bold ${rc[u.role as keyof typeof rc] ?? "bg-zinc-100"}`}>{rl[u.role as keyof typeof rl] ?? u.role}</span>
-                              {!u.is_active && <span className="text-[10px] font-bold text-rose-500">Inativo</span>}
-                            </div>
-                          </li>
-                        );
-                      })}
-                      {storeUsers.length === 0 && <p className="text-sm text-zinc-500">Nenhum usuário vinculado.</p>}
-                    </ul>
-                  </div>
+                    {/* ── ABA: FUNCIONÁRIOS ── */}
+                    {drawerTab === "USERS" && (
+                      <motion.div key="dusers" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-5 p-5">
+                        {/* Gerentes */}
+                        <div>
+                          <div className="mb-2 flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">Gerentes</span>
+                            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-600">{managers.length}</span>
+                          </div>
+                          {managers.length === 0 ? (
+                            <p className="rounded-xl border border-dashed border-zinc-200 py-4 text-center text-xs text-zinc-500">Nenhum gerente vinculado</p>
+                          ) : (
+                            <ul className="space-y-2">
+                              {managers.map(u => (
+                                <li key={u.id} className="flex items-center gap-3 rounded-xl border border-zinc-100 bg-white px-3 py-3">
+                                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-100">
+                                    <span className="text-sm font-bold text-blue-700">{(u.name || u.username).charAt(0).toUpperCase()}</span>
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                      {u.is_primary && <Star className="size-3 fill-amber-400 text-amber-400" />}
+                                      <p className="truncate text-sm font-semibold text-zinc-950">{u.name || u.username}</p>
+                                    </div>
+                                    <p className="text-xs text-zinc-500">@{u.username}{u.is_primary ? " · Principal" : ""}</p>
+                                  </div>
+                                  <div className="flex shrink-0 items-center gap-1">
+                                    <button
+                                      onClick={() => handleToggleActive(u)}
+                                      disabled={toggleLoadingId === u.id}
+                                      title={u.is_active ? "Desativar" : "Ativar"}
+                                      className="flex size-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-zinc-100 transition"
+                                    >
+                                      {toggleLoadingId === u.id ? <Loader2 className="size-3.5 animate-spin" /> : u.is_active ? <ShieldCheck className="size-4 text-emerald-500" /> : <ShieldOff className="size-4 text-rose-400" />}
+                                    </button>
+                                    <button onClick={() => setEditingUser(u)} className="flex size-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-blue-50 hover:text-blue-600 transition">
+                                      <Edit2 className="size-4" />
+                                    </button>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
 
-                  {/* Ação: Editar usuários */}
-                  <button
-                    onClick={() => { setSelectedStoreId(null); setActiveTab("USERS"); }}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 py-3 text-sm font-bold text-white transition hover:bg-zinc-800"
-                  >
-                    <Edit2 className="size-4" /> Gerenciar Usuários
-                  </button>
+                        {/* Funcionários Operacionais */}
+                        <div>
+                          <div className="mb-2 flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">Operadores</span>
+                            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-600">{employees.length}</span>
+                          </div>
+                          {employees.length === 0 ? (
+                            <p className="rounded-xl border border-dashed border-zinc-200 py-4 text-center text-xs text-zinc-500">Nenhum operador vinculado</p>
+                          ) : (
+                            <ul className="space-y-2">
+                              {employees.map(u => (
+                                <li key={u.id} className={`flex items-center gap-3 rounded-xl border px-3 py-3 ${u.is_active ? "border-zinc-100 bg-white" : "border-zinc-200 bg-zinc-50 opacity-60"}`}>
+                                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100">
+                                    <span className="text-sm font-bold text-zinc-600">{(u.name || u.username).charAt(0).toUpperCase()}</span>
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-semibold text-zinc-950">{u.name || u.username}</p>
+                                    <p className="text-xs text-zinc-500">@{u.username}{!u.is_active ? " · Inativo" : ""}</p>
+                                  </div>
+                                  <div className="flex shrink-0 items-center gap-1">
+                                    <button
+                                      onClick={() => handleToggleActive(u)}
+                                      disabled={toggleLoadingId === u.id}
+                                      title={u.is_active ? "Desativar" : "Ativar"}
+                                      className="flex size-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-zinc-100 transition"
+                                    >
+                                      {toggleLoadingId === u.id ? <Loader2 className="size-3.5 animate-spin" /> : u.is_active ? <ShieldCheck className="size-4 text-emerald-500" /> : <ShieldOff className="size-4 text-rose-400" />}
+                                    </button>
+                                    <button onClick={() => setEditingUser(u)} className="flex size-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-blue-50 hover:text-blue-600 transition">
+                                      <Edit2 className="size-4" />
+                                    </button>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             </motion.div>
