@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
     const { data: user, error } = await supabaseAdmin
       .from("app_users")
-      .select("id, username, password_hash, role, is_active")
+      .select("id, username, password_hash, role, is_active, store_id")
       .eq("username", username)
       .single();
 
@@ -32,11 +32,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Credenciais inválidas." }, { status: 401 });
     }
 
-    // Criar sessão (Cookie)
+    // Criar sessão com storeId embutido no JWT
     await createSession({
       id: user.id,
       username: user.username,
       role: user.role,
+      storeId: user.store_id ?? null,
     });
 
     return NextResponse.json({ success: true, role: user.role });

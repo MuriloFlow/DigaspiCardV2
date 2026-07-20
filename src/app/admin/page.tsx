@@ -1,18 +1,22 @@
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { getAdminData } from "./actions";
 import { AdminPanel } from "./admin-panel";
+import { getGlobalMetrics } from "@/lib/records/repository";
 
 export default async function AdminPage() {
-  const data = await getAdminData();
+  const [data, metrics] = await Promise.all([
+    getAdminData(),
+    getGlobalMetrics().catch(() => null),
+  ]);
 
   return (
     <PageContainer>
       <PageHeader
         eyebrow="Gerenciamento Global"
         title="Rede & Usuários"
-        description="Controle total sobre as lojas (unidades) e contas de acesso ao sistema."
+        description="Controle centralizado de todas as unidades, contas e métricas da rede."
       />
-      <AdminPanel initialData={data} />
+      <AdminPanel initialData={data} metrics={metrics} />
     </PageContainer>
   );
 }

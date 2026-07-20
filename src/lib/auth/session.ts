@@ -9,6 +9,7 @@ export type SessionPayload = {
   id: string;
   username: string;
   role: "EMPLOYEE" | "MANAGER" | "GLOBAL_ADMIN";
+  storeId: string | null;
   expiresAt: Date;
 };
 
