@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, History, Home, Trophy, Users, LogOut } from "lucide-react";
+import { BarChart3, History, Home, Trophy, Users, LogOut, Building } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils/cn";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -34,6 +34,13 @@ const items: NavItem[] = [
     icon: Users,
     match: (path: string) => path.startsWith("/colaboradores"),
     roles: ["GLOBAL_ADMIN", "MANAGER"],
+  },
+  {
+    label: "Lojas & Admin",
+    href: "/admin",
+    icon: Building,
+    match: (path: string) => path.startsWith("/admin"),
+    roles: ["GLOBAL_ADMIN"],
   },
   {
     label: "Ranking",
