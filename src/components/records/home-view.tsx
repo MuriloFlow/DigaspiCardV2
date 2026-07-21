@@ -44,15 +44,29 @@ export function HomeView() {
   const todayCardsCount = todayRecords.length;
 
   const dailyGoal = useMemo(() => {
-    if (records.length === 0) return 5;
+    const day = new Date().getDay(); // 0 = Domingo, 1 = Segunda, ..., 5 = Sexta, 6 = Sábado
+    let baseGoal = 12; // Padrão: Domingo a Quinta
+    if (day === 5) baseGoal = 15; // Sexta-feira
+    if (day === 6) baseGoal = 30; // Sábado
+
+    if (records.length === 0) return baseGoal;
+
     // Pega a data do registro mais antigo e calcula os dias totais de uso do sistema
     const oldestDate = new Date(records[records.length - 1].createdAt);
     const msDiff = Date.now() - oldestDate.getTime();
     const daysSinceFirst = Math.max(1, Math.ceil(msDiff / (1000 * 60 * 60 * 24)));
     
+    // Se for sistema novo (menos de 7 dias de histórico), usamos puramente a meta do dia
+    if (daysSinceFirst <= 7) {
+      return baseGoal;
+    }
+
     // Média diária do período todo + 15% de meta de crescimento
     const avgDaily = records.length / daysSinceFirst;
-    return Math.max(1, Math.ceil(avgDaily * 1.15));
+    const dynamicGoal = Math.max(1, Math.ceil(avgDaily * 1.15));
+
+    // A meta nunca pode ser inferior à meta padrão daquele dia
+    return Math.max(baseGoal, dynamicGoal);
   }, [records]);
 
   const recentRecords = useMemo(() => getRecentRecords(records, 5), [records]);
