@@ -1,14 +1,14 @@
 export const OPERATOR_COLORS = [
-  "#111827",
-  "#2563eb",
-  "#10b981",
-  "#f59e0b",
-  "#e11d48",
-  "#7c3aed",
-  "#0891b2",
-  "#ea580c",
-  "#4f46e5",
-  "#16a34a",
+  "#3b82f6", // Blue
+  "#10b981", // Emerald
+  "#f59e0b", // Amber
+  "#ec4899", // Pink
+  "#8b5cf6", // Violet
+  "#06b6d4", // Cyan
+  "#f97316", // Orange
+  "#6366f1", // Indigo
+  "#14b8a6", // Teal
+  "#f43f5e", // Rose
 ];
 
 export function getOperatorColor(name: string, fallbackIndex = 0) {
