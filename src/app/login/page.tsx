@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const [showForm, setShowForm] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -112,7 +113,7 @@ export default function LoginPage() {
                   type="text"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  className="w-full rounded-full border border-[#27272a] bg-[#121214] px-5 py-4 text-[15px] font-medium text-[#ffffff] shadow-inner outline-none transition-all placeholder:text-[#52525b] focus:border-[#6387FB]/50 focus:bg-[#1a1a1c] focus:ring-4 focus:ring-[#6387FB]/10"
+                  className="w-full rounded-full border border-white/10 bg-white/5 px-5 py-4 text-[15px] font-medium text-[#ffffff] shadow-inner outline-none transition-all placeholder:text-white/40 focus:border-[#6387FB]/50 focus:bg-white/10 focus:ring-4 focus:ring-[#6387FB]/10"
                   placeholder="Ex: operacao.41"
                 />
               </div>
@@ -121,14 +122,23 @@ export default function LoginPage() {
                 <label className="mb-2 block text-[13px] font-medium text-[#a1a1aa] tracking-wide">
                   Senha
                 </label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full rounded-full border border-[#27272a] bg-[#121214] px-5 py-4 text-[15px] font-medium text-[#ffffff] shadow-inner outline-none transition-all placeholder:text-[#52525b] focus:border-[#6387FB]/50 focus:bg-[#1a1a1c] focus:ring-4 focus:ring-[#6387FB]/10"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full rounded-full border border-white/10 bg-white/5 py-4 pl-5 pr-12 text-[15px] font-medium text-[#ffffff] shadow-inner outline-none transition-all placeholder:text-white/40 focus:border-[#6387FB]/50 focus:bg-white/10 focus:ring-4 focus:ring-[#6387FB]/10"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                  </button>
+                </div>
               </div>
 
               <div className="h-2" />
