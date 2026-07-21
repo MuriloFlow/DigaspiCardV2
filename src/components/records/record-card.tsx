@@ -1,7 +1,4 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { CreditCard, Timer, Trash2, Loader2, AlertTriangle, Edit2, Check, X } from "lucide-react";
 import { getOperatorColor } from "@/lib/records/colors";
@@ -29,11 +26,6 @@ export function RecordCard({
   const [editAmount, setEditAmount] = useState((record.amountInCents / 100).toString());
   const [editActivated, setEditActivated] = useState(record.activated);
   const [isSaving, setIsSaving] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
   
   const isBeingDeleted = isDeleting === record.id;
   const canDelete = user?.role === "GLOBAL_ADMIN" || user?.role === "MANAGER";
@@ -70,92 +62,14 @@ export function RecordCard({
   }
 
   return (
-    <motion.article
+    <>
+      <motion.article
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: isBeingDeleted ? 0.5 : 1, y: 0 }}
       exit={{ opacity: 0, y: -12, height: 0 }}
       transition={{ duration: 0.35, delay: Math.min(index * 0.035, 0.18) }}
       className="group relative overflow-hidden rounded-[1.5rem] border border-zinc-200/80 bg-white p-4 shadow-[0_14px_42px_rgba(15,23,42,0.05)] transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-[0_20px_54px_rgba(15,23,42,0.08)]"
     >
-      {mounted && createPortal(
-        <AnimatePresence>
-          {isEditing && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsEditing(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="relative w-full max-w-sm overflow-hidden rounded-[2rem] bg-white shadow-2xl"
-            >
-              <div className="border-b border-zinc-100 bg-zinc-50/50 px-6 py-5">
-                <h3 className="text-lg font-bold text-zinc-950">Editar Registro</h3>
-                <p className="text-sm font-medium text-zinc-500">Corrija os dados do cartão de {record.operatorName}</p>
-              </div>
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-zinc-700">Nome do Cliente</label>
-                  <input 
-                    value={editClient} 
-                    onChange={e => setEditClient(e.target.value)} 
-                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-zinc-950 focus:ring-4 focus:ring-zinc-950/5" 
-                    placeholder="Nome do cliente"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-zinc-700">Valor</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-3.5 flex items-center text-sm font-semibold text-zinc-500">
-                        R$
-                      </span>
-                      <input 
-                        type="text"
-                        value={editAmount} 
-                        onChange={e => {
-                          const val = e.target.value.replace(/[^0-9.,]/g, "");
-                          setEditAmount(val);
-                        }} 
-                        className="w-full rounded-xl border border-zinc-200 pl-9 pr-3 py-3 text-sm outline-none transition focus:border-zinc-950 focus:ring-4 focus:ring-zinc-950/5" 
-                        placeholder="0,00"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-zinc-700">Status</label>
-                    <label className="flex h-[46px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm font-semibold transition hover:bg-zinc-100">
-                      <input 
-                        type="checkbox" 
-                        checked={editActivated} 
-                        onChange={e => setEditActivated(e.target.checked)} 
-                        className="size-4 rounded border-zinc-300 accent-zinc-900"
-                      />
-                      Ativo
-                    </label>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button onClick={() => setIsEditing(false)} className="flex-1 rounded-xl bg-zinc-100 px-4 py-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-200">Cancelar</button>
-                  <button onClick={handleSaveEdit} disabled={isSaving} className="flex-1 rounded-xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-zinc-800 disabled:opacity-50">
-                    {isSaving ? "Salvando..." : "Salvar"}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-            </div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
-
       <div className="flex items-center gap-4">
           <div
             className="flex size-12 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold text-white shadow-[0_12px_26px_rgba(15,23,42,0.12)]"
@@ -263,5 +177,82 @@ export function RecordCard({
         )}
       </AnimatePresence>
     </motion.article>
+
+      <AnimatePresence>
+        {isEditing && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsEditing(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="relative w-full max-w-sm overflow-hidden rounded-[2rem] bg-white shadow-2xl"
+            >
+              <div className="border-b border-zinc-100 bg-zinc-50/50 px-6 py-5">
+                <h3 className="text-lg font-bold text-zinc-950">Editar Registro</h3>
+                <p className="text-sm font-medium text-zinc-500">Corrija os dados do cartão de {record.operatorName}</p>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-zinc-700">Nome do Cliente</label>
+                  <input 
+                    value={editClient} 
+                    onChange={e => setEditClient(e.target.value)} 
+                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-zinc-950 focus:ring-4 focus:ring-zinc-950/5" 
+                    placeholder="Nome do cliente"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold text-zinc-700">Valor</label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-3.5 flex items-center text-sm font-semibold text-zinc-500">
+                        R$
+                      </span>
+                      <input 
+                        type="text"
+                        value={editAmount} 
+                        onChange={e => {
+                          const val = e.target.value.replace(/[^0-9.,]/g, "");
+                          setEditAmount(val);
+                        }} 
+                        className="w-full rounded-xl border border-zinc-200 pl-9 pr-3 py-3 text-sm outline-none transition focus:border-zinc-950 focus:ring-4 focus:ring-zinc-950/5" 
+                        placeholder="0,00"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold text-zinc-700">Status</label>
+                    <label className="flex h-[46px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm font-semibold transition hover:bg-zinc-100">
+                      <input 
+                        type="checkbox" 
+                        checked={editActivated} 
+                        onChange={e => setEditActivated(e.target.checked)} 
+                        className="size-4 rounded border-zinc-300 accent-zinc-900"
+                      />
+                      Ativo
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => setIsEditing(false)} className="flex-1 rounded-xl bg-zinc-100 px-4 py-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-200">Cancelar</button>
+                  <button onClick={handleSaveEdit} disabled={isSaving} className="flex-1 rounded-xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-zinc-800 disabled:opacity-50">
+                    {isSaving ? "Salvando..." : "Salvar"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
