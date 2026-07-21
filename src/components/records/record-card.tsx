@@ -77,9 +77,10 @@ export function RecordCard({
       transition={{ duration: 0.35, delay: Math.min(index * 0.035, 0.18) }}
       className="group relative overflow-hidden rounded-[1.5rem] border border-zinc-200/80 bg-white p-4 shadow-[0_14px_42px_rgba(15,23,42,0.05)] transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-[0_20px_54px_rgba(15,23,42,0.08)]"
     >
-      <AnimatePresence>
-        {isEditing && mounted && createPortal(
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {mounted && createPortal(
+        <AnimatePresence>
+          {isEditing && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -149,10 +150,11 @@ export function RecordCard({
                 </div>
               </div>
             </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       <div className="flex items-center gap-4">
           <div
