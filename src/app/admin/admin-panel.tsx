@@ -521,6 +521,7 @@ export function AdminPanel({
   const [users, setUsers] = useState(initialData.users);
   
   const [toggleLoadingId, setToggleLoadingId] = useState<string | null>(null);
+  const [confirmDeleteStoreId, setConfirmDeleteStoreId] = useState<string | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [drawerTab, setDrawerTab] = useState<"OVERVIEW" | "USERS">("OVERVIEW");
   const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
@@ -561,11 +562,11 @@ export function AdminPanel({
   }
 
   async function handleDeleteStore(id: string) {
-    if (!confirm("Tem certeza que deseja DELETAR esta unidade? Todos os usuários e registros vinculados serão APAGADOS permanentemente. Esta ação não pode ser desfeita.")) return;
     try {
       await deleteStore(id);
       setStores(prev => prev.filter(s => s.id !== id));
       showToast("Unidade e todos os seus dados foram deletados.");
+      setConfirmDeleteStoreId(null);
       refreshData();
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : "Erro ao deletar unidade.", "error");
@@ -954,7 +955,7 @@ export function AdminPanel({
                         <button onClick={() => setEditingStore(s)} className="flex size-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-blue-50 hover:text-blue-600 transition">
                           <Edit2 className="size-4" />
                         </button>
-                        <button onClick={() => handleDeleteStore(s.id)} className="flex size-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-rose-50 hover:text-rose-600 transition">
+                        <button onClick={() => setConfirmDeleteStoreId(s.id)} className="flex size-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-rose-50 hover:text-rose-600 transition">
                           <Trash2 className="size-4" />
                         </button>
                       </div>
@@ -1100,6 +1101,53 @@ export function AdminPanel({
               await refreshData();
             }}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Confirmação de Deleção de Loja */}
+      <AnimatePresence>
+        {confirmDeleteStoreId && (
+          <motion.div
+            className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center sm:p-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setConfirmDeleteStoreId(null)}
+          >
+            <motion.div
+              className="w-full max-w-sm overflow-hidden rounded-[2rem] bg-white shadow-2xl"
+              initial={{ y: "100%", scale: 0.95 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: "100%", scale: 0.95 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="bg-rose-50 p-6 pb-5 text-center">
+                <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-rose-100 text-rose-600 shadow-sm ring-4 ring-rose-50/50">
+                  <Trash2 className="size-6" />
+                </div>
+                <h3 className="mb-2 text-lg font-bold text-rose-950">Deletar Unidade</h3>
+                <p className="text-sm font-medium leading-relaxed text-rose-800/80">
+                  Tem certeza que deseja <strong className="text-rose-600">DELETAR</strong> esta unidade? <br />
+                  <span className="font-semibold text-rose-900">Todos os usuários, colaboradores e registros vinculados serão APAGADOS permanentemente.</span> Esta ação é irreversível.
+                </p>
+              </div>
+              <div className="flex gap-3 bg-white p-5">
+                <button
+                  onClick={() => setConfirmDeleteStoreId(null)}
+                  className="flex-1 rounded-xl bg-zinc-100 px-4 py-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => handleDeleteStore(confirmDeleteStoreId)}
+                  className="flex-1 rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-rose-700 shadow-[0_4px_14px_rgba(225,29,72,0.3)] hover:shadow-[0_6px_20px_rgba(225,29,72,0.4)]"
+                >
+                  Confirmar Exclusão
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
