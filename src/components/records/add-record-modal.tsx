@@ -50,7 +50,7 @@ export function AddRecordModal({
   const [errors, setErrors] = useState<FieldErrors>({});
   const [apiError, setApiError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [collaborators, setCollaborators] = useState<{ value: string; label: string }[]>([]);
+  const [collaborators, setCollaborators] = useState<{ value: string; label: string; icon?: React.ReactNode }[]>([]);
   const [isLoadingCollaborators, setIsLoadingCollaborators] = useState(false);
 
   const amountInCents = useMemo(() => parseCurrencyInput(amount), [amount]);
@@ -58,24 +58,82 @@ export function AddRecordModal({
   useEffect(() => {
     if (open && collaborators.length === 0) {
       setIsLoadingCollaborators(true);
-      fetch("/api/collaborators")
-        .then(r => r.json())
-        .then(d => {
-          if (d.collaborators) {
-            // Filtra para pegar apenas os funcionários ativos da loja (já filtrados pelo backend)
-            const activeEmployees = (d.collaborators as { id: string; name: string; subRole?: string; isActive: boolean }[])
-              .filter(c => c.isActive)
-              .map(c => ({
+
+      Promise.all([
+        fetch("/api/collaborators").then(r => r.json()),
+        fetch("/api/managers").then(r => r.json()).catch(() => ({ managers: [] })),
+      ])
+        .then(([collabData, managerData]) => {
+          // ── Mapa de configuração de cargos de colaboradores ───────────────
+          type RoleConfig = { label: string; groupLabel: string; cls: string; order: number };
+          const roleConfig: Record<string, RoleConfig> = {
+            "Funcionario Operacional": { label: "Operador",       groupLabel: "Operadores",     cls: "bg-purple-100 text-purple-700",  order: 0 },
+            "Caixa":                   { label: "Caixa",          groupLabel: "Caixa",           cls: "bg-blue-100 text-blue-700",      order: 1 },
+            "Lider de Caixa":          { label: "Líder de Caixa", groupLabel: "Líder de Caixa",  cls: "bg-rose-100 text-rose-700",      order: 2 },
+            "VM":                      { label: "VM",             groupLabel: "VM",              cls: "bg-pink-100 text-pink-700",      order: 3 },
+            "Vendedor":                { label: "Vendedor",       groupLabel: "Vendedores",      cls: "bg-emerald-100 text-emerald-700", order: 4 },
+          };
+
+          const result: { value: string; label: string; icon?: React.ReactNode; isHeader?: boolean }[] = [];
+
+          // ── Colaboradores agrupados e ordenados ───────────────────────────
+          if (collabData.collaborators) {
+            const active = (collabData.collaborators as { id: string; name: string; subRole?: string; isActive: boolean }[])
+              .filter(c => c.isActive);
+
+            active.sort((a, b) => {
+              const oA = roleConfig[a.subRole ?? ""]?.order ?? 99;
+              const oB = roleConfig[b.subRole ?? ""]?.order ?? 99;
+              if (oA !== oB) return oA - oB;
+              return a.name.localeCompare(b.name, "pt-BR");
+            });
+
+            let lastGroup = "";
+            for (const c of active) {
+              const cfg = roleConfig[c.subRole ?? ""];
+              const groupLabel = cfg?.groupLabel ?? c.subRole ?? "Outros";
+              if (groupLabel !== lastGroup) {
+                result.push({ value: `__header_${groupLabel}`, label: groupLabel, isHeader: true });
+                lastGroup = groupLabel;
+              }
+              result.push({
                 value: c.id,
-                label: c.subRole ? `${c.name} - ${c.subRole}` : c.name
-              }));
-            setCollaborators(activeEmployees);
+                label: c.name,
+                icon: cfg ? (
+                  <span className={`inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${cfg.cls}`}>
+                    {cfg.label}
+                  </span>
+                ) : undefined,
+              });
+            }
           }
+
+          // ── Gerentes ao final (MANAGER e VM juntos, ordenados A-Z) ────────
+          const managers = (managerData.managers ?? []) as { id: string; name: string; role: "MANAGER" | "VM" }[];
+          if (managers.length > 0) {
+            managers.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+            result.push({ value: "__header_gerentes", label: "Gerentes", isHeader: true });
+            for (const m of managers) {
+              const tagLabel = m.role === "VM" ? "VM" : "Gerente";
+              result.push({
+                value: m.id,
+                label: m.name,
+                icon: (
+                  <span className="inline-flex shrink-0 rounded-md bg-yellow-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-yellow-700">
+                    {tagLabel}
+                  </span>
+                ),
+              });
+            }
+          }
+
+          setCollaborators(result);
         })
         .catch(() => {})
         .finally(() => setIsLoadingCollaborators(false));
     }
   }, [open, collaborators.length]);
+
 
   useEffect(() => {
     if (!open) return;

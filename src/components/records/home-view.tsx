@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { CreditCard, RefreshCw, TrendingUp, Users, Building } from "lucide-react";
+import { CreditCard, RefreshCw, TrendingUp, Users, Building, Target, Bug } from "lucide-react";
 import { OperatorPieChart } from "@/components/charts/operator-pie-chart";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { useRecords } from "@/components/providers/records-provider";
@@ -18,7 +18,6 @@ import {
   getRecentRecords,
 } from "@/lib/records/domain";
 import { formatCurrency, formatInteger, toDateKey } from "@/lib/utils/format";
-import { Target } from "lucide-react";
 
 export function HomeView() {
   const {
@@ -34,6 +33,7 @@ export function HomeView() {
   const isGlobalAdmin = user?.role === "GLOBAL_ADMIN";
   const [modalOpen, setModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [manualGoal, setManualGoal] = useState<number | null>(null);
 
   // Lógica de Reset às 00:00: Filtrar apenas registros de hoje para o gráfico
   const todayKey = toDateKey(new Date().toISOString());
@@ -42,6 +42,19 @@ export function HomeView() {
     return isGlobalAdmin ? aggregateByStore(todayRecords) : aggregateByOperator(todayRecords);
   }, [todayRecords, isGlobalAdmin]);
   const todayCardsCount = todayRecords.length;
+
+  useEffect(() => {
+    fetch(`/api/goals?date=${todayKey}`)
+      .then(res => res.json())
+      .then(data => {
+        if (typeof data.goal === "number") {
+          setManualGoal(data.goal);
+        } else {
+          setManualGoal(null);
+        }
+      })
+      .catch(() => setManualGoal(null));
+  }, [todayKey]);
 
   const dailyGoal = useMemo(() => {
     // Para Admin Global, a meta base é a soma da meta de cada loja existente
@@ -74,6 +87,7 @@ export function HomeView() {
     return Math.max(baseGoal, dynamicGoal);
   }, [records]);
 
+  const finalGoal = manualGoal ?? dailyGoal;
   const recentRecords = useMemo(() => getRecentRecords(records, 5), [records]);
 
   function showSuccess(operatorName: string) {
@@ -145,10 +159,10 @@ export function HomeView() {
         <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
           <MetricCard
             label="Meta do Dia"
-            value={`${formatInteger(todayCardsCount)} / ${formatInteger(dailyGoal)}`}
-            detail={todayCardsCount >= dailyGoal ? "Meta atingida! 🎉" : `${Math.round((todayCardsCount / dailyGoal) * 100)}% concluída`}
+            value={`${formatInteger(todayCardsCount)} / ${formatInteger(finalGoal)}`}
+            detail={todayCardsCount >= finalGoal ? "Meta atingida! 🎉" : `${Math.round((todayCardsCount / finalGoal) * 100)}% concluída`}
             icon={Target}
-            tone={todayCardsCount >= dailyGoal ? "green" : "blue"}
+            tone={todayCardsCount >= finalGoal ? "green" : "blue"}
           />
           <MetricCard
             label="Valor total da rede"

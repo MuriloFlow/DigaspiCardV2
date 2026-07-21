@@ -28,7 +28,7 @@ export function getRecentRecords(records: OperatorRecord[], limit = 6) {
 }
 
 export function aggregateByOperator(records: OperatorRecord[]) {
-  const totals = new Map<string, { count: number; totalInCents: number; collaboratorId?: string }>();
+  const totals = new Map<string, { count: number; totalInCents: number; collaboratorId?: string; subRole?: string }>();
 
   records.forEach((record) => {
     const current = totals.get(record.operatorName) ?? {
@@ -40,6 +40,7 @@ export function aggregateByOperator(records: OperatorRecord[]) {
       count: current.count + 1,
       totalInCents: current.totalInCents + record.amountInCents,
       collaboratorId: record.collaboratorId || current.collaboratorId,
+      subRole: current.subRole ?? record.subRole,
     });
   });
 
@@ -49,6 +50,7 @@ export function aggregateByOperator(records: OperatorRecord[]) {
     .map<OperatorSummary>(([operatorName, total], index) => ({
       operatorName,
       collaboratorId: total.collaboratorId,
+      subRole: total.subRole,
       count: total.count,
       totalInCents: total.totalInCents,
       averageInCents: Math.round(total.totalInCents / total.count),
@@ -62,6 +64,7 @@ export function aggregateByOperator(records: OperatorRecord[]) {
       return right.totalInCents - left.totalInCents;
     });
 }
+
 
 export function aggregateByStore(records: OperatorRecord[]) {
   const totals = new Map<string, { count: number; totalInCents: number }>();

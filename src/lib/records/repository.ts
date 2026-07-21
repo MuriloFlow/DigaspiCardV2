@@ -18,6 +18,7 @@ type DbRecord = {
   amount_in_cents: number;
   activated: boolean;
   created_at: string;
+  collaborators?: { sub_role: string } | null;
 };
 
 function toOperatorRecord(row: DbRecord): OperatorRecord {
@@ -30,6 +31,7 @@ function toOperatorRecord(row: DbRecord): OperatorRecord {
     activated: row.activated,
     createdAt: row.created_at,
     storeName: (row as any).stores?.name,
+    subRole: row.collaborators?.sub_role ?? undefined,
   };
 }
 
@@ -42,7 +44,7 @@ function toOperatorRecord(row: DbRecord): OperatorRecord {
 export async function listRecords(storeId?: string | null): Promise<OperatorRecord[]> {
   let query = supabaseAdmin
     .from("records")
-    .select("*, stores(name)")
+    .select("*, stores(name), collaborators(sub_role)")
     .order("created_at", { ascending: false });
 
   if (storeId) {
@@ -56,21 +58,71 @@ export async function listRecords(storeId?: string | null): Promise<OperatorReco
 
 /**
  * Cria um registro. storeId é SEMPRE extraído do JWT no servidor, nunca do cliente.
+ * Aceita tanto IDs de colaboradores quanto IDs de usuários MANAGER/VM (auto-cria colaborador se necessário).
  */
 export async function createRecord(input: unknown, storeId: string | null): Promise<OperatorRecord> {
   const payload = createRecordSchema.parse(input);
   const clientName = normalizePersonName(payload.clientName);
 
-  // Valida o colaborador e garante que pertence à mesma loja (segurança multi-tenant)
-  const collabQuery = supabaseAdmin
+  // ── Tenta buscar como colaborador normal ──────────────────────────────────
+  let { data: collab, error: collabError } = await supabaseAdmin
     .from("collaborators")
-    .select("name, is_active, store_id")
+    .select("id, name, is_active, store_id")
     .eq("id", payload.collaboratorId)
-    .single();
+    .maybeSingle();
 
-  const { data: collab, error: collabError } = await collabQuery;
+  // ── Se não encontrou como colaborador, verifica se é um usuário MANAGER/VM ─
+  if (!collab) {
+    const { data: managerUser } = await supabaseAdmin
+      .from("app_users")
+      .select("id, name, username, role, store_id")
+      .eq("id", payload.collaboratorId)
+      .in("role", ["MANAGER", "VM"])
+      .eq("is_active", true)
+      .maybeSingle();
 
-  if (collabError || !collab) throw new Error("Colaborador não encontrado.");
+    if (!managerUser) {
+      throw new Error("Colaborador não encontrado.");
+    }
+
+    const managerStoreId = managerUser.store_id ?? storeId;
+    if (!managerStoreId) throw new Error("Gerente sem loja vinculada.");
+
+    const managerName = managerUser.name || managerUser.username;
+
+    // Verifica se já existe um colaborador criado para este gerente (por referência no campo sub_role)
+    const { data: existing } = await supabaseAdmin
+      .from("collaborators")
+      .select("id, name, is_active, store_id")
+      .eq("store_id", managerStoreId)
+      .eq("name", normalizePersonName(managerName))
+      .in("sub_role", ["Gerente", "VM"])
+      .maybeSingle();
+
+    if (existing) {
+      collab = existing;
+    } else {
+      // Auto-cria colaborador para o gerente na primeira vez
+      const subRole = managerUser.role === "VM" ? "VM" : "Gerente";
+      const { data: created, error: createError } = await supabaseAdmin
+        .from("collaborators")
+        .insert({
+          name: normalizePersonName(managerName),
+          store_id: managerStoreId,
+          sub_role: subRole,
+          is_active: true,
+        })
+        .select("id, name, is_active, store_id")
+        .single();
+
+      if (createError || !created) {
+        throw new Error("Erro ao registrar gerente como colaborador.");
+      }
+      collab = created;
+    }
+  }
+
+  if (!collab) throw new Error("Colaborador não encontrado.");
   if (!collab.is_active) throw new Error("Colaborador está inativo ou foi mesclado.");
 
   // MANAGER/EMPLOYEE só podem registrar para colaboradores da sua própria loja
@@ -81,8 +133,8 @@ export async function createRecord(input: unknown, storeId: string | null): Prom
   const { data, error } = await supabaseAdmin
     .from("records")
     .insert({
-      collaborator_id: payload.collaboratorId,
-      store_id: storeId ?? collab.store_id, // Usa storeId do JWT; fallback p/ loja do colaborador
+      collaborator_id: collab.id,
+      store_id: storeId ?? collab.store_id,
       operator_name: collab.name,
       client_name: clientName,
       amount_in_cents: payload.amountInCents,

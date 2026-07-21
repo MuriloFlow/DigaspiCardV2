@@ -7,7 +7,7 @@ type User = {
   id: string;
   username: string;
   name?: string;
-  role: "EMPLOYEE" | "MANAGER" | "GLOBAL_ADMIN";
+  role: "EMPLOYEE" | "MANAGER" | "GLOBAL_ADMIN" | "TI_ADMIN";
 };
 
 type AuthContextType = {

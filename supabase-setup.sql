@@ -35,7 +35,7 @@ create table if not exists app_users (
   store_id uuid references stores(id) on delete restrict,   -- NULL para GLOBAL_ADMIN
   username text not null unique,
   password_hash text not null,
-  role text not null check (role in ('EMPLOYEE', 'MANAGER', 'GLOBAL_ADMIN')),
+  role text not null check (role in ('EMPLOYEE', 'MANAGER', 'VM', 'GLOBAL_ADMIN')),
   name text,
   is_active boolean default true not null,
   is_primary boolean default false not null,  -- Gerente Principal da unidade
@@ -49,7 +49,7 @@ create table if not exists collaborators (
   store_id uuid not null references stores(id) on delete restrict, -- OBRIGATÓRIO
   name text not null,
   sub_role text not null default 'Funcionario Operacional'
-    check (sub_role in ('Funcionario Operacional', 'Caixa', 'Lider de Caixa', 'VM')),
+    check (sub_role in ('Funcionario Operacional', 'Caixa', 'Lider de Caixa', 'VM', 'Vendedor', 'Gerente')),
   merged_into_id uuid references collaborators(id) on delete set null,
   is_active boolean default true not null,
   created_at timestamptz default now() not null,
@@ -64,7 +64,7 @@ alter table collaborators
 
 alter table collaborators
   add constraint collaborators_sub_role_check
-  check (sub_role in ('Funcionario Operacional', 'Caixa', 'Lider de Caixa', 'VM'));
+  check (sub_role in ('Funcionario Operacional', 'Caixa', 'Lider de Caixa', 'VM', 'Vendedor', 'Gerente'));
 
 -- Registros de Cartões — store_id obrigatório
 create table if not exists records (
@@ -144,6 +144,30 @@ create index if not exists idx_audit_logs_store_id      on audit_logs(store_id);
 -- app_users
 create index if not exists idx_app_users_store_id       on app_users(store_id);
 
+-- Metas Manuais por Data e Loja
+create table if not exists daily_goals (
+  id uuid default uuid_generate_v4() primary key,
+  store_id uuid not null references stores(id) on delete cascade,
+  date_key text not null, -- format YYYY-MM-DD
+  goal integer not null,
+  created_at timestamptz default now() not null,
+  unique (store_id, date_key)
+);
+create index if not exists idx_daily_goals_store_date on daily_goals(store_id, date_key);
+
+-- Tracking de Erros de Sistema
+create table if not exists system_errors (
+  id uuid primary key, -- O Tracking ID gerado na aplicação
+  message text not null,
+  context text not null,
+  stack_trace text,
+  user_info text,
+  store_info text,
+  status text default 'open' check (status in ('open', 'resolved')),
+  created_at timestamptz default now() not null,
+  resolved_at timestamptz
+);
+
 -- ==============================================================================
 -- 7) ROW LEVEL SECURITY (Elimina Advisors de Segurança do Supabase)
 -- O Next.js usa Service Role Key que bypassa RLS nativamente.
@@ -154,6 +178,8 @@ alter table app_users    enable row level security;
 alter table collaborators enable row level security;
 alter table records       enable row level security;
 alter table audit_logs    enable row level security;
+alter table daily_goals   enable row level security;
+alter table system_errors enable row level security;
 
 -- Remove policies antigas se existirem
 drop policy if exists "deny_all_anon" on stores;
@@ -161,6 +187,8 @@ drop policy if exists "deny_all_anon" on app_users;
 drop policy if exists "deny_all_anon" on collaborators;
 drop policy if exists "deny_all_anon" on records;
 drop policy if exists "deny_all_anon" on audit_logs;
+drop policy if exists "deny_all_anon" on daily_goals;
+drop policy if exists "deny_all_anon" on system_errors;
 
 -- Cria políticas de negação total para acesso público/anônimo
 create policy "deny_all_anon" on stores        for all to anon using (false);
@@ -168,8 +196,38 @@ create policy "deny_all_anon" on app_users     for all to anon using (false);
 create policy "deny_all_anon" on collaborators for all to anon using (false);
 create policy "deny_all_anon" on records       for all to anon using (false);
 create policy "deny_all_anon" on audit_logs    for all to anon using (false);
+create policy "deny_all_anon" on daily_goals   for all to anon using (false);
+create policy "deny_all_anon" on system_errors for all to anon using (false);
 
 -- ==============================================================================
 -- 8) RELOAD DO CACHE (PostgREST / Supabase API)
 -- ==============================================================================
 NOTIFY pgrst, 'reload schema';
+
+-- ==============================================================================
+-- 9) TABELA DE CHAMADOS DE TI (Helpdesk)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.support_tickets (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    title TEXT NOT NULL,
+    category TEXT NOT NULL,
+    description TEXT NOT NULL,
+    images JSONB DEFAULT '[]'::jsonb, -- Array de strings base64
+    status TEXT NOT NULL DEFAULT 'open', -- 'open', 'resolved'
+    user_info TEXT NOT NULL,
+    store_info TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    resolved_at TIMESTAMP WITH TIME ZONE
+);
+
+ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Enable insert for authenticated users on support_tickets"
+    ON public.support_tickets FOR INSERT 
+    TO authenticated
+    WITH CHECK (true);
+
+CREATE POLICY "deny_all_anon_support"
+    ON public.support_tickets FOR SELECT
+    TO anon
+    USING (false);

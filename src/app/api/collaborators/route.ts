@@ -13,6 +13,7 @@ import {
   transferCollaborator,
 } from "@/lib/records/repository";
 import { getSession } from "@/lib/auth/session";
+import { handleError } from "@/lib/utils/error-handler";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,10 +33,8 @@ export async function GET() {
     const collaborators = await listCollaborators(storeId);
     return NextResponse.json({ collaborators }, { headers: noStore });
   } catch (error) {
-    return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Erro ao carregar colaboradores." },
-      { status: 500, headers: noStore },
-    );
+    const msg = await handleError(error, "collaborators:GET");
+    return NextResponse.json({ message: msg }, { status: 500, headers: noStore });
   }
 }
 
@@ -139,9 +138,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: "Ação desconhecida." }, { status: 400, headers: noStore });
   } catch (error) {
-    return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Erro na operação." },
-      { status: 400, headers: noStore },
-    );
+    const msg = await handleError(error, `collaborators:POST:${action}`);
+    return NextResponse.json({ message: msg }, { status: 400, headers: noStore });
   }
 }

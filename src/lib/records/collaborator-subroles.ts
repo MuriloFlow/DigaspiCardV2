@@ -5,6 +5,7 @@ export const COLLABORATOR_SUBROLES: CollaboratorSubRole[] = [
   "Caixa",
   "Lider de Caixa",
   "VM",
+  "Vendedor",
 ];
 
 export const DEFAULT_COLLABORATOR_SUBROLE: CollaboratorSubRole =

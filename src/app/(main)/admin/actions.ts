@@ -3,62 +3,69 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { classifyError, sendErrorToDiscord } from "@/lib/utils/error-handler";
+
+// ─── Helper interno ───────────────────────────────────────────────────────────
+
+function throwFriendly(error: unknown, context: string, extra?: Record<string, unknown>): never {
+  const classified = classifyError(error);
+  if (classified.level === "system") {
+    void sendErrorToDiscord({ error, context, extra });
+  }
+  throw new Error(classified.userMessage);
+}
+
+// ─── Stores ───────────────────────────────────────────────────────────────────
 
 export async function createStore(name: string) {
   if (!name.trim()) throw new Error("Nome da loja é obrigatório.");
   const { data, error } = await supabaseAdmin.from("stores").insert({ name: name.trim() }).select("id").single();
-  if (error) {
-    if (error.code === '23505' || error.message.includes("stores_name_key")) {
-      throw new Error(`A unidade "${name.trim()}" já está registrada na rede.`);
-    }
-    throw new Error(error.message);
-  }
+  if (error) throwFriendly(error, "createStore", { name });
   revalidatePath("/admin");
-  return data.id;
+  return data!.id;
 }
 
 export async function updateStore(id: string, name: string) {
   if (!name.trim()) throw new Error("Nome da loja é obrigatório.");
   const { error } = await supabaseAdmin.from("stores").update({ name: name.trim() }).eq("id", id);
-  if (error) {
-    if (error.code === '23505' || error.message.includes("stores_name_key")) {
-      throw new Error(`A unidade "${name.trim()}" já está registrada na rede.`);
-    }
-    throw new Error(error.message);
-  }
+  if (error) throwFriendly(error, "updateStore", { id, name });
   revalidatePath("/admin");
 }
 
 export async function deleteStore(id: string) {
-  // Cascata de exclusão (se o BD não tiver ON DELETE CASCADE configurado para todas)
   await supabaseAdmin.from("records").delete().eq("store_id", id);
   await supabaseAdmin.from("collaborators").delete().eq("store_id", id);
   await supabaseAdmin.from("app_users").delete().eq("store_id", id);
-  
   const { error } = await supabaseAdmin.from("stores").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) throwFriendly(error, "deleteStore", { id });
   revalidatePath("/admin");
 }
 
-export async function createUser(data: { username: string; password_plain: string; role: string; name: string; store_id?: string | null }) {
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+export async function createUser(data: {
+  username: string;
+  password_plain: string;
+  role: string;
+  name: string;
+  store_id?: string | null;
+}) {
   if (!data.username || !data.password_plain) throw new Error("Usuário e senha são obrigatórios.");
-  
+
   const password_hash = await bcrypt.hash(data.password_plain, 10);
-  
+
+  // VM é exibido no front como cargo separado, mas salvo como MANAGER no banco
+  const dbRole = data.role === "VM" ? "MANAGER" : data.role;
+
   const { error } = await supabaseAdmin.from("app_users").insert({
     username: data.username,
     password_hash,
-    role: data.role,
+    role: dbRole,
     name: data.name,
-    store_id: data.store_id || null
+    store_id: data.store_id || null,
   });
 
-  if (error) {
-    if (error.code === '23505' || error.message.includes("app_users_username_key")) {
-      throw new Error(`O login de usuário "${data.username}" já existe no sistema. Escolha outro.`);
-    }
-    throw new Error(error.message);
-  }
+  if (error) throwFriendly(error, "createUser", { username: data.username, role: dbRole });
   revalidatePath("/admin");
 }
 
@@ -86,31 +93,36 @@ export async function updateUser(data: {
   const payload: Record<string, unknown> = {};
   if (data.name !== undefined) payload.name = data.name;
   if (data.username !== undefined) payload.username = data.username.trim();
-  if (data.role !== undefined) payload.role = data.role;
+  // VM é exibido no front mas salvo como MANAGER no banco
+  if (data.role !== undefined) payload.role = data.role === "VM" ? "MANAGER" : data.role;
   if (data.store_id !== undefined) payload.store_id = data.store_id || null;
   if (data.is_active !== undefined) payload.is_active = data.is_active;
   if (data.is_primary !== undefined) payload.is_primary = data.is_primary;
 
-  // Só re-hasha a senha se uma nova for enviada
   if (data.password_plain && data.password_plain.trim().length > 0) {
     payload.password_hash = await bcrypt.hash(data.password_plain.trim(), 10);
   }
 
   const { error } = await supabaseAdmin.from("app_users").update(payload).eq("id", data.id);
-  if (error) {
-    if (error.code === '23505' || error.message.includes("app_users_username_key")) {
-      throw new Error(`O login de usuário "${data.username}" já está sendo usado. Escolha outro.`);
-    }
-    throw new Error(error.message);
-  }
+  if (error) throwFriendly(error, "updateUser", { id: data.id, username: data.username });
   revalidatePath("/admin");
 }
 
 export async function toggleUserActive(id: string, is_active: boolean) {
   const { error } = await supabaseAdmin.from("app_users").update({ is_active }).eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) throwFriendly(error, "toggleUserActive", { id, is_active });
   revalidatePath("/admin");
 }
+
+export async function setStoreGoal(store_id: string, date_key: string, goal: number) {
+  const { error } = await supabaseAdmin
+    .from("daily_goals")
+    .upsert({ store_id, date_key, goal }, { onConflict: "store_id, date_key" });
+  if (error) throwFriendly(error, "setStoreGoal", { store_id, date_key, goal });
+  revalidatePath("/admin");
+}
+
+// ─── Metrics ──────────────────────────────────────────────────────────────────
 
 export async function getGlobalMetrics() {
   const todayStart = new Date();

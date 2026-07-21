@@ -18,11 +18,13 @@ export type OperatorRecord = {
   activated: boolean;
   createdAt: string;
   storeName?: string;
+  subRole?: string;
 };
 
 export type OperatorSummary = {
   operatorName: string;
   collaboratorId?: string;
+  subRole?: string;
   count: number;
   totalInCents: number;
   averageInCents: number;
@@ -63,7 +65,9 @@ export type CollaboratorSubRole =
   | "Funcionario Operacional"
   | "Caixa"
   | "Lider de Caixa"
-  | "VM";
+  | "VM"
+  | "Vendedor"
+  | "Gerente";
 
 export type Collaborator = {
   id: string;

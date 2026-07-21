@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { createStore, updateStore, deleteStore, createUser, updateUser, toggleUserActive } from "./actions";
+import { createStore, updateStore, deleteStore, createUser, updateUser, toggleUserActive, setStoreGoal } from "./actions";
 import {
   Building, Users, Key, Save, Loader2, Plus, TrendingUp,
-  CreditCard, ChevronRight, Edit2, X, Star, Eye, EyeOff,
-  ShieldCheck, ShieldOff, ArrowLeft, BarChart2, CheckCircle2, Search, Trash2
+  ShieldCheck, ShieldOff, ArrowLeft, BarChart2, CheckCircle2, Search, Trash2, Target,
+  CreditCard, ChevronRight, Edit2, X, Star, Eye, EyeOff
 } from "lucide-react";
 import { CustomSelect } from "@/components/ui/custom-select";
 
@@ -62,7 +62,7 @@ function EditUserModal({
     }
   }
 
-  const roleLabel = { EMPLOYEE: "Funcionário Operacional", MANAGER: "Gerente de Unidade", GLOBAL_ADMIN: "Admin Global (Rede)" };
+  const roleLabel = { EMPLOYEE: "Funcionário Operacional", MANAGER: "Gerente de Unidade", VM: "VM (Gerente)", GLOBAL_ADMIN: "Admin Global (Rede)" };
 
   if (isSuccess) {
     return (
@@ -135,7 +135,7 @@ function EditUserModal({
             <label className="mb-1 block text-xs font-semibold text-zinc-600">Nível de Acesso</label>
             <CustomSelect
               value={role}
-              onChange={setRole}
+              onChange={(v) => setRole(v === "VM" ? "VM" : v)}
               options={Object.entries(roleLabel).map(([k, v]) => ({ value: k, label: v }))}
             />
           </div>
@@ -152,7 +152,13 @@ function EditUserModal({
             </div>
           )}
 
-          {role === "MANAGER" && (
+          {role === "VM" && (
+            <p className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-2.5 text-xs font-medium text-pink-700">
+              O cargo VM tem as mesmas permissões de Gerente de Unidade.
+            </p>
+          )}
+
+          {(role === "MANAGER" || role === "VM") && (
             <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 transition hover:bg-zinc-100">
               <div className={`relative flex size-9 items-center justify-center rounded-xl transition ${isPrimary ? "bg-amber-400" : "bg-zinc-200"}`}>
                 <Star className={`size-5 ${isPrimary ? "fill-white text-white" : "text-zinc-400"}`} />
@@ -276,6 +282,7 @@ function CreateUserModal({
               onChange={setRole}
               options={[
                 { value: "MANAGER", label: "Gerente de Unidade" },
+                { value: "VM", label: "VM (Gerente)" },
                 { value: "GLOBAL_ADMIN", label: "Admin Global" },
               ]}
             />
@@ -504,6 +511,64 @@ function EditStoreModal({
   );
 }
 
+// ─── Modal de Definir Meta ──────────────────────────────────────────────────
+function SetGoalModal({ store, onClose, onSaved }: { store: Store; onClose: () => void; onSaved: () => void }) {
+  const [goal, setGoal] = useState("");
+  const [date, setDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    const goalNum = parseInt(goal, 10);
+    if (isNaN(goalNum) || goalNum <= 0) {
+      setError("Insira um número válido para a meta.");
+      return;
+    }
+    setIsLoading(true);
+    setError("");
+    try {
+      await setStoreGoal(store.id, date, goalNum);
+      onSaved();
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao definir meta.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="relative w-full max-w-sm rounded-[2rem] border border-zinc-200 bg-white p-7 shadow-2xl">
+        <button onClick={onClose} className="absolute right-5 top-5 rounded-xl p-2 text-zinc-400 hover:bg-zinc-100 transition"><X className="size-5" /></button>
+        <div className="mb-6">
+          <p className="text-xs font-semibold uppercase text-zinc-500">Definir Meta Manual</p>
+          <h2 className="mt-1 text-xl font-bold text-zinc-950">{store.name}</h2>
+        </div>
+        <form onSubmit={handleSave} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-zinc-600">Data da Meta</label>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} required className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-zinc-950" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-zinc-600">Meta de Cartões (Qtd)</label>
+            <input type="number" min="1" step="1" placeholder="Ex: 15" value={goal} onChange={e => setGoal(e.target.value)} required className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-zinc-950" />
+          </div>
+          {error && <p className="rounded-xl bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-700">{error}</p>}
+          <button disabled={isLoading} type="submit" className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50">
+            {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Salvar Meta
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Painel Principal ──────────────────────────────────────────────────────────
 export function AdminPanel({
   initialData,
@@ -516,6 +581,7 @@ export function AdminPanel({
   const [createStoreModalOpen, setCreateStoreModalOpen] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
+  const [setGoalStoreId, setSetGoalStoreId] = useState<string | null>(null);
   
   const [stores, setStores] = useState(initialData.stores);
   const [users, setUsers] = useState(initialData.users);
@@ -599,11 +665,13 @@ export function AdminPanel({
   const roleLabel: Record<string, string> = {
     GLOBAL_ADMIN: "Admin Global",
     MANAGER: "Gerente",
+    VM: "VM",
     EMPLOYEE: "Funcionário",
   };
   const roleColor: Record<string, string> = {
     GLOBAL_ADMIN: "bg-purple-100 text-purple-700",
     MANAGER: "bg-blue-100 text-blue-700",
+    VM: "bg-pink-100 text-pink-700",
     EMPLOYEE: "bg-zinc-100 text-zinc-600",
   };
 
@@ -786,7 +854,6 @@ export function AdminPanel({
                           </div>
                         )}
 
-                        {/* Gerente Principal */}
                         <div className="rounded-[1.25rem] border border-zinc-200 bg-zinc-50 px-4 py-3">
                           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Gerente Responsável</p>
                           {manager ? (
@@ -800,6 +867,15 @@ export function AdminPanel({
                           ) : (
                             <p className="text-sm text-zinc-500">Sem gerente definido</p>
                           )}
+                          <div className="mt-3 border-t border-zinc-200 pt-3">
+                            <button
+                              onClick={() => setSetGoalStoreId(store?.id || null)}
+                              className="flex w-full items-center justify-center gap-2 rounded-xl bg-white border border-zinc-200 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 hover:border-zinc-300"
+                            >
+                              <Target className="size-4" />
+                              Definir Meta Manual
+                            </button>
+                          </div>
                         </div>
 
                         <button
@@ -1148,6 +1224,20 @@ export function AdminPanel({
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL DE DEFINIR META */}
+      <AnimatePresence>
+        {setGoalStoreId && (
+          <SetGoalModal
+            store={stores.find(s => s.id === setGoalStoreId)!}
+            onClose={() => setSetGoalStoreId(null)}
+            onSaved={() => {
+              showToast("Meta manual definida com sucesso!");
+              refreshData();
+            }}
+          />
         )}
       </AnimatePresence>
     </div>

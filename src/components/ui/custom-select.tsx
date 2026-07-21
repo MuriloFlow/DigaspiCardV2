@@ -9,6 +9,8 @@ export type SelectOption = {
   value: string;
   label: string;
   icon?: React.ReactNode;
+  /** Se true, renderiza como cabeçalho de grupo (não clicável) */
+  isHeader?: boolean;
 };
 
 type CustomSelectProps = {
@@ -33,7 +35,7 @@ export function CustomSelect({
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const selectedOption = options.find((o) => o.value === value);
+  const selectedOption = options.find((o) => !o.isHeader && o.value === value);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -78,8 +80,8 @@ export function CustomSelect({
         <div className="flex items-center gap-2 truncate">
           {selectedOption ? (
             <>
-              {selectedOption.icon && <span className="shrink-0 text-zinc-400">{selectedOption.icon}</span>}
               <span className="truncate text-zinc-950">{selectedOption.label}</span>
+              {selectedOption.icon && <span className="shrink-0">{selectedOption.icon}</span>}
             </>
           ) : (
             <span className="truncate text-zinc-500">{placeholder}</span>
@@ -107,26 +109,37 @@ export function CustomSelect({
             {options.length === 0 ? (
               <div className="px-3 py-4 text-center text-sm text-zinc-500">Nenhuma opção disponível.</div>
             ) : (
-              options.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
-                  }}
-                  className={cn(
-                    "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm font-medium transition",
-                    value === option.value ? "bg-zinc-100 text-zinc-950" : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950"
-                  )}
-                >
-                  <div className="flex items-center gap-2 truncate">
-                    {option.icon && <span className="shrink-0">{option.icon}</span>}
-                    <span className="truncate">{option.label}</span>
+              options.map((option, i) =>
+                option.isHeader ? (
+                  // ── Cabeçalho de grupo (não clicável) ──
+                  <div
+                    key={`header-${i}`}
+                    className="flex items-center gap-2 px-3 pb-1 pt-2.5 first:pt-1"
+                  >
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{option.label}</span>
+                    <div className="h-px flex-1 bg-zinc-100" />
                   </div>
-                  {value === option.value && <Check className="size-4 shrink-0 text-zinc-950" />}
-                </button>
-              ))
+                ) : (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      onChange(option.value);
+                      setIsOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm font-medium transition",
+                      value === option.value ? "bg-zinc-100 text-zinc-950" : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="truncate">{option.label}</span>
+                      {option.icon && <span className="shrink-0">{option.icon}</span>}
+                    </div>
+                    {value === option.value && <Check className="size-4 shrink-0 text-zinc-950" />}
+                  </button>
+                )
+              )
             )}
           </motion.div>
         )}

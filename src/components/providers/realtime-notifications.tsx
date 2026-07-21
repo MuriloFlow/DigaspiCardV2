@@ -20,6 +20,11 @@ export function RealtimeNotificationsProvider() {
   useEffect(() => {
     if (!user) return;
 
+    // Pedir permissão para Push Notifications
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
     // Escutar novos registros na tabela "records"
     const channel = supabase
       .channel("public:records")
@@ -50,8 +55,50 @@ export function RealtimeNotificationsProvider() {
       )
       .subscribe();
 
+    // Escutar novas mensagens do Chat de TI
+    const chatChannel = supabase
+      .channel("public:ticket_messages")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "ticket_messages" },
+        (payload) => {
+          const newMsg = payload.new as any;
+          // Se eu enviei, ignora
+          if (newMsg.sender_name === user.username) return;
+
+          const isTI = user.role === "GLOBAL_ADMIN" || user.role === "MANAGER";
+          
+          // TI não recebe alerta de outro TI. Usuário não recebe de outro Usuário.
+          if (isTI && newMsg.sender_type === "TI") return;
+          if (!isTI && newMsg.sender_type === "USER") return;
+
+          // Disparar Notificação Push Nativa (estilo WhatsApp Web)
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(`Suporte TI - ${newMsg.sender_name}`, {
+              body: newMsg.content || "Enviou um anexo",
+              icon: "/icon-192.png",
+            });
+          }
+
+          // Notificação in-app
+          const notif: Notification = {
+            id: newMsg.id,
+            message: `Chat TI: ${newMsg.content || "Novo anexo recebido"}`,
+            operatorName: newMsg.sender_name,
+            storeId: null,
+          };
+
+          setNotifications((prev) => [notif, ...prev]);
+          setTimeout(() => {
+            setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+          }, 5000);
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(chatChannel);
     };
   }, [user]);
 

@@ -816,6 +816,19 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className={cn("truncate text-base font-semibold", collab.isActive ? "text-zinc-950" : "text-zinc-500 line-through decoration-zinc-300")}>{collab.name}</h3>
+                    {(() => {
+                      const tagMap: Record<string, { label: string; cls: string }> = {
+                        "Funcionario Operacional": { label: "OP", cls: "bg-purple-100 text-purple-700" },
+                        "Caixa":                  { label: "CX", cls: "bg-blue-100 text-blue-700" },
+                        "Lider de Caixa":          { label: "LC", cls: "bg-rose-100 text-rose-700" },
+                        "VM":                      { label: "VM", cls: "bg-pink-100 text-pink-700" },
+                        "Vendedor":                { label: "VD", cls: "bg-emerald-100 text-emerald-700" },
+                      };
+                      const tag = tagMap[collab.subRole];
+                      return tag ? (
+                        <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${tag.cls}`} title={collab.subRole}>{tag.label}</span>
+                      ) : null;
+                    })()}
                     {!collab.isActive && collab.mergedIntoId && (
                       <span className="rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 uppercase tracking-wide">Mesclado</span>
                     )}
@@ -824,9 +837,6 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
                     )}
                   </div>
                   <p className="mt-0.5 text-xs text-zinc-500">Registrado em {new Date(collab.createdAt).toLocaleDateString("pt-BR")}</p>
-                  <span className="mt-2 inline-flex max-w-full rounded-lg bg-zinc-100 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-zinc-600">
-                    {collab.subRole}
-                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   {collab.isActive && (

@@ -13,6 +13,7 @@ export async function proxy(req: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/auth") ||
     pathname === "/login" ||
+    pathname === "/dev-login" ||
     pathname === "/manifest.webmanifest" ||
     pathname.includes("favicon") ||
     pathname.endsWith(".ico") ||
@@ -23,9 +24,14 @@ export async function proxy(req: NextRequest) {
   }
 
   // Verifica Sessão
-  const sessionToken = req.cookies.get("session")?.value;
+  const isDevRoute = pathname.startsWith("/dev") && pathname !== "/dev-login";
+  const sessionCookieName = isDevRoute ? "dev_session" : "session";
+  const sessionToken = req.cookies.get(sessionCookieName)?.value;
 
   if (!sessionToken) {
+    if (isDevRoute) {
+      return NextResponse.redirect(new URL("/dev-login", req.url));
+    }
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -45,8 +51,9 @@ export async function proxy(req: NextRequest) {
     return res;
   } catch (error) {
     // Token inválido ou expirado
-    const res = NextResponse.redirect(new URL("/login", req.url));
-    res.cookies.delete("session");
+    const redirectUrl = isDevRoute ? "/dev-login" : "/login";
+    const res = NextResponse.redirect(new URL(redirectUrl, req.url));
+    res.cookies.delete(sessionCookieName);
     return res;
   }
 }

@@ -10,6 +10,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { aggregateByOperator, aggregateByStore } from "@/lib/records/domain";
 import type { OperatorSummary } from "@/lib/records/types";
 import { formatCurrency, formatInteger } from "@/lib/utils/format";
+import { SubRoleTag } from "@/components/ui/sub-role-tag";
 
 const medals = ["🥇", "🥈", "🥉"];
 
@@ -55,10 +56,13 @@ function RankList({ title, subtitle, ranking, itemName }: { title: string; subti
               </div>
             </div>
 
-            <h3 className="text-2xl font-semibold text-zinc-950 truncate" title={operator.operatorName}>
-              {operator.operatorName}
-            </h3>
-            <p className="mt-2 text-sm text-zinc-500">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-2xl font-semibold text-zinc-950 truncate" title={operator.operatorName}>
+                {operator.operatorName}
+              </h3>
+              <SubRoleTag subRole={operator.subRole} />
+            </div>
+            <p className="mt-0 text-sm text-zinc-500">
               {formatInteger(operator.count)} cartões registrados
             </p>
 
@@ -122,6 +126,7 @@ function RankList({ title, subtitle, ranking, itemName }: { title: string; subti
                       <h4 className="truncate text-base font-semibold text-zinc-950" title={operator.operatorName}>
                         {operator.operatorName}
                       </h4>
+                      <SubRoleTag subRole={operator.subRole} />
                     </div>
                     <p className="mt-1 text-sm text-zinc-500">
                       {formatInteger(operator.count)} cartões

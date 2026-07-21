@@ -7,6 +7,7 @@ import { formatCurrency, formatTime } from "@/lib/utils/format";
 import { useRecords } from "@/components/providers/records-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { cn } from "@/lib/utils/cn";
+import { SubRoleTag } from "@/components/ui/sub-role-tag";
 
 export function RecordCard({
   record,
@@ -83,6 +84,7 @@ export function RecordCard({
               <div className="min-w-0">
                 <h3 className="truncate text-sm font-semibold text-zinc-950 flex items-center gap-2">
                   {record.operatorName}
+                  <SubRoleTag subRole={record.subRole} />
                   {user?.role === "GLOBAL_ADMIN" && record.storeName && (
                     <span className="text-xs font-medium text-zinc-500 px-1.5 py-0.5 bg-zinc-100 rounded-md">
                       {record.storeName}
@@ -244,6 +246,15 @@ export function RecordCard({
 
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setIsEditing(false)} className="flex-1 rounded-xl bg-zinc-100 px-4 py-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-200">Cancelar</button>
+                  {canDelete && (
+                    <button
+                      onClick={() => { setIsEditing(false); setConfirmDelete(true); }}
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600 transition hover:bg-rose-100"
+                    >
+                      <Trash2 className="size-4" />
+                      Deletar
+                    </button>
+                  )}
                   <button onClick={handleSaveEdit} disabled={isSaving} className="flex-1 rounded-xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-zinc-800 disabled:opacity-50">
                     {isSaving ? "Salvando..." : "Salvar"}
                   </button>

@@ -3,11 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, History, Home, Trophy, Users, LogOut, Building, Settings, UserCircle2, Moon } from "lucide-react";
+import { BarChart3, History, Home, Trophy, Users, LogOut, Building, Settings, UserCircle2, Moon, Headset } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { cn } from "@/lib/utils/cn";
 import { useAuth } from "@/components/providers/auth-provider";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/providers/main-theme-provider";
+import { cn } from "@/lib/utils/cn";
 
 type NavItem = {
   label: string;
@@ -71,7 +71,7 @@ export function BottomNavigation() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showSettings]);
 
-  if (pathname === "/login") return null;
+  if (pathname === "/login" || pathname.startsWith("/dev")) return null;
 
   const visibleItems = items.filter(
     (item) => !item.roles || (user && item.roles.includes(user.role))
@@ -170,6 +170,18 @@ export function BottomNavigation() {
                 </div>
 
                 <div className="px-2 pb-2 space-y-1">
+                  {(user.role === "MANAGER" || user.role === "GLOBAL_ADMIN") && (
+                    <Link
+                      href="/chamados/novo"
+                      onClick={() => setShowSettings(false)}
+                      className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
+                    >
+                      <div className="flex items-center gap-2 text-rose-600">
+                        <Headset className="size-4" />
+                        Abrir Chamado (TI)
+                      </div>
+                    </Link>
+                  )}
                   <button
                     onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                     className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"

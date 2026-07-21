@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { formatInteger } from "@/lib/utils/format";
 import type { OperatorSummary } from "@/lib/records/types";
 import { cn } from "@/lib/utils/cn";
+import { SubRoleTag } from "@/components/ui/sub-role-tag";
 
 type OperatorPieChartProps = {
   operators: OperatorSummary[];
@@ -98,6 +99,7 @@ export function OperatorPieChart({
               <span className="truncate text-sm font-medium text-zinc-800">
                 {operator.operatorName}
               </span>
+              <SubRoleTag subRole={operator.subRole} />
             </div>
             <span className="shrink-0 text-sm font-semibold text-zinc-950">
               {formatInteger(operator.count)} {operator.count === 1 ? "cartão" : "cartões"}
