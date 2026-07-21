@@ -904,7 +904,7 @@ export function AdminPanel({
               </div>
               <button
                 onClick={() => setCreateStoreModalOpen(true)}
-                className="flex items-center gap-2 rounded-xl bg-zinc-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800"
+                className="flex items-center gap-2 whitespace-nowrap rounded-xl bg-zinc-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800"
               >
                 <Plus className="size-4" /> Nova Unidade
               </button>
@@ -964,7 +964,7 @@ export function AdminPanel({
               </div>
               <button
                 onClick={() => setCreateUserModalOpen(true)}
-                className="flex items-center gap-2 rounded-xl bg-zinc-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800"
+                className="flex items-center gap-2 whitespace-nowrap rounded-xl bg-zinc-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800"
               >
                 <Plus className="size-4" /> Nova Conta
               </button>

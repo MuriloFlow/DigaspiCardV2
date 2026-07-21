@@ -32,11 +32,23 @@ export function OperatorPieChart({
       )}
     >
       <div className="relative mx-auto aspect-square w-full max-w-[360px]">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-xs font-semibold uppercase text-zinc-500">
+              {centerLabel}
+            </p>
+            <p className="mt-2 text-4xl font-semibold text-zinc-950 sm:text-5xl">
+              {centerValue}
+            </p>
+          </div>
+        </div>
+
         {hasData ? (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Tooltip
                 cursor={false}
+                wrapperStyle={{ zIndex: 100 }}
                 formatter={(value, name) => [
                   `${formatInteger(Number(value))} cartões`,
                   String(name),
@@ -69,17 +81,6 @@ export function OperatorPieChart({
         ) : (
           <div className="absolute inset-[12%] rounded-full border border-dashed border-zinc-300 bg-zinc-50" />
         )}
-
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-xs font-semibold uppercase text-zinc-500">
-              {centerLabel}
-            </p>
-            <p className="mt-2 text-4xl font-semibold text-zinc-950 sm:text-5xl">
-              {centerValue}
-            </p>
-          </div>
-        </div>
       </div>
 
       <div className="mt-5 grid max-h-[140px] gap-2 overflow-y-auto pr-1 sm:grid-cols-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-200">
