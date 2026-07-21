@@ -210,21 +210,33 @@ export default function NovoChamadoPage() {
 
             {/* Modal de Chat para Usuário */}
             {activeChatTicketId && (
-              <div className="fixed inset-0 z-[60] flex flex-col sm:items-center sm:justify-center bg-zinc-50 dark:bg-zinc-950 sm:bg-black/60 sm:dark:bg-black/80 sm:backdrop-blur-sm sm:p-4 transition-colors">
-                <div className="flex-1 w-full sm:max-w-md sm:max-h-[85vh] bg-white dark:bg-zinc-950 sm:rounded-[2rem] flex flex-col overflow-hidden shadow-2xl border border-zinc-200 dark:border-zinc-800 transition-colors">
-                  <div className="flex items-center justify-between p-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+              <div className="fixed inset-0 z-[60] flex flex-col sm:items-center sm:justify-center bg-zinc-50 sm:bg-black/60 sm:backdrop-blur-sm sm:p-4 transition-colors">
+                <div className="flex-1 w-full sm:max-w-md sm:max-h-[85vh] bg-white sm:rounded-[2rem] flex flex-col overflow-hidden shadow-2xl border border-zinc-200 transition-colors">
+                  <div className="flex items-center justify-between p-4 border-b border-zinc-100 shrink-0 bg-white">
                     <div className="flex items-center gap-2">
-                      <div className="flex size-8 items-center justify-center rounded-lg bg-rose-50 dark:bg-zinc-900 text-rose-500">
+                      <div className="flex size-8 items-center justify-center rounded-lg bg-rose-50 text-rose-500">
                         <MessageSquare className="size-4" />
                       </div>
-                      <h3 className="font-bold text-zinc-900 dark:text-white">Chat com o TI</h3>
+                      <h3 className="font-bold text-zinc-900">Chat com o TI</h3>
                     </div>
-                    <button onClick={() => setActiveChatTicketId(null)} className="p-2 rounded-full text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-white transition">
+                    <button onClick={() => setActiveChatTicketId(null)} className="p-2 rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 transition">
                       <X className="size-5" />
                     </button>
                   </div>
-                  <div className="flex-1 overflow-hidden bg-white dark:bg-zinc-950">
-                    <TicketChat ticketId={activeChatTicketId} userRole="USER" />
+                  <div className="flex-1 overflow-hidden bg-white">
+                    <TicketChat
+                      ticketId={activeChatTicketId}
+                      userRole="USER"
+                      onTicketResolved={() => {
+                        setActiveChatTicketId(null);
+                        // Recarrega a lista de chamados
+                        setLoadingTickets(true);
+                        getUserOpenTickets().then((t) => {
+                          setOpenTickets(t || []);
+                          setLoadingTickets(false);
+                        });
+                      }}
+                    />
                   </div>
                 </div>
               </div>

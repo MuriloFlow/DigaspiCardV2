@@ -54,11 +54,37 @@ export default async function RootLayout({
   return (
     <html
       lang="pt-BR"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var isDev = window.location.pathname.startsWith('/dev');
+                  if (isDev) {
+                    document.documentElement.classList.add('dev-app');
+                  } else {
+                    document.documentElement.classList.add('main-app');
+                  }
+                  
+                  var cookieName = isDev ? 'dev_theme' : 'theme';
+                  var match = document.cookie.match(new RegExp('(^| )' + cookieName + '=([^;]+)'));
+                  var theme = match ? match[2] : 'dark';
+                  if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
       </head>
-      <body className="h-full">
+      <body className="flex min-h-full flex-col bg-white dark:bg-zinc-950 text-zinc-950 dark:text-zinc-50 transition-colors">
         <AuthProvider initialUser={session}>
           <DevBanner />
           <AppProviders>

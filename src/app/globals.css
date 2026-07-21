@@ -56,9 +56,12 @@ input {
   }
 }
 
-.dark {
+/* Tema do App Principal (Usa inversões globais) */
+html.main-app.dark {
   --background: #0d0d0d;
   --foreground: #f4f4f5;
+  --nav-bg: rgba(20, 20, 20, 0.95);
+  --nav-border: rgba(38, 38, 38, 0.8);
 
   /* Overriding white so that bg-white maps to #0d0d0d */
   --color-white: #0d0d0d;
@@ -98,7 +101,62 @@ input {
   --color-amber-700: #f59e0b;
 }
 
-.dark body::before {
+/* Tema do Dev Console (Nativo, sem inversões) */
+html.dev-app.dark {
+  --background: #0d0d0d;
+  --foreground: #f4f4f5;
+}
+
+/* Chat CSS vars — painel principal (light) */
+html.main-app {
+  --chat-bg: #ffffff;
+  --chat-bubble: #f4f4f5;
+  --chat-text: #18181b;
+  --chat-muted: #71717a;
+  --chat-border: rgba(228,228,231,0.6);
+  --chat-btn-bg: #f4f4f5;
+  --chat-input-bg: rgba(255,255,255,0.95);
+  --chat-scrollbar: rgba(161,161,170,0.4);
+}
+
+/* Chat CSS vars — painel principal (dark) */
+html.main-app.dark {
+  --chat-bg: #0d0d0d;
+  --chat-bubble: #1a1a1a;
+  --chat-text: #f4f4f5;
+  --chat-muted: #71717a;
+  --chat-border: rgba(38,38,38,0.7);
+  --chat-btn-bg: #1a1a1a;
+  --chat-input-bg: rgba(13,13,13,0.95);
+  --chat-scrollbar: rgba(63,63,70,0.5);
+}
+
+/* Chat CSS vars — painel Dev (light, padrão nativo) */
+html.dev-app {
+  --chat-bg: #ffffff;
+  --chat-bubble: #f4f4f5;
+  --chat-text: #18181b;
+  --chat-muted: #71717a;
+  --chat-border: rgba(228,228,231,0.6);
+  --chat-btn-bg: #f4f4f5;
+  --chat-input-bg: rgba(255,255,255,0.95);
+  --chat-scrollbar: rgba(161,161,170,0.4);
+}
+
+/* Chat CSS vars — painel Dev (dark) */
+html.dev-app.dark {
+  --chat-bg: #09090b;
+  --chat-bubble: #18181b;
+  --chat-text: #f4f4f5;
+  --chat-muted: #71717a;
+  --chat-border: rgba(39,39,42,0.7);
+  --chat-btn-bg: #18181b;
+  --chat-input-bg: rgba(9,9,11,0.95);
+  --chat-scrollbar: rgba(63,63,70,0.5);
+}
+
+html.main-app.dark body::before,
+html.dev-app.dark body::before {
   background:
     linear-gradient(180deg, rgba(13, 13, 13, 0.96), #0d0d0d 38%),
     linear-gradient(90deg, rgba(37, 99, 235, 0.08), transparent 36%, rgba(16, 185, 129, 0.07));
@@ -119,4 +177,11 @@ input:-webkit-autofill:active{
 .login-input:-webkit-autofill:focus, 
 .login-input:-webkit-autofill:active{
     -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Oculta o BottomNavigation quando o chat estiver aberto */
+body.chat-open #bottom-nav {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(150%);
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { getSession } from "@/lib/auth/session";
+import { getSession, getDevSession } from "@/lib/auth/session";
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || "";
 
@@ -141,11 +141,13 @@ export async function getTicketMessages(ticketId: string) {
 }
 
 export async function sendTicketMessage(ticketId: string, content: string, images: string[] = [], asRole?: "TI" | "USER") {
-  const session = await getSession();
+  const isTI = asRole === "TI";
+  const session = isTI ? await getDevSession() : await getSession();
+  
   if (!session) throw new Error("Não autenticado");
 
-  const senderType = asRole || (session.role === "GLOBAL_ADMIN" || session.role === "MANAGER" ? "TI" : "USER");
-  const senderName = senderType === "TI" ? `Suporte TI (${session.username})` : session.username;
+  const senderType = asRole || (session.role === "GLOBAL_ADMIN" || session.role === "MANAGER" || session.role === "TI_ADMIN" ? "TI" : "USER");
+  const senderName = senderType === "TI" ? `Suporte TI (${session.username.split("@")[0]})` : session.username;
 
   const { data, error } = await supabaseAdmin
     .from("ticket_messages")

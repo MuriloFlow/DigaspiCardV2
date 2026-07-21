@@ -25,8 +25,17 @@ export function DevThemeProvider({
     document.cookie = `dev_theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`;
   };
 
-  // Sincroniza caso o cookie mude em outra aba
   useEffect(() => {
+    // Aplica as classes no HTML
+    document.documentElement.classList.remove("main-app");
+    document.documentElement.classList.add("dev-app");
+
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+
     const handleCookieChange = () => {
       const match = document.cookie.match(new RegExp('(^| )dev_theme=([^;]+)'));
       if (match) {
@@ -43,9 +52,7 @@ export function DevThemeProvider({
 
   return (
     <DevThemeContext.Provider value={{ theme, setTheme }}>
-      <div className={`${theme === "dark" ? "dark" : ""} min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-950 dark:text-white transition-colors flex flex-col`}>
-        {children}
-      </div>
+      {children}
     </DevThemeContext.Provider>
   );
 }

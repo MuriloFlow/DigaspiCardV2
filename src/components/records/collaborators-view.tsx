@@ -760,18 +760,20 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
             <button onClick={() => setStatusFilter("INACTIVE")} className={cn("flex-1 rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold transition", statusFilter === "INACTIVE" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-950")}>Inativos</button>
             <button onClick={() => setStatusFilter("ALL")} className={cn("flex-1 rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold transition", statusFilter === "ALL" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-950")}>Todos</button>
           </div>
-          <div className="flex w-full gap-2 sm:w-auto">
+          <div className="grid grid-cols-2 w-full gap-2 sm:flex sm:w-auto">
             <button 
               onClick={() => setSortOrder(prev => prev === "AZ" ? "ZA" : "AZ")}
-              className="inline-flex h-11 sm:h-12 flex-1 items-center justify-center whitespace-nowrap rounded-[1.25rem] border border-zinc-200 bg-white px-4 text-xs sm:text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+              className="inline-flex h-11 sm:h-12 items-center justify-center whitespace-nowrap rounded-[1.25rem] border border-zinc-200 bg-white px-2 sm:px-4 text-xs sm:text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
             >
-              Ordenação: {sortOrder === "AZ" ? "A-Z" : "Z-A"}
+              <span className="hidden sm:inline">Ordenação: </span>{sortOrder === "AZ" ? "A-Z" : "Z-A"}
             </button>
             <button
               onClick={() => setCreateModalOpen(true)}
-              className="inline-flex h-11 sm:h-12 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-[1.25rem] bg-zinc-950 px-5 text-xs sm:text-sm font-semibold text-white transition hover:bg-zinc-800"
+              className="inline-flex h-11 sm:h-12 items-center justify-center gap-1.5 whitespace-nowrap rounded-[1.25rem] bg-zinc-950 px-2 sm:px-5 text-xs sm:text-sm font-semibold text-white transition hover:bg-zinc-800"
             >
-              <Plus className="size-4" /> Novo Colaborador
+              <Plus className="size-4 shrink-0" /> 
+              <span className="hidden sm:inline">Novo Colaborador</span>
+              <span className="sm:hidden">Novo</span>
             </button>
           </div>
         </div>

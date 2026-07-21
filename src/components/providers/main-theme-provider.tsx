@@ -26,6 +26,16 @@ export function MainThemeProvider({
   };
 
   useEffect(() => {
+    // Aplica as classes no HTML
+    document.documentElement.classList.remove("dev-app");
+    document.documentElement.classList.add("main-app");
+    
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+
     const handleCookieChange = () => {
       const match = document.cookie.match(new RegExp('(^| )theme=([^;]+)'));
       if (match) {
@@ -42,9 +52,7 @@ export function MainThemeProvider({
 
   return (
     <MainThemeContext.Provider value={{ theme, setTheme }}>
-      <div className={`${theme === "dark" ? "dark" : ""} flex min-h-full flex-col bg-white dark:bg-zinc-950 text-zinc-950 dark:text-zinc-50 transition-colors`}>
-        {children}
-      </div>
+      {children}
     </MainThemeContext.Provider>
   );
 }

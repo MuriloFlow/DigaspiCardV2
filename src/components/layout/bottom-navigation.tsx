@@ -85,10 +85,17 @@ export function BottomNavigation() {
 
   return (
     <nav
+      id="bottom-nav"
       aria-label="Navegacao principal"
-      className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 sm:bottom-6"
+      className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 sm:bottom-6 transition-all duration-300"
     >
-      <div className="flex w-full max-w-lg sm:max-w-2xl md:max-w-3xl items-center justify-between gap-1 sm:gap-2 rounded-[2rem] border border-zinc-200/80 bg-white/95 p-2 sm:p-2.5 shadow-[0_20px_60px_rgba(15,23,42,0.14)] backdrop-blur-xl">
+      <div
+        className="flex w-full max-w-lg sm:max-w-2xl md:max-w-3xl items-center justify-between gap-1 sm:gap-2 rounded-[2rem] p-2 sm:p-2.5 shadow-[0_20px_60px_rgba(15,23,42,0.14)] backdrop-blur-xl border"
+        style={{
+          backgroundColor: "var(--nav-bg, rgba(255,255,255,0.95))",
+          borderColor: "var(--nav-border, rgba(228,228,231,0.8))",
+        }}
+      >
         {visibleItems.map((item) => {
           const active = item.match(pathname);
           const Icon = item.icon;
@@ -150,7 +157,11 @@ export function BottomNavigation() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                className="absolute bottom-full right-0 mb-4 w-64 rounded-3xl border border-zinc-200/80 bg-white p-2 shadow-2xl origin-bottom-right"
+                className="absolute bottom-full right-0 mb-4 w-64 rounded-3xl p-2 shadow-2xl origin-bottom-right border"
+                style={{
+                  backgroundColor: "var(--nav-bg, rgba(255,255,255,0.98))",
+                  borderColor: "var(--nav-border, rgba(228,228,231,0.8))",
+                }}
               >
                 <div className="flex flex-col items-center gap-2 p-4 pb-3">
                   <div className="flex size-14 items-center justify-center rounded-full bg-zinc-100 text-zinc-400">

@@ -210,7 +210,14 @@ export default function DevTicketsPage() {
                   </div>
                 ) : (
                   <div className="flex-1 overflow-hidden flex flex-col">
-                    <TicketChat ticketId={selectedTicket.id} userRole="TI" />
+                    <TicketChat
+                      ticketId={selectedTicket.id}
+                      userRole="TI"
+                      onTicketResolved={() => {
+                        setSelectedTicket(null);
+                        fetchTickets();
+                      }}
+                    />
                   </div>
                 )}
               </div>
