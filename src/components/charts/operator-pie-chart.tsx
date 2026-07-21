@@ -32,7 +32,7 @@ export function OperatorPieChart({
       )}
     >
       <div className="relative mx-auto aspect-square w-full max-w-[360px]">
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
           <div className="text-center">
             <p className="text-xs font-semibold uppercase text-zinc-500">
               {centerLabel}
@@ -79,7 +79,7 @@ export function OperatorPieChart({
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <div className="absolute inset-[12%] rounded-full border border-dashed border-zinc-300 bg-zinc-50" />
+          <div className="absolute inset-[12%] rounded-full border border-dashed border-zinc-300 bg-transparent" />
         )}
       </div>
 

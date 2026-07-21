@@ -79,11 +79,13 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       setRecords(data.records);
       setSummary(data.summary);
     } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Nao foi possivel carregar os registros.",
-      );
+      let errorMessage = "Não foi possível carregar os registros.";
+      if (loadError instanceof Error) {
+        errorMessage = loadError.message.includes("Failed to fetch") 
+          ? "Sem conexão com o servidor. Verifique sua internet ou VPN." 
+          : loadError.message;
+      }
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
