@@ -38,7 +38,7 @@ const items: NavItem[] = [
     roles: ["GLOBAL_ADMIN", "MANAGER"],
   },
   {
-    label: "Lojas & Admin",
+    label: "Lojas",
     href: "/admin",
     icon: Building,
     match: (path: string) => path.startsWith("/admin"),
@@ -88,7 +88,7 @@ export function BottomNavigation() {
       aria-label="Navegacao principal"
       className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 sm:bottom-6"
     >
-      <div className="flex w-full max-w-lg items-center justify-between gap-1 rounded-[2rem] border border-zinc-200/80 bg-white/95 p-2 shadow-[0_20px_60px_rgba(15,23,42,0.14)] backdrop-blur-xl">
+      <div className="flex w-full max-w-lg sm:max-w-2xl md:max-w-3xl items-center justify-between gap-1 sm:gap-2 rounded-[2rem] border border-zinc-200/80 bg-white/95 p-2 sm:p-2.5 shadow-[0_20px_60px_rgba(15,23,42,0.14)] backdrop-blur-xl">
         {visibleItems.map((item) => {
           const active = item.match(pathname);
           const Icon = item.icon;
@@ -99,7 +99,7 @@ export function BottomNavigation() {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "group relative flex h-12 flex-1 items-center justify-center gap-1.5 rounded-[1.25rem] px-2 text-xs font-medium text-zinc-500 outline-none transition duration-300 hover:text-zinc-950 focus-visible:ring-2 focus-visible:ring-zinc-950/15 sm:h-14 sm:gap-2 sm:rounded-[1.5rem] sm:text-sm",
+                "group relative flex h-12 flex-1 items-center justify-center gap-1.5 rounded-[1.25rem] px-2 sm:px-4 text-xs font-medium text-zinc-500 outline-none transition duration-300 hover:text-zinc-950 focus-visible:ring-2 focus-visible:ring-zinc-950/15 sm:h-14 sm:gap-2.5 sm:rounded-[1.5rem] sm:text-[13px] md:text-sm whitespace-nowrap",
                 active && "text-zinc-950",
               )}
             >
