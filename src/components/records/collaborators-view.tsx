@@ -827,13 +827,6 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
                         className="flex size-9 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600">
                         <UserMinus className="size-4" />
                       </button>
-                      {isGlobalAdmin && (
-                        <button type="button" aria-label="Transferir" title="Transferir Unidade"
-                          onClick={() => setTransferTarget(collab.id)}
-                          className="flex size-9 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-purple-50 hover:text-purple-600">
-                          <Building className="size-4" />
-                        </button>
-                      )}
                     </>
                   )}
                   <button type="button" aria-label="Ver histórico e ações" title="Gerenciar"
@@ -859,33 +852,6 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
                         className="rounded-xl bg-zinc-950 px-3 py-2 text-xs font-semibold text-white disabled:opacity-75">
                         {actionLoading === "rename" ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
                       </button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {isTransferSource && (
-                  <motion.div key={`transfer-${collab.id}`} initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden border-t border-purple-100">
-                    <div className="flex flex-col gap-3 bg-purple-50 p-4">
-                      <p className="text-xs font-semibold text-purple-800">Transferir colaborador para outra unidade</p>
-                      <div className="flex flex-col sm:flex-row items-center gap-2">
-                        <div className="flex-1 w-full">
-                          <CustomSelect
-                             value={transferStoreId}
-                             onChange={setTransferStoreId}
-                             options={stores.filter(s => s.id !== collab.storeId).map(s => ({ value: s.id, label: s.name }))}
-                          />
-                        </div>
-                        <div className="flex w-full sm:w-auto items-center gap-2">
-                          <button type="button" onClick={() => { setTransferTarget(null); setTransferStoreId(""); }}
-                            className="flex-1 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-sm border border-purple-200 hover:bg-purple-100 transition">Cancelar</button>
-                          <button type="button" onClick={() => handleTransfer(collab.id)}
-                            disabled={!transferStoreId || actionLoading === "transfer"}
-                            className="flex-1 rounded-xl bg-purple-600 px-3 py-2 text-xs font-semibold text-white shadow-sm disabled:opacity-75 hover:bg-purple-700 transition">
-                            {actionLoading === "transfer" ? "..." : "Confirmar"}
-                          </button>
-                        </div>
-                      </div>
                     </div>
                   </motion.div>
                 )}
