@@ -113,3 +113,10 @@ input:-webkit-autofill:active{
     transition: background-color 5000s ease-in-out 0s;
     -webkit-text-fill-color: var(--foreground) !important;
 }
+
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover, 
+.login-input:-webkit-autofill:focus, 
+.login-input:-webkit-autofill:active{
+    -webkit-text-fill-color: #ffffff !important;
+}

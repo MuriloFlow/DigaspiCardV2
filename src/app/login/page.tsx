@@ -43,7 +43,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#070709] px-4 overflow-hidden selection:bg-[#6387FB]/30 selection:text-[#B19FFC] font-sans">
+    <div className="dark relative flex min-h-screen flex-col items-center justify-center bg-[#070709] px-4 overflow-hidden selection:bg-[#6387FB]/30 selection:text-[#B19FFC] font-sans">
       
       {/* Background Ambient Glows (Vibe do Screenshot) */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -113,7 +113,7 @@ export default function LoginPage() {
                   type="text"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  className="w-full rounded-full border border-white/10 bg-white/5 px-5 py-4 text-[15px] font-medium text-[#ffffff] shadow-inner outline-none transition-all placeholder:text-white/40 focus:border-[#6387FB]/50 focus:bg-white/10 focus:ring-4 focus:ring-[#6387FB]/10"
+                  className="login-input w-full rounded-full border border-[#ffffff]/10 bg-[#ffffff]/5 px-5 py-4 text-[15px] font-medium text-[#ffffff] shadow-inner outline-none transition-all placeholder:text-[#ffffff]/40 focus:border-[#6387FB]/50 focus:bg-[#ffffff]/10 focus:ring-4 focus:ring-[#6387FB]/10"
                   placeholder="Ex: operacao.41"
                 />
               </div>
@@ -128,13 +128,13 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="w-full rounded-full border border-white/10 bg-white/5 py-4 pl-5 pr-12 text-[15px] font-medium text-[#ffffff] shadow-inner outline-none transition-all placeholder:text-white/40 focus:border-[#6387FB]/50 focus:bg-white/10 focus:ring-4 focus:ring-[#6387FB]/10"
+                    className="login-input w-full rounded-full border border-[#ffffff]/10 bg-[#ffffff]/5 py-4 pl-5 pr-12 text-[15px] font-medium text-[#ffffff] shadow-inner outline-none transition-all placeholder:text-[#ffffff]/40 focus:border-[#6387FB]/50 focus:bg-[#ffffff]/10 focus:ring-4 focus:ring-[#6387FB]/10"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#ffffff]/40 hover:text-[#ffffff]/80 transition-colors"
                   >
                     {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
                   </button>
