@@ -44,10 +44,15 @@ export function HomeView() {
   const todayCardsCount = todayRecords.length;
 
   const dailyGoal = useMemo(() => {
+    // Para Admin Global, a meta base é a soma da meta de cada loja existente
+    const storeCount = isGlobalAdmin 
+      ? Math.max(1, new Set(records.map(r => r.storeName).filter(Boolean)).size)
+      : 1;
+
     const day = new Date().getDay(); // 0 = Domingo, 1 = Segunda, ..., 5 = Sexta, 6 = Sábado
-    let baseGoal = 12; // Padrão: Domingo a Quinta
-    if (day === 5) baseGoal = 15; // Sexta-feira
-    if (day === 6) baseGoal = 30; // Sábado
+    let baseGoal = 12 * storeCount; // Padrão: Domingo a Quinta
+    if (day === 5) baseGoal = 15 * storeCount; // Sexta-feira
+    if (day === 6) baseGoal = 30 * storeCount; // Sábado
 
     if (records.length === 0) return baseGoal;
 
@@ -96,7 +101,7 @@ export function HomeView() {
       />
 
       {isGlobalAdmin && (
-        <div className="mb-6 flex items-center gap-3 rounded-[1.5rem] border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700">
+        <div className="mb-6 flex items-center gap-3 rounded-[1.5rem] bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700">
           <Building className="size-4 shrink-0" />
           <span>Você está no painel de <strong>Administrador Global</strong>. O registro de cartões é feito pelos operadores de cada unidade.</span>
         </div>
