@@ -29,6 +29,17 @@ export async function updateStore(id: string, name: string) {
   revalidatePath("/admin");
 }
 
+export async function deleteStore(id: string) {
+  // Cascata de exclusão (se o BD não tiver ON DELETE CASCADE configurado para todas)
+  await supabaseAdmin.from("records").delete().eq("store_id", id);
+  await supabaseAdmin.from("collaborators").delete().eq("store_id", id);
+  await supabaseAdmin.from("app_users").delete().eq("store_id", id);
+  
+  const { error } = await supabaseAdmin.from("stores").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin");
+}
+
 export async function createUser(data: { username: string; password_plain: string; role: string; name: string; store_id?: string | null }) {
   if (!data.username || !data.password_plain) throw new Error("Usuário e senha são obrigatórios.");
   

@@ -154,15 +154,23 @@ function CollaboratorOptionsModal({
   onClose,
   onToggleActive,
   onHardDelete,
+  onTransfer,
   loadingAction,
+  isGlobalAdmin,
+  stores,
 }: {
   collab: Collaborator | null;
   isOpen: boolean;
   onClose: () => void;
   onToggleActive: () => void;
   onHardDelete: () => void;
+  onTransfer: (newStoreId: string) => void;
   loadingAction: string | null;
+  isGlobalAdmin: boolean;
+  stores: Store[];
 }) {
+  const [transferStoreId, setTransferStoreId] = useState(collab?.storeId || "");
+  
   if (!isOpen || !collab) return null;
 
   return (
@@ -193,6 +201,28 @@ function CollaboratorOptionsModal({
           </div>
           
           <div className="p-4 space-y-2">
+            {isGlobalAdmin && (
+              <div className="mb-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                <label className="mb-2 block text-xs font-semibold text-zinc-700">Transferir para outra Unidade</label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <CustomSelect
+                      value={transferStoreId}
+                      onChange={setTransferStoreId}
+                      options={stores.map(s => ({ value: s.id, label: s.name }))}
+                    />
+                  </div>
+                  <button 
+                    disabled={!transferStoreId || transferStoreId === collab.storeId || loadingAction === "transfer"}
+                    onClick={() => onTransfer(transferStoreId)}
+                    className="flex shrink-0 items-center justify-center rounded-[1rem] bg-zinc-950 px-4 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50"
+                  >
+                    {loadingAction === "transfer" ? <Loader2 className="size-4 animate-spin" /> : "Transferir"}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <button
               onClick={onToggleActive}
               disabled={loadingAction === "toggle-active"}
@@ -256,6 +286,8 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
   const [mergeTarget, setMergeTarget] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteRecordId, setConfirmDeleteRecordId] = useState<string | null>(null);
+  const [transferTarget, setTransferTarget] = useState<string | null>(null);
+  const [transferStoreId, setTransferStoreId] = useState("");
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const loadCollaborators = useCallback(async () => {
@@ -342,6 +374,24 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
       if (selectedId === id) void loadRecords(id);
     } catch (e) { setError(e instanceof Error ? e.message : "Erro."); }
     finally { setActionLoading(null); }
+  }
+
+  async function handleTransfer(id: string, newStoreId?: string) {
+    const targetStoreId = newStoreId || transferStoreId;
+    if (!targetStoreId) return;
+    setActionLoading("transfer");
+    setError(null);
+    try {
+      const data = await apiRequest({ action: "transfer", id, newStoreId: targetStoreId });
+      if (data.collaborators) setCollaborators(data.collaborators);
+      setTransferTarget(null);
+      setTransferStoreId("");
+      showSuccess("Colaborador transferido com sucesso.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao transferir.");
+    } finally {
+      setActionLoading(null);
+    }
   }
 
   async function handleMerge(keepId: string, mergeId: string) {
@@ -581,7 +631,10 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
           onClose={() => setOptionsModalOpen(false)}
           onToggleActive={handleToggleActive}
           onHardDelete={handleHardDelete}
+          onTransfer={(newStoreId) => { if (selectedCollab) handleTransfer(selectedCollab.id, newStoreId); }}
           loadingAction={actionLoading}
+          isGlobalAdmin={isGlobalAdmin}
+          stores={stores}
         />
       </PageContainer>
     );
@@ -729,6 +782,7 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
           const isRenaming = renameId === collab.id;
           const isConfirmingDelete = confirmDeleteId === collab.id;
           const isMergeSource = mergeTarget === collab.id;
+          const isTransferSource = transferTarget === collab.id;
 
           return (
             <motion.article key={collab.id}
@@ -773,6 +827,13 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
                         className="flex size-9 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600">
                         <UserMinus className="size-4" />
                       </button>
+                      {isGlobalAdmin && (
+                        <button type="button" aria-label="Transferir" title="Transferir Unidade"
+                          onClick={() => setTransferTarget(collab.id)}
+                          className="flex size-9 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-purple-50 hover:text-purple-600">
+                          <Building className="size-4" />
+                        </button>
+                      )}
                     </>
                   )}
                   <button type="button" aria-label="Ver histórico e ações" title="Gerenciar"
@@ -798,6 +859,33 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
                         className="rounded-xl bg-zinc-950 px-3 py-2 text-xs font-semibold text-white disabled:opacity-75">
                         {actionLoading === "rename" ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
                       </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {isTransferSource && (
+                  <motion.div key={`transfer-${collab.id}`} initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden border-t border-purple-100">
+                    <div className="flex flex-col gap-3 bg-purple-50 p-4">
+                      <p className="text-xs font-semibold text-purple-800">Transferir colaborador para outra unidade</p>
+                      <div className="flex flex-col sm:flex-row items-center gap-2">
+                        <div className="flex-1 w-full">
+                          <CustomSelect
+                             value={transferStoreId}
+                             onChange={setTransferStoreId}
+                             options={stores.filter(s => s.id !== collab.storeId).map(s => ({ value: s.id, label: s.name }))}
+                          />
+                        </div>
+                        <div className="flex w-full sm:w-auto items-center gap-2">
+                          <button type="button" onClick={() => { setTransferTarget(null); setTransferStoreId(""); }}
+                            className="flex-1 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-sm border border-purple-200 hover:bg-purple-100 transition">Cancelar</button>
+                          <button type="button" onClick={() => handleTransfer(collab.id)}
+                            disabled={!transferStoreId || actionLoading === "transfer"}
+                            className="flex-1 rounded-xl bg-purple-600 px-3 py-2 text-xs font-semibold text-white shadow-sm disabled:opacity-75 hover:bg-purple-700 transition">
+                            {actionLoading === "transfer" ? "..." : "Confirmar"}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
                 )}

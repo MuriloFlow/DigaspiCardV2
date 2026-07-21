@@ -99,10 +99,11 @@ export async function deleteRecord(id: string, storeId?: string | null): Promise
   if (error) throw new Error(`Erro ao deletar registro: ${error.message}`);
 }
 
-export async function updateRecord(id: string, updates: { clientName?: string; activated?: boolean }): Promise<void> {
+export async function updateRecord(id: string, updates: { clientName?: string; activated?: boolean; amountInCents?: number }): Promise<void> {
   const payload: Record<string, unknown> = {};
   if (updates.clientName !== undefined) payload.client_name = normalizePersonName(updates.clientName);
   if (updates.activated !== undefined) payload.activated = updates.activated;
+  if (updates.amountInCents !== undefined) payload.amount_in_cents = updates.amountInCents;
   if (Object.keys(payload).length === 0) return;
 
   const { error } = await supabaseAdmin.from("records").update(payload).eq("id", id);
@@ -229,7 +230,21 @@ export async function unmergeCollaborator(mergeId: string): Promise<void> {
     .eq("collaborator_id", collabData.merged_into_id)
     .eq("operator_name", collabData.name);
 
-  if (recordsError) throw new Error(`Erro ao devolver registros: ${recordsError.message}`);
+  if (recordsError) throw new Error(`Erro ao propagar nome nos registros: ${recordsError.message}`);
+}
+
+export async function transferCollaborator(id: string, newStoreId: string): Promise<void> {
+  const { error: collabError } = await supabaseAdmin
+    .from("collaborators")
+    .update({ store_id: newStoreId })
+    .eq("id", id);
+  if (collabError) throw new Error(`Erro ao transferir colaborador: ${collabError.message}`);
+
+  const { error: recordsError } = await supabaseAdmin
+    .from("records")
+    .update({ store_id: newStoreId })
+    .eq("collaborator_id", id);
+  if (recordsError) throw new Error(`Erro ao transferir registros do colaborador: ${recordsError.message}`);
 }
 
 export async function renameCollaborator(id: string, newName: string): Promise<void> {

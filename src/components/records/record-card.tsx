@@ -25,6 +25,7 @@ export function RecordCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editClient, setEditClient] = useState(record.clientName);
+  const [editAmount, setEditAmount] = useState((record.amountInCents / 100).toString());
   const [editActivated, setEditActivated] = useState(record.activated);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -49,7 +50,8 @@ export function RecordCard({
         body: JSON.stringify({
           id: record.id,
           clientName: editClient,
-          activated: editActivated
+          activated: editActivated,
+          amountInCents: Math.round(Number(editAmount.replace(/,/g, ".")) * 100) || 0
         })
       });
       if (res.ok) {
@@ -78,6 +80,21 @@ export function RecordCard({
               className="flex-1 rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-950" 
               placeholder="Nome do cliente"
             />
+            <div className="relative w-24">
+              <span className="absolute inset-y-0 left-2.5 flex items-center text-sm font-medium text-zinc-500">
+                R$
+              </span>
+              <input 
+                type="text"
+                value={editAmount} 
+                onChange={e => {
+                  const val = e.target.value.replace(/[^0-9.,]/g, "");
+                  setEditAmount(val);
+                }} 
+                className="w-full rounded-xl border border-zinc-200 pl-8 pr-2 py-2 text-sm outline-none focus:border-zinc-950" 
+                placeholder="0,00"
+              />
+            </div>
             <label className="flex items-center gap-2 text-sm font-medium">
               <input 
                 type="checkbox" 

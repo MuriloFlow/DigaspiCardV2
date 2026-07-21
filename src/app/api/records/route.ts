@@ -69,7 +69,11 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     if (!body.id) return NextResponse.json({ message: "ID não fornecido." }, { status: 400 });
 
-    await updateRecord(body.id, { clientName: body.clientName, activated: body.activated });
+    await updateRecord(body.id, { 
+      clientName: body.clientName, 
+      activated: body.activated,
+      amountInCents: body.amountInCents 
+    });
 
     const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
     const records = await listRecords(storeId);

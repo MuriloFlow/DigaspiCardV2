@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { createStore, updateStore, createUser, updateUser, toggleUserActive } from "./actions";
+import { createStore, updateStore, deleteStore, createUser, updateUser, toggleUserActive } from "./actions";
 import {
   Building, Users, Key, Save, Loader2, Plus, TrendingUp,
   CreditCard, ChevronRight, Edit2, X, Star, Eye, EyeOff,
-  ShieldCheck, ShieldOff, ArrowLeft, BarChart2, CheckCircle2, Search
+  ShieldCheck, ShieldOff, ArrowLeft, BarChart2, CheckCircle2, Search, Trash2
 } from "lucide-react";
 import { CustomSelect } from "@/components/ui/custom-select";
 
@@ -560,6 +560,18 @@ export function AdminPanel({
     }
   }
 
+  async function handleDeleteStore(id: string) {
+    if (!confirm("Tem certeza que deseja DELETAR esta unidade? Todos os usuários e registros vinculados serão APAGADOS permanentemente. Esta ação não pode ser desfeita.")) return;
+    try {
+      await deleteStore(id);
+      setStores(prev => prev.filter(s => s.id !== id));
+      showToast("Unidade e todos os seus dados foram deletados.");
+      refreshData();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Erro ao deletar unidade.", "error");
+    }
+  }
+
 
 
   async function handleToggleActive(u: AppUser) {
@@ -941,6 +953,9 @@ export function AdminPanel({
                         <span className="rounded-lg bg-zinc-200/50 px-2.5 py-1 font-mono text-[10px] font-bold text-zinc-500">{s.id.split("-")[0]}</span>
                         <button onClick={() => setEditingStore(s)} className="flex size-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-blue-50 hover:text-blue-600 transition">
                           <Edit2 className="size-4" />
+                        </button>
+                        <button onClick={() => handleDeleteStore(s.id)} className="flex size-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-rose-50 hover:text-rose-600 transition">
+                          <Trash2 className="size-4" />
                         </button>
                       </div>
                     </li>

@@ -10,6 +10,7 @@ import {
   findSimilarCollaborators,
   toggleCollaboratorActive,
   hardDeleteCollaborator,
+  transferCollaborator,
 } from "@/lib/records/repository";
 import { getSession } from "@/lib/auth/session";
 
@@ -113,6 +114,13 @@ export async function POST(request: Request) {
     if (action === "toggle-active") {
       if (isEmployee) return forbidden();
       await toggleCollaboratorActive(body.id as string, body.isActive as boolean);
+      const collaborators = await listCollaborators(storeId);
+      return NextResponse.json({ collaborators, success: true }, { headers: noStore });
+    }
+
+    if (action === "transfer") {
+      if (isEmployee) return forbidden();
+      await transferCollaborator(body.id as string, body.newStoreId as string);
       const collaborators = await listCollaborators(storeId);
       return NextResponse.json({ collaborators, success: true }, { headers: noStore });
     }
