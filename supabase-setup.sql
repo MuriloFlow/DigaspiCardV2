@@ -48,11 +48,23 @@ create table if not exists collaborators (
   id uuid default gen_random_uuid() primary key,
   store_id uuid not null references stores(id) on delete restrict, -- OBRIGATÓRIO
   name text not null,
+  sub_role text not null default 'Funcionario Operacional'
+    check (sub_role in ('Funcionario Operacional', 'Caixa', 'Lider de Caixa', 'VM')),
   merged_into_id uuid references collaborators(id) on delete set null,
   is_active boolean default true not null,
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );
+
+alter table collaborators
+  add column if not exists sub_role text not null default 'Funcionario Operacional';
+
+alter table collaborators
+  drop constraint if exists collaborators_sub_role_check;
+
+alter table collaborators
+  add constraint collaborators_sub_role_check
+  check (sub_role in ('Funcionario Operacional', 'Caixa', 'Lider de Caixa', 'VM'));
 
 -- Registros de Cartões — store_id obrigatório
 create table if not exists records (

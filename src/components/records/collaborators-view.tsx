@@ -14,6 +14,10 @@ import { getOperatorColor } from "@/lib/records/colors";
 import { formatCurrency, formatInteger, formatTime } from "@/lib/utils/format";
 import { toDateKey, formatLongDate } from "@/lib/utils/format";
 import type { OperatorRecord, Collaborator } from "@/lib/records/types";
+import {
+  COLLABORATOR_SUBROLES,
+  normalizeCollaboratorSubRole,
+} from "@/lib/records/collaborator-subroles";
 import { cn } from "@/lib/utils/cn";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -32,10 +36,11 @@ function CreateCollaboratorModal({
   isGlobalAdmin: boolean;
   userStoreId?: string | null;
   onClose: () => void;
-  onCreated: (name: string, storeId: string) => Promise<void>;
+  onCreated: (name: string, storeId: string, subRole: string) => Promise<void>;
 }) {
   const [name, setName] = useState("");
   const [storeId, setStoreId] = useState(isGlobalAdmin ? "" : (userStoreId ?? ""));
+  const [subRole, setSubRole] = useState(COLLABORATOR_SUBROLES[0]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -46,7 +51,7 @@ function CreateCollaboratorModal({
     setIsLoading(true);
     setError("");
     try {
-      await onCreated(name.trim(), storeId);
+      await onCreated(name.trim(), storeId, subRole);
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro ao criar.");
@@ -113,6 +118,17 @@ function CreateCollaboratorModal({
                 options={stores.map(s => ({ value: s.id, label: s.name }))}
               />
             )}
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-zinc-600 uppercase tracking-wide">
+              Subcargo
+            </label>
+            <CustomSelect
+              value={subRole}
+              onChange={(value) => setSubRole(normalizeCollaboratorSubRole(value))}
+              options={COLLABORATOR_SUBROLES.map((role) => ({ value: role, label: role }))}
+            />
           </div>
 
           {error && (
@@ -313,10 +329,10 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
 
   useEffect(() => { void loadCollaborators(); }, [loadCollaborators]);
 
-  async function handleCreateCollaborator(name: string, storeId: string) {
-    const d = (await apiRequest({ action: "create", name, storeId })) as { collaborators: Collaborator[] };
+  async function handleCreateCollaborator(name: string, storeId: string, subRole: string) {
+    const d = (await apiRequest({ action: "create", name, storeId, subRole })) as { collaborators: Collaborator[] };
     setCollaborators(d.collaborators);
-    showSuccess(`Colaborador "${name}" cadastrado com sucesso.`);
+    showSuccess(`Colaborador "${name}" cadastrado como ${subRole}.`);
   }
 
   const loadRecords = useCallback(async (collabId: string) => {
@@ -808,6 +824,9 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
                     )}
                   </div>
                   <p className="mt-0.5 text-xs text-zinc-500">Registrado em {new Date(collab.createdAt).toLocaleDateString("pt-BR")}</p>
+                  <span className="mt-2 inline-flex max-w-full rounded-lg bg-zinc-100 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-zinc-600">
+                    {collab.subRole}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   {collab.isActive && (

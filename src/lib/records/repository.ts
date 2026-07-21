@@ -4,6 +4,10 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { normalizePersonName } from "./domain";
 import { createRecordSchema } from "./schema";
 import type { OperatorRecord, Collaborator } from "./types";
+import {
+  DEFAULT_COLLABORATOR_SUBROLE,
+  normalizeCollaboratorSubRole,
+} from "./collaborator-subroles";
 
 type DbRecord = {
   id: string;
@@ -118,7 +122,7 @@ export async function updateRecord(id: string, updates: { clientName?: string; a
 export async function listCollaborators(storeId?: string | null): Promise<Collaborator[]> {
   let query = supabaseAdmin
     .from("collaborators")
-    .select("id, name, is_active, merged_into_id, store_id, created_at")
+    .select("*")
     .order("name", { ascending: true });
 
   if (storeId) query = query.eq("store_id", storeId);
@@ -129,6 +133,7 @@ export async function listCollaborators(storeId?: string | null): Promise<Collab
   return data.map((d) => ({
     id: d.id,
     name: d.name,
+    subRole: normalizeCollaboratorSubRole(d.sub_role),
     isActive: d.is_active,
     mergedIntoId: d.merged_into_id,
     storeId: d.store_id,
@@ -142,7 +147,7 @@ export async function listCollaborators(storeId?: string | null): Promise<Collab
 export async function listActiveCollaborators(storeId?: string | null): Promise<Collaborator[]> {
   let query = supabaseAdmin
     .from("collaborators")
-    .select("id, name, is_active, merged_into_id, store_id, created_at")
+    .select("*")
     .eq("is_active", true)
     .order("name", { ascending: true });
 
@@ -154,6 +159,7 @@ export async function listActiveCollaborators(storeId?: string | null): Promise<
   return data.map((d) => ({
     id: d.id,
     name: d.name,
+    subRole: normalizeCollaboratorSubRole(d.sub_role),
     isActive: d.is_active,
     mergedIntoId: d.merged_into_id,
     storeId: d.store_id,
@@ -164,16 +170,30 @@ export async function listActiveCollaborators(storeId?: string | null): Promise<
 /**
  * Cria colaborador. storeId é OBRIGATÓRIO e vem do JWT (nunca do frontend).
  */
-export async function createCollaborator(name: string, storeId: string): Promise<void> {
+export async function createCollaborator(
+  name: string,
+  storeId: string,
+  subRole: unknown = DEFAULT_COLLABORATOR_SUBROLE,
+): Promise<void> {
   const normalized = normalizePersonName(name);
+  const normalizedSubRole = normalizeCollaboratorSubRole(subRole);
   if (!normalized) throw new Error("Nome é obrigatório.");
   if (!storeId) throw new Error("Unidade (loja) é obrigatória para criar um colaborador.");
 
   const { error } = await supabaseAdmin
     .from("collaborators")
-    .insert({ name: normalized, store_id: storeId });
+    .insert({ name: normalized, store_id: storeId, sub_role: normalizedSubRole });
 
-  if (error) throw new Error(`Erro ao criar colaborador: ${error.message}`);
+  if (error) {
+    if (error.code === "PGRST204" || error.code === "42703") {
+      const retry = await supabaseAdmin
+        .from("collaborators")
+        .insert({ name: normalized, store_id: storeId });
+      if (retry.error) throw new Error(`Erro ao criar colaborador: ${retry.error.message}`);
+      return;
+    }
+    throw new Error(`Erro ao criar colaborador: ${error.message}`);
+  }
 }
 
 export async function getCollaboratorRecords(collaboratorId: string): Promise<OperatorRecord[]> {

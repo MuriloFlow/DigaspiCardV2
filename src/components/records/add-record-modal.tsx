@@ -63,11 +63,11 @@ export function AddRecordModal({
         .then(d => {
           if (d.collaborators) {
             // Filtra para pegar apenas os funcionários ativos da loja (já filtrados pelo backend)
-            const activeEmployees = (d.collaborators as { id: string; name: string; isActive: boolean }[])
+            const activeEmployees = (d.collaborators as { id: string; name: string; subRole?: string; isActive: boolean }[])
               .filter(c => c.isActive)
               .map(c => ({
                 value: c.id,
-                label: c.name
+                label: c.subRole ? `${c.name} - ${c.subRole}` : c.name
               }));
             setCollaborators(activeEmployees);
           }

@@ -73,7 +73,7 @@ export async function POST(request: Request) {
         );
       }
 
-      await createCollaborator(body.name as string, targetStoreId);
+      await createCollaborator(body.name as string, targetStoreId, body.subRole as string);
       const collaborators = await listCollaborators(storeId);
       return NextResponse.json({ collaborators, success: true }, { headers: noStore });
     }

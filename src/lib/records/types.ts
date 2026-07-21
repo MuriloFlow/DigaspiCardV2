@@ -59,9 +59,16 @@ export type CreateRecordPayload = {
   activated: boolean;
 };
 
+export type CollaboratorSubRole =
+  | "Funcionario Operacional"
+  | "Caixa"
+  | "Lider de Caixa"
+  | "VM";
+
 export type Collaborator = {
   id: string;
   name: string;
+  subRole: CollaboratorSubRole;
   isActive: boolean;
   mergedIntoId: string | null;
   storeId?: string | null;
