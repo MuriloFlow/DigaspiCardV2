@@ -65,11 +65,11 @@ function CreateCollaboratorModal({
         onClick={onClose}
       />
       <motion.div
-        initial={{ opacity: 0, y: 40, scale: 0.97 }}
+        initial={{ opacity: 0, y: 100, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 40, scale: 0.97 }}
-        transition={{ type: "spring", damping: 28, stiffness: 380 }}
-        className="relative w-full max-w-md rounded-[2rem] border border-zinc-200 bg-white p-7 shadow-2xl"
+        exit={{ opacity: 0, y: 100, scale: 0.95 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="relative w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] bg-white shadow-2xl p-7"
       >
         <button onClick={onClose} className="absolute right-5 top-5 rounded-xl p-2 text-zinc-400 hover:bg-zinc-100 transition">
           <X className="size-5" />

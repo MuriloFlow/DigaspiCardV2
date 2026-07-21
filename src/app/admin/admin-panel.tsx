@@ -243,7 +243,7 @@ function CreateUserModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative z-10 w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative z-10 w-full max-w-md rounded-[2rem] bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5">
           <div>
             <p className="text-xs font-semibold uppercase text-zinc-500">Nova Conta</p>
@@ -356,7 +356,7 @@ function CreateStoreModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative z-10 w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative z-10 w-full max-w-md rounded-[2rem] bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5">
           <div>
             <p className="text-xs font-semibold uppercase text-zinc-500">Nova Unidade</p>

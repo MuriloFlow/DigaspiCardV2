@@ -173,7 +173,7 @@ export function AddRecordModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 14, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 420, damping: 34 }}
-            className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.22)]"
+            className="relative w-full max-w-lg rounded-[2rem] border border-zinc-200 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.22)]"
           >
             <div className="flex items-start justify-between gap-4 border-b border-zinc-100 px-6 py-5">
               <div>
