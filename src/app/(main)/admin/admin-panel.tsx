@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { createStore, updateStore, deleteStore, createUser, updateUser, toggleUserActive, setStoreGoal } from "./actions";
+import { createStore, updateStore, deleteStore, createUser, updateUser, toggleUserActive, setStoreGoal, getAdminData } from "./actions";
 import {
   Building, Users, Key, Save, Loader2, Plus, TrendingUp,
   ShieldCheck, ShieldOff, ArrowLeft, BarChart2, CheckCircle2, Search, Trash2, Target,
@@ -622,11 +622,12 @@ export function AdminPanel({
   }
 
   async function refreshData() {
-    const res = await fetch("/api/admin/users", { cache: "no-store" });
-    if (res.ok) {
-      const d = await res.json();
+    try {
+      const d = await getAdminData();
       if (d.users) setUsers(d.users);
       if (d.stores) setStores(d.stores);
+    } catch (err) {
+      console.error(err);
     }
   }
 
