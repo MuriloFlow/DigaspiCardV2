@@ -14,11 +14,16 @@ import { RecordCard } from "./record-card";
 import { useAuth } from "@/components/providers/auth-provider";
 import { DailyCustomersModal } from "./daily-customers-modal";
 import { useState } from "react";
+import { DailyMetricsModal } from "./daily-metrics-modal";
+import { DigitacoesListModal } from "./digitacoes-list-modal";
+import { Activity, Keyboard } from "lucide-react";
 
 export function HistoryDetailView({ dateKey }: { dateKey: string }) {
   const { user } = useAuth();
-  const { records, isLoading } = useRecords();
+  const { records, digitacoes, dailyMetrics, isLoading } = useRecords();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [metricsModalOpen, setMetricsModalOpen] = useState(false);
+  const [digitacoesModalOpen, setDigitacoesModalOpen] = useState(false);
   const group = useMemo(
     () => getDateGroup(records, dateKey),
     [dateKey, records],
@@ -69,15 +74,31 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
         title={group.label}
         description="Participacao percentual, volume e valor por operador no dia selecionado."
       >
-        {(user?.role === "MANAGER" || user?.role === "GLOBAL_ADMIN") && (
+        <div className="flex flex-col gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+          {(user?.role === "MANAGER" || user?.role === "GLOBAL_ADMIN") && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/20"
+            >
+              <Users className="size-4" />
+              Total de Clientes
+            </button>
+          )}
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/20"
+            onClick={() => setMetricsModalOpen(true)}
+            className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10"
           >
-            <Users className="size-4" />
-            Total de Clientes
+            <Activity className="size-4 text-emerald-500" />
+            Ver métricas
           </button>
-        )}
+          <button
+            onClick={() => setDigitacoesModalOpen(true)}
+            className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10"
+          >
+            <Keyboard className="size-4 text-purple-500" />
+            Digitações
+          </button>
+        </div>
       </PageHeader>
 
       <DailyCustomersModal 
@@ -197,6 +218,49 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
           </div>
         </div>
       </section>
+      
+      {(() => {
+        const dailyDigs = digitacoes.filter(d => d.createdAt.startsWith(dateKey));
+        const dailyTotalClientes = dailyMetrics.find(m => m.dateKey === dateKey)?.totalCustomers || 0;
+        
+        const totalCartoes = group.count;
+        const totalDigitacoes = dailyDigs.length;
+        
+        const taxaAproveitamento = dailyTotalClientes > 0 ? ((totalCartoes + totalDigitacoes) / dailyTotalClientes) * 100 : 0;
+        const taxaAprovacao = (totalCartoes + totalDigitacoes) > 0 ? (totalCartoes / (totalCartoes + totalDigitacoes)) * 100 : 0;
+        const activeCount = group.records.filter(r => r.activated).length;
+        const activeLaterCount = group.records.filter(r => r.activatedLater).length;
+        const cartoesAtivosPerc = totalCartoes > 0 ? (activeCount / totalCartoes) * 100 : 0;
+        const ativosNoCaixaPerc = totalCartoes > 0 ? (activeLaterCount / totalCartoes) * 100 : 0;
+        const ticketMedio = totalCartoes > 0 ? group.totalInCents / totalCartoes : 0;
+        
+        return (
+          <>
+            <DailyMetricsModal
+              open={metricsModalOpen}
+              onClose={() => setMetricsModalOpen(false)}
+              dateLabel={group.label}
+              totalCartoes={totalCartoes}
+              totalDigitacoes={totalDigitacoes}
+              totalClientes={dailyTotalClientes}
+              taxaAproveitamento={taxaAproveitamento}
+              taxaAprovacao={taxaAprovacao}
+              cartoesAtivosPerc={cartoesAtivosPerc}
+              ativosNoCaixaPerc={ativosNoCaixaPerc}
+              ticketMedio={ticketMedio}
+              crescimentoCartoes={0} // Sem cálculo dia a dia por enquanto
+              crescimentoValor={0}
+            />
+            <DigitacoesListModal
+              open={digitacoesModalOpen}
+              onClose={() => setDigitacoesModalOpen(false)}
+              title="Digitações do Dia"
+              subtitle={group.label}
+              digitacoes={dailyDigs}
+            />
+          </>
+        );
+      })()}
     </PageContainer>
   );
 }

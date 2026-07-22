@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth/session";
 import {
   listDigitacoes,
   createDigitacao,
+  deleteDigitacao,
+  updateDigitacao,
 } from "@/lib/records/digitacoes-repository";
 import { listCollaborators } from "@/lib/records/repository";
 
@@ -71,6 +73,51 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "Erro ao salvar digitação." },
+      { status: 500, headers: noStore },
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const session = await getSession();
+    if (!session) return forbidden("Sessão inválida.");
+
+    const body = await request.json();
+    if (!body.id) return NextResponse.json({ message: "ID não fornecido." }, { status: 400 });
+
+    await updateDigitacao(body.id, { clientName: body.clientName });
+
+    const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
+    const digitacoes = await listDigitacoes(storeId);
+    return NextResponse.json({ digitacoes, success: true }, { headers: noStore });
+  } catch (error) {
+    return NextResponse.json(
+      { message: error instanceof Error ? error.message : "Erro ao atualizar digitação." },
+      { status: 400, headers: noStore },
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ message: "ID obrigatório." }, { status: 400, headers: noStore });
+
+  try {
+    const session = await getSession();
+    if (!session) return forbidden("Sessão inválida.");
+
+    if (session.role === "EMPLOYEE") return forbidden("Sem permissão para deletar registros.");
+
+    const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
+    await deleteDigitacao(id, storeId);
+    
+    const digitacoes = await listDigitacoes(storeId);
+    return NextResponse.json({ digitacoes, success: true }, { headers: noStore });
+  } catch (error) {
+    return NextResponse.json(
+      { message: error instanceof Error ? error.message : "Erro ao deletar digitação." },
       { status: 500, headers: noStore },
     );
   }

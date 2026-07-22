@@ -68,3 +68,20 @@ export async function createDigitacao(params: {
   if (error) throw new Error(`Erro ao criar digitação: ${error.message}`);
   return toDigitacao(data as DbDigitacao);
 }
+
+export async function deleteDigitacao(id: string, storeId?: string | null): Promise<void> {
+  let query = supabaseAdmin.from("digitacoes").delete().eq("id", id);
+  if (storeId) query = query.eq("store_id", storeId);
+  const { error } = await query;
+  if (error) throw new Error(`Erro ao deletar digitação: ${error.message}`);
+}
+
+export async function updateDigitacao(id: string, updates: { clientName?: string }): Promise<void> {
+  const payload: Record<string, unknown> = {};
+  if (updates.clientName !== undefined) payload.client_name = updates.clientName.trim();
+
+  if (Object.keys(payload).length === 0) return;
+
+  const { error } = await supabaseAdmin.from("digitacoes").update(payload).eq("id", id);
+  if (error) throw new Error(`Erro ao atualizar digitação: ${error.message}`);
+}

@@ -3,17 +3,21 @@
 import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, ArrowRight, CalendarDays, ChevronDown, RefreshCw, Search, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, ChevronDown, RefreshCw, Search, X, Keyboard } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
+import { useAuth } from "@/components/providers/auth-provider";
 import { useRecords } from "@/components/providers/records-provider";
+import { DigitacoesListModal } from "./digitacoes-list-modal";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
 import { groupRecordsByMonth } from "@/lib/records/domain";
 import { formatCurrency, formatInteger } from "@/lib/utils/format";
 import { MonthAnalytics } from "./month-analytics";
 
 export function HistoryView() {
+  const { user } = useAuth();
   const { records, digitacoes, dailyMetrics, isLoading, error, refresh } = useRecords();
   const [search, setSearch] = useState("");
+  const [digitacoesModalOpen, setDigitacoesModalOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   
   // Controls which month is currently opened (drill-down state)
@@ -93,7 +97,17 @@ export function HistoryView() {
           eyebrow="Dias Registrados"
           title={`Mês de ${activeMonth.label}`}
           description={`Total de ${activeMonth.count} cartões registrados neste mês.`}
-        />
+        >
+          <div className="flex flex-col gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+            <button
+              onClick={() => setDigitacoesModalOpen(true)}
+              className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10"
+            >
+              <Keyboard className="size-4 text-purple-500" />
+              Ver digitações
+            </button>
+          </div>
+        </PageHeader>
 
         {/* Analytics 9 Cards */}
         {(() => {
@@ -201,6 +215,14 @@ export function HistoryView() {
             </div>
           )}
         </div>
+
+        <DigitacoesListModal
+          open={digitacoesModalOpen}
+          onClose={() => setDigitacoesModalOpen(false)}
+          title="Digitações do Mês"
+          subtitle={activeMonth.label}
+          digitacoes={activeMonth.digitacoes}
+        />
       </PageContainer>
     );
   }
