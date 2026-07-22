@@ -182,18 +182,18 @@ export function HomeView() {
         {/* Métricas */}
         <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
             <MetricCard
-              label="Digitações Hoje"
-              value={formatInteger(digitacaoCount)}
-              detail={digitacaoCount === 1 ? "1 tentativa registrada" : `${formatInteger(digitacaoCount)} tentativas registradas`}
-              icon={Users}
-              tone="blue"
-            />
-            <MetricCard
               label="Meta do Dia"
               value={`${formatInteger(todayCardsCount)} / ${formatInteger(finalGoal)}`}
               detail={todayCardsCount >= finalGoal ? "Meta atingida! 🎉" : `${Math.round((todayCardsCount / finalGoal) * 100)}% concluída`}
               icon={Target}
               tone={todayCardsCount >= finalGoal ? "green" : "blue"}
+            />
+            <MetricCard
+              label="Digitações Hoje"
+              value={formatInteger(digitacaoCount)}
+              detail={digitacaoCount === 1 ? "1 tentativa registrada" : `${formatInteger(digitacaoCount)} tentativas registradas`}
+              icon={Users}
+              tone="blue"
             />
             <MetricCard
               label="Valor total da rede"

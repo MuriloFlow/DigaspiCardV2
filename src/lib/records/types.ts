@@ -42,6 +42,16 @@ export type DateGroup = {
   operators: OperatorSummary[];
 };
 
+export type MonthGroup = {
+  monthKey: string;
+  label: string;
+  year: number;
+  records: OperatorRecord[];
+  count: number;
+  totalInCents: number;
+  dateGroups: DateGroup[];
+};
+
 export type DashboardSummary = {
   totalCards: number;
   totalAmountInCents: number;

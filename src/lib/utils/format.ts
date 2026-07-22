@@ -29,6 +29,10 @@ export function toDateKey(isoDate: string) {
   return format(parseISO(isoDate), "yyyy-MM-dd");
 }
 
+export function toMonthKey(isoDate: string) {
+  return format(parseISO(isoDate), "yyyy-MM");
+}
+
 function dateKeyToLocalDate(dateKey: string) {
   const [year, month, day] = dateKey.split("-").map(Number);
   return new Date(year, month - 1, day);
@@ -42,6 +46,16 @@ export function formatLongDate(dateKey: string) {
 
 export function formatShortDate(dateKey: string) {
   return format(dateKeyToLocalDate(dateKey), "dd/MM/yyyy", { locale: ptBR });
+}
+
+function monthKeyToLocalDate(monthKey: string) {
+  const [year, month] = monthKey.split("-").map(Number);
+  return new Date(year, month - 1, 1);
+}
+
+export function formatMonth(monthKey: string) {
+  const str = format(monthKeyToLocalDate(monthKey), "MMMM", { locale: ptBR });
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 export function formatRelativeDate(dateKey: string) {

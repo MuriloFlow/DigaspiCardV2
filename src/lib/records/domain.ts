@@ -2,6 +2,8 @@ import {
   formatLongDate,
   formatRelativeDate,
   toDateKey,
+  formatMonth,
+  toMonthKey,
 } from "@/lib/utils/format";
 import { getOperatorColor } from "./colors";
 import type {
@@ -10,6 +12,7 @@ import type {
   OperatorRecord,
   OperatorSummary,
   RecordsPayload,
+  MonthGroup,
 } from "./types";
 
 export function normalizePersonName(value: string) {
@@ -133,6 +136,29 @@ export function groupRecordsByDate(records: OperatorRecord[]) {
     ),
     operators: aggregateByOperator(items),
   }));
+}
+
+export function groupRecordsByMonth(records: OperatorRecord[]): MonthGroup[] {
+  const months = new Map<string, OperatorRecord[]>();
+
+  sortRecordsByNewest(records).forEach((record) => {
+    const monthKey = toMonthKey(record.createdAt);
+    const current = months.get(monthKey) ?? [];
+    months.set(monthKey, [...current, record]);
+  });
+
+  return Array.from(months.entries()).map<MonthGroup>(([monthKey, items]) => {
+    const [yearStr] = monthKey.split("-");
+    return {
+      monthKey,
+      label: formatMonth(monthKey),
+      year: Number(yearStr),
+      records: items,
+      count: items.length,
+      totalInCents: items.reduce((total, r) => total + r.amountInCents, 0),
+      dateGroups: groupRecordsByDate(items),
+    };
+  });
 }
 
 export function getDateGroup(records: OperatorRecord[], dateKey: string) {
