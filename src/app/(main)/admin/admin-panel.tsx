@@ -47,7 +47,7 @@ function EditUserModal({
         username,
         password_plain: password || undefined,
         role,
-        store_id: !["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(role) ? storeId || null : null,
+        store_id: role === "GLOBAL_ADMIN" ? null : storeId || null,
         is_primary: isPrimary,
       });
       setIsSuccess(true);
@@ -140,7 +140,7 @@ function EditUserModal({
             />
           </div>
 
-          {!["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(role) && (
+          {role !== "GLOBAL_ADMIN" && (
             <div>
               <label className="mb-1 block text-xs font-semibold text-zinc-600">Unidade (Loja)</label>
               <CustomSelect
@@ -214,7 +214,7 @@ function CreateUserModal({
         username,
         password_plain: password,
         role,
-        store_id: !["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(role) ? storeId || null : null,
+        store_id: role === "GLOBAL_ADMIN" ? null : storeId || null,
         is_primary: false,
       });
       setIsSuccess(true);
@@ -289,7 +289,7 @@ function CreateUserModal({
               ]}
             />
           </div>
-          {!["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(role) && (
+          {role !== "GLOBAL_ADMIN" && (
             <div>
               <label className="mb-1 block text-xs font-semibold text-zinc-600">Unidade (Obrigatório)</label>
               <CustomSelect
