@@ -94,8 +94,8 @@ export function EditRecordModal({
         activated,
       };
 
-      if (isManagerOrAdmin && activated && amountUsedInCents > 0) {
-        payload.amountUsedInCents = amountUsedInCents;
+      if (isManagerOrAdmin && activated) {
+        payload.amountUsedInCents = amountUsedInCents > 0 ? amountUsedInCents : null;
       }
 
       const res = await fetch("/api/records", {
