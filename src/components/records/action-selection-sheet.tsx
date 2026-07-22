@@ -68,16 +68,16 @@ export function ActionSelectionSheet({
                 type="button"
                 onClick={() => { onClose(); setTimeout(onSelectCard, 80); }}
                 whileTap={{ scale: 0.97 }}
-                className="group flex items-center gap-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-left transition hover:border-zinc-950 hover:bg-zinc-950 hover:text-white"
+                className="group flex items-center gap-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-left transition hover:border-zinc-300 hover:bg-zinc-100"
               >
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white transition group-hover:bg-white group-hover:text-zinc-950">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white transition group-hover:scale-105">
                   <CreditCard className="size-6" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-base font-bold text-zinc-950 transition group-hover:text-white">
+                  <p className="text-base font-bold text-zinc-950">
                     Registro de Cartão
                   </p>
-                  <p className="mt-0.5 text-sm text-zinc-500 transition group-hover:text-zinc-300">
+                  <p className="mt-0.5 text-sm text-zinc-500">
                     Cartão aprovado e valor confirmado
                   </p>
                 </div>
@@ -88,16 +88,16 @@ export function ActionSelectionSheet({
                 type="button"
                 onClick={() => { onClose(); setTimeout(onSelectDigitacao, 80); }}
                 whileTap={{ scale: 0.97 }}
-                className="group flex items-center gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition hover:border-amber-500 hover:bg-amber-500 hover:text-white"
+                className="group flex items-center gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition hover:border-amber-300 hover:bg-amber-100"
               >
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white transition group-hover:bg-white group-hover:text-amber-600">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white transition group-hover:scale-105">
                   <Keyboard className="size-6" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-base font-bold text-amber-900 transition group-hover:text-white">
+                  <p className="text-base font-bold text-amber-900">
                     Digitação
                   </p>
-                  <p className="mt-0.5 text-sm text-amber-700 transition group-hover:text-amber-100">
+                  <p className="mt-0.5 text-sm text-amber-700">
                     Tentativa não aprovada — registrar em lote
                   </p>
                 </div>
