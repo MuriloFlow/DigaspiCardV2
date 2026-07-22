@@ -148,28 +148,39 @@ export function HomeView() {
         ) : null}
       </AnimatePresence>
 
-      {/* ── Dois gráficos de pizza lado a lado ── */}
-      <section className="mb-6">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-[1fr_1fr_360px] lg:items-stretch">
-          {/* Pizza Cartões */}
+      {/* ── Gráficos + Métricas (layout original restaurado) ── */}
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
+
+        {/* Card único com Cartões e DIG empilhados */}
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: "easeOut" }}
+          className="overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-6"
+        >
+          {/* Gráfico Cartões */}
           <OperatorPieChart
             operators={todayOperators}
             centerLabel="Cartões"
             centerValue={formatInteger(todayCardsCount)}
-            className="min-h-0"
+            bare
           />
 
-          {/* Pizza Digitações */}
+          {/* Divisor */}
+          <div className="my-4 border-t border-dashed border-zinc-200" />
+
+          {/* Gráfico Digitações */}
           <OperatorPieChart
             operators={digitacaoOperators}
             centerLabel="DIG"
             centerValue={formatInteger(digitacaoCount)}
             tooltipLabel="digitações"
-            className="min-h-0"
+            bare
           />
+        </motion.div>
 
-          {/* Métricas (ocupa coluna extra em lg) */}
-          <div className="col-span-2 grid gap-3 sm:grid-cols-3 lg:col-span-1 lg:grid-cols-1">
+        {/* Métricas */}
+        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
             <MetricCard
               label="Meta do Dia"
               value={`${formatInteger(todayCardsCount)} / ${formatInteger(finalGoal)}`}
@@ -196,7 +207,6 @@ export function HomeView() {
               tone="green"
             />
           </div>
-        </div>
       </section>
 
       <section className="mt-2">

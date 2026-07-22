@@ -13,6 +13,8 @@ type OperatorPieChartProps = {
   centerValue: string;
   tooltipLabel?: string;
   className?: string;
+  /** Se true, omite o wrapper de card (borda/shadow) para ser embutido em um card pai */
+  bare?: boolean;
 };
 
 export function OperatorPieChart({
@@ -21,20 +23,13 @@ export function OperatorPieChart({
   centerValue,
   tooltipLabel = "cartões",
   className,
+  bare = false,
 }: OperatorPieChartProps) {
   const hasData = operators.length > 0;
 
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: "easeOut" }}
-      className={cn(
-        "overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-6",
-        className,
-      )}
-    >
-      <div className="relative mx-auto aspect-square w-full max-w-[360px]">
+  const inner = (
+    <>
+      <div className="relative mx-auto aspect-square w-full max-w-[280px] sm:max-w-[320px]">
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
           <div className="text-center">
             <p className="text-xs font-semibold uppercase text-zinc-500">
@@ -86,7 +81,7 @@ export function OperatorPieChart({
         )}
       </div>
 
-      <div className="mt-5 grid max-h-[140px] gap-2 overflow-y-auto pr-1 sm:grid-cols-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-200">
+      <div className="mt-4 grid max-h-[140px] gap-2 overflow-y-auto pr-1 sm:grid-cols-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-200">
         {operators.map((operator) => (
           <div
             key={operator.operatorName}
@@ -109,6 +104,24 @@ export function OperatorPieChart({
           </div>
         ))}
       </div>
+    </>
+  );
+
+  if (bare) {
+    return <div className={className}>{inner}</div>;
+  }
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: "easeOut" }}
+      className={cn(
+        "overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-6",
+        className,
+      )}
+    >
+      {inner}
     </motion.section>
   );
 }
