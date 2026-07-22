@@ -62,7 +62,7 @@ function EditUserModal({
     }
   }
 
-  const roleLabel = { EMPLOYEE: "Funcionário Operacional", MANAGER: "Gerente de Unidade", VM: "VM (Gerente)", GLOBAL_ADMIN: "Admin Global (Rede)" };
+  const roleLabel = { EMPLOYEE: "Funcionário Operacional", MANAGER: "Gerente de Unidade", REGIONAL_MANAGER: "Gerente Regional", VM: "VM (Gerente)", GLOBAL_ADMIN: "Admin Global (Rede)", TI_ADMIN: "TI (Dev)" };
 
   if (isSuccess) {
     return (
