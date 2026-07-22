@@ -3,19 +3,20 @@
 import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowRight, CalendarDays, ChevronDown, RefreshCw, Search, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, ChevronDown, RefreshCw, Search, X } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { useRecords } from "@/components/providers/records-provider";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
 import { groupRecordsByMonth } from "@/lib/records/domain";
 import { formatCurrency, formatInteger } from "@/lib/utils/format";
-import { cn } from "@/lib/utils/cn";
 
 export function HistoryView() {
   const { records, isLoading, error, refresh } = useRecords();
   const [search, setSearch] = useState("");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
+  
+  // Controls which month is currently opened (drill-down state)
+  const [activeMonthKey, setActiveMonthKey] = useState<string | null>(null);
 
   const monthGroups = useMemo(() => groupRecordsByMonth(records), [records]);
 
@@ -31,58 +32,35 @@ export function HistoryView() {
     }
   }, [availableYears, selectedYear]);
 
-  // Expand first month of the selected year by default
-  useEffect(() => {
-    if (selectedYear !== null) {
-      const firstMonth = monthGroups.find((g) => g.year === selectedYear);
-      if (firstMonth && !expandedMonth) {
-        setExpandedMonth(firstMonth.monthKey);
-      }
-    }
-  }, [selectedYear, monthGroups, expandedMonth]);
-
+  // Filter months for the year view
   const filteredMonths = useMemo(() => {
     if (!selectedYear) return [];
-
     const forYear = monthGroups.filter((g) => g.year === selectedYear);
-    
     if (!search.trim()) return forYear;
     
     const query = search.toLowerCase();
-    
-    return forYear.map(monthGroup => {
-      const matchMonth = monthGroup.label.toLowerCase().includes(query);
-      
-      const filteredDateGroups = monthGroup.dateGroups.map(dateGroup => {
-        const matchDate = dateGroup.label.toLowerCase().includes(query) || dateGroup.dateKey.includes(query);
-        
-        const filteredRecords = dateGroup.records.filter(record => 
-          record.operatorName.toLowerCase().includes(query) ||
-          record.clientName.toLowerCase().includes(query)
-        );
-        
-        if (matchDate || filteredRecords.length > 0) {
-          return {
-            ...dateGroup,
-            records: matchDate ? dateGroup.records : filteredRecords,
-            count: matchDate ? dateGroup.count : filteredRecords.length,
-            totalInCents: (matchDate ? dateGroup.records : filteredRecords).reduce((acc, r) => acc + r.amountInCents, 0)
-          };
-        }
-        return null;
-      }).filter(Boolean) as typeof monthGroup.dateGroups;
-      
-      if (matchMonth || filteredDateGroups.length > 0) {
-        return {
-          ...monthGroup,
-          dateGroups: matchMonth ? monthGroup.dateGroups : filteredDateGroups,
-          count: matchMonth ? monthGroup.count : filteredDateGroups.reduce((acc, g) => acc + g.count, 0),
-          totalInCents: matchMonth ? monthGroup.totalInCents : filteredDateGroups.reduce((acc, g) => acc + g.totalInCents, 0)
-        };
-      }
-      return null;
-    }).filter(Boolean) as typeof monthGroups;
+    return forYear.filter(mg => mg.label.toLowerCase().includes(query));
   }, [monthGroups, search, selectedYear]);
+
+  // When drilled down into a month, filter its days
+  const activeMonth = useMemo(() => {
+    if (!activeMonthKey) return null;
+    return monthGroups.find(m => m.monthKey === activeMonthKey) || null;
+  }, [activeMonthKey, monthGroups]);
+
+  const filteredDays = useMemo(() => {
+    if (!activeMonth) return [];
+    if (!search.trim()) return activeMonth.dateGroups;
+
+    const query = search.toLowerCase();
+    return activeMonth.dateGroups.filter(dateGroup => {
+      const matchDate = dateGroup.label.toLowerCase().includes(query) || dateGroup.dateKey.includes(query);
+      const hasMatchingRecords = dateGroup.records.some(r => 
+        r.operatorName.toLowerCase().includes(query) || r.clientName.toLowerCase().includes(query)
+      );
+      return matchDate || hasMatchingRecords;
+    });
+  }, [activeMonth, search]);
 
   if (isLoading) {
     return (
@@ -92,12 +70,109 @@ export function HistoryView() {
     );
   }
 
+  // --- DRILL DOWN VIEW (Viewing Days inside a Month) ---
+  if (activeMonth) {
+    return (
+      <PageContainer>
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => { setActiveMonthKey(null); setSearch(""); }}
+            className="group flex items-center gap-2 text-sm font-semibold text-zinc-500 transition hover:text-zinc-950"
+          >
+            <div className="flex size-8 items-center justify-center rounded-full bg-zinc-100 transition group-hover:bg-zinc-200">
+              <ArrowLeft className="size-4" />
+            </div>
+            Voltar para {activeMonth.year}
+          </button>
+        </div>
+
+        <PageHeader
+          eyebrow="Dias Registrados"
+          title={`Mês de ${activeMonth.label}`}
+          description={`Total de ${activeMonth.count} cartões registrados neste mês.`}
+        />
+
+        <div className="mb-6 flex items-center rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-3.5 shadow-sm transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
+          <Search className="size-5 shrink-0 text-zinc-400" />
+          <input
+            value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="Pesquisar dia, cliente ou colaborador..."
+            className="ml-3 min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch("")} className="ml-2 text-zinc-400 hover:text-zinc-700">
+              <X className="size-5" />
+            </button>
+          )}
+        </div>
+
+        <div className="grid gap-3">
+          {filteredDays.map((dayGroup, index) => (
+            <motion.div
+              key={dayGroup.dateKey}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.25) }}
+              className="flex flex-col gap-4 rounded-[1.5rem] border border-zinc-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between shadow-sm transition duration-300 hover:shadow-md hover:border-zinc-300"
+            >
+              <Link
+                href={`/historico/${dayGroup.dateKey}`}
+                className="flex min-w-0 items-center gap-4 outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/15"
+              >
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-600 transition group-hover:bg-zinc-200">
+                  <CalendarDays className="size-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                    {dayGroup.relativeLabel}
+                  </p>
+                  <h3 className="text-base font-bold text-zinc-950">
+                    {dayGroup.label}
+                  </h3>
+                </div>
+              </Link>
+              
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex items-center gap-4 sm:mr-2">
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Cartões</p>
+                    <p className="text-sm font-semibold text-zinc-950">{formatInteger(dayGroup.count)}</p>
+                  </div>
+                  <div className="w-px h-6 bg-zinc-200" />
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Valor</p>
+                    <p className="text-sm font-semibold text-zinc-950">{formatCurrency(dayGroup.totalInCents)}</p>
+                  </div>
+                </div>
+                <Link
+                  href={`/historico/${dayGroup.dateKey}`}
+                  className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white shadow-sm transition hover:bg-zinc-800 sm:w-auto sm:px-4 sm:gap-2"
+                >
+                  <span className="hidden text-sm font-semibold sm:block">Detalhes</span>
+                  <ArrowRight className="size-4" />
+                </Link>
+              </div>
+            </motion.div>
+          ))}
+
+          {!filteredDays.length && (
+            <div className="rounded-[1.5rem] border border-dashed border-zinc-300 bg-white px-5 py-10 text-center text-sm font-medium text-zinc-500">
+              Nenhum dia encontrado nesta busca.
+            </div>
+          )}
+        </div>
+      </PageContainer>
+    );
+  }
+
+  // --- MAIN VIEW (Viewing Months) ---
   return (
     <PageContainer>
       <PageHeader
         eyebrow="Histórico"
         title="Registros por data"
-        description="Dias agrupados automaticamente por mês, com totais e detalhe analítico."
+        description="Selecione o mês para ver os dias registrados."
       />
 
       {error ? (
@@ -114,28 +189,32 @@ export function HistoryView() {
         </div>
       ) : null}
 
-      <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      {/* Search and Year Select Container */}
+      <div className="mb-6 flex flex-row items-center gap-3">
         {/* Search */}
-        <div className="flex flex-1 items-center gap-3 rounded-[1.5rem] border border-zinc-200 bg-white px-5 py-4 shadow-[0_4px_24px_rgba(15,23,42,0.02)] transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
+        <div className="flex flex-1 items-center rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-3.5 shadow-[0_4px_24px_rgba(15,23,42,0.02)] transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
           <Search className="size-5 shrink-0 text-zinc-400" />
           <input
             value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Pesquisar por data ou colaborador..."
-            className="min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
+            placeholder="Pesquisar por mês..."
+            className="ml-3 min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
           />
           {search && (
-            <button type="button" onClick={() => setSearch("")} className="text-zinc-400 hover:text-zinc-700">
+            <button type="button" onClick={() => setSearch("")} className="ml-2 text-zinc-400 hover:text-zinc-700">
               <X className="size-5" />
             </button>
           )}
         </div>
 
-        {/* Year Select */}
-        <div className="flex shrink-0 items-center rounded-[1.5rem] border border-zinc-200 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.02)] transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10 relative">
+        {/* Year Select (Smaller width) */}
+        <div className="relative shrink-0 rounded-[1.5rem] border border-zinc-200 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.02)] transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
           <select
             value={selectedYear ?? ""}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="h-full min-h-[56px] w-full appearance-none bg-transparent px-5 pr-10 text-base font-semibold text-zinc-950 outline-none sm:w-32"
+            onChange={(e) => {
+              setSelectedYear(Number(e.target.value));
+              setSearch("");
+            }}
+            className="h-full min-h-[52px] w-28 appearance-none bg-transparent pl-5 pr-10 text-base font-semibold text-zinc-950 outline-none"
           >
             {availableYears.map((year) => (
               <option key={year} value={year}>
@@ -147,126 +226,54 @@ export function HistoryView() {
         </div>
       </div>
 
-      <div className="grid gap-4">
-        {filteredMonths.map((monthGroup, index) => {
-          const isExpanded = expandedMonth === monthGroup.monthKey;
+      {/* Months Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {filteredMonths.map((monthGroup, index) => (
+          <motion.button
+            key={monthGroup.monthKey}
+            type="button"
+            onClick={() => {
+              setActiveMonthKey(monthGroup.monthKey);
+              setSearch("");
+            }}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.2) }}
+            className="group flex flex-col items-start rounded-[1.75rem] border border-zinc-800 bg-zinc-950 p-5 text-left shadow-lg transition duration-300 hover:-translate-y-1 hover:border-zinc-700 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-500/30"
+          >
+            <div className="flex w-full items-start justify-between">
+              <div className="flex size-12 items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 transition group-hover:bg-zinc-700 group-hover:text-white">
+                <CalendarDays className="size-5" />
+              </div>
+            </div>
 
-          return (
-            <motion.article
-              key={monthGroup.monthKey}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.2) }}
-              className="overflow-hidden rounded-[1.75rem] border border-zinc-200/80 bg-white shadow-[0_18px_54px_rgba(15,23,42,0.06)]"
-            >
-              {/* Month Header */}
-              <button
-                type="button"
-                onClick={() => setExpandedMonth(isExpanded ? null : monthGroup.monthKey)}
-                className="flex w-full flex-col gap-4 p-4 text-left transition hover:bg-zinc-50/50 sm:flex-row sm:items-center sm:justify-between sm:p-5 outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10"
-              >
-                <div className="flex min-w-0 items-center gap-4">
-                  <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 text-zinc-600 transition duration-300 group-hover:border-zinc-300 group-hover:bg-white group-hover:text-zinc-950">
-                    <ChevronDown
-                      aria-hidden="true"
-                      className={cn(
-                        "size-5 transition duration-300",
-                        isExpanded && "rotate-180",
-                      )}
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="flex items-center gap-2 text-sm font-semibold text-zinc-500">
-                      Mês de
-                    </p>
-                    <h2 className="mt-1 truncate text-xl font-semibold text-zinc-950">
-                      {monthGroup.label}
-                    </h2>
-                  </div>
-                </div>
+            <div className="mt-5">
+              <h2 className="text-xl font-bold text-white transition group-hover:text-zinc-50">
+                {monthGroup.label}
+              </h2>
+              <p className="mt-1 text-sm font-medium text-zinc-400">
+                {monthGroup.count} {monthGroup.count === 1 ? 'cartão registrado' : 'cartões registrados'}
+              </p>
+            </div>
 
-                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
-                  <div className="rounded-2xl bg-zinc-50 px-3 py-2 border border-zinc-100">
-                    <p className="text-xs font-medium text-zinc-500">Cartões</p>
-                    <p className="text-sm font-semibold text-zinc-950">
-                      {formatInteger(monthGroup.count)}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-zinc-50 px-3 py-2 border border-zinc-100">
-                    <p className="text-xs font-medium text-zinc-500">Total</p>
-                    <p className="text-sm font-semibold text-zinc-950">
-                      {formatCurrency(monthGroup.totalInCents)}
-                    </p>
-                  </div>
-                </div>
-              </button>
-
-              {/* Days inside Month */}
-              <AnimatePresence initial={false}>
-                {isExpanded ? (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.28, ease: "easeInOut" }}
-                    className="overflow-hidden border-t border-zinc-100 bg-zinc-50/30"
-                  >
-                    <div className="grid gap-3 p-4 sm:p-5">
-                      {monthGroup.dateGroups.map((dayGroup) => (
-                        <div key={dayGroup.dateKey} className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between">
-                          <Link
-                            href={`/historico/${dayGroup.dateKey}`}
-                            className="flex min-w-0 items-center gap-3 outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/15"
-                          >
-                            <div className="flex size-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600">
-                              <CalendarDays className="size-4" />
-                            </div>
-                            <div>
-                              <p className="text-xs font-semibold text-zinc-500">
-                                {dayGroup.relativeLabel}
-                              </p>
-                              <h3 className="text-base font-bold text-zinc-950">
-                                {dayGroup.label}
-                              </h3>
-                            </div>
-                          </Link>
-                          
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-4 mr-2">
-                              <div className="text-right">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Cartões</p>
-                                <p className="text-sm font-semibold text-zinc-950">{formatInteger(dayGroup.count)}</p>
-                              </div>
-                              <div className="w-px h-6 bg-zinc-200" />
-                              <div className="text-right">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Valor</p>
-                                <p className="text-sm font-semibold text-zinc-950">{formatCurrency(dayGroup.totalInCents)}</p>
-                              </div>
-                            </div>
-                            <Link
-                              href={`/historico/${dayGroup.dateKey}`}
-                              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-zinc-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-zinc-800"
-                            >
-                              Detalhes
-                              <ArrowRight className="size-3" />
-                            </Link>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
-            </motion.article>
-          );
-        })}
-
-        {!filteredMonths.length ? (
-          <div className="rounded-[1.5rem] border border-dashed border-zinc-300 bg-white px-5 py-10 text-center text-sm font-medium text-zinc-500">
-            {search ? "Nenhum resultado encontrado para este ano." : "Nenhum registro para este ano."}
-          </div>
-        ) : null}
+            <div className="mt-6 flex w-full items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-400">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                {monthGroup.activeCount} ATIVOS
+              </span>
+              <div className="flex size-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 opacity-0 transition duration-300 group-hover:opacity-100 group-hover:text-white">
+                <ArrowRight className="size-4" />
+              </div>
+            </div>
+          </motion.button>
+        ))}
       </div>
+
+      {!filteredMonths.length ? (
+        <div className="rounded-[1.5rem] border border-dashed border-zinc-300 bg-white px-5 py-10 text-center text-sm font-medium text-zinc-500">
+          {search ? "Nenhum resultado encontrado para esta busca." : "Nenhum registro para este ano."}
+        </div>
+      ) : null}
     </PageContainer>
   );
 }

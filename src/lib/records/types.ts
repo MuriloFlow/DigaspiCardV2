@@ -48,6 +48,7 @@ export type MonthGroup = {
   year: number;
   records: OperatorRecord[];
   count: number;
+  activeCount: number;
   totalInCents: number;
   dateGroups: DateGroup[];
 };

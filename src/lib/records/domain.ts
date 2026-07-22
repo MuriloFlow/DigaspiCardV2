@@ -155,6 +155,7 @@ export function groupRecordsByMonth(records: OperatorRecord[]): MonthGroup[] {
       year: Number(yearStr),
       records: items,
       count: items.length,
+      activeCount: items.filter(r => r.activated).length,
       totalInCents: items.reduce((total, r) => total + r.amountInCents, 0),
       dateGroups: groupRecordsByDate(items),
     };
