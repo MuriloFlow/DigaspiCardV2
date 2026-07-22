@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, History, Home, Trophy, Users, LogOut, Building, Settings, UserCircle2, Moon, Headset } from "lucide-react";
+import { BarChart3, History, Home, Trophy, Users, LogOut, Building, Settings, UserCircle2, Moon, Headset, Bug, Star } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useTheme } from "@/components/providers/main-theme-provider";
@@ -171,7 +171,11 @@ export function BottomNavigation() {
                     <UserCircle2 className="size-8" />
                   </div>
                   <div className="text-center">
-                    <h3 className="text-base font-bold text-zinc-950">{user.name || user.username}</h3>
+                    <h3 className="flex items-center justify-center gap-1.5 text-base font-bold text-zinc-950">
+                      {user.role === "TI_ADMIN" && <Bug className="size-4 shrink-0 fill-emerald-500/20 text-emerald-500" />}
+                      {user.is_primary && <Star className="size-4 shrink-0 fill-amber-400 text-amber-400" />}
+                      {user.name || user.username}
+                    </h3>
                     <span className={cn(
                       "mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
                       user.role === "GLOBAL_ADMIN" ? "bg-purple-100 text-purple-700" :

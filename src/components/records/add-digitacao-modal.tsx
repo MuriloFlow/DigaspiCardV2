@@ -193,34 +193,38 @@ export function AddDigitacaoModal({
           />
           <motion.div
             key="dig-panel"
-            className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] border-t border-zinc-100 bg-white shadow-[0_-24px_80px_rgba(15,23,42,0.18)]"
-            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-            transition={{ type: "spring", stiffness: 400, damping: 38 }}
+            initial={{ y: "100%", opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: "100%", opacity: 0, scale: 0.95 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed bottom-0 left-0 right-0 z-[60] flex w-full flex-col overflow-hidden rounded-t-[2rem] bg-white dark:bg-zinc-950 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
           >
-            <div className="mx-auto mt-4 h-1 w-12 rounded-full bg-zinc-200" />
+            <div className="mx-auto mt-4 h-1 w-12 rounded-full bg-zinc-200 dark:bg-zinc-700" />
 
             {/* Header */}
-            <div className="flex items-center gap-3 border-b border-zinc-100 px-5 py-4">
+            <div className="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800 px-5 py-4">
               {step === "add-clients" && (
                 <button type="button" onClick={() => setStep("select-collab")}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition hover:bg-zinc-50">
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 transition hover:bg-zinc-50 dark:hover:bg-zinc-800">
                   <ChevronLeft className="size-4" />
                 </button>
               )}
               {/* Ícone neutro (sem cor amarela) */}
-              <div className="flex size-9 items-center justify-center rounded-xl bg-zinc-900 text-white shrink-0">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-zinc-900 dark:bg-zinc-800 text-white shrink-0">
                 <Keyboard className="size-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                   {step === "select-collab" ? "Nova Digitação" : "Adicionando para"}
                 </p>
-                <h3 className="text-base font-bold text-zinc-950 truncate">
+                <h3 className="text-base font-bold text-zinc-950 dark:text-white truncate">
                   {step === "select-collab" ? "Selecione o Funcionário" : selectedCollabName}
                 </h3>
               </div>
               <button type="button" onClick={onClose}
-                className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-700">
+                className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 transition hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300">
                 <X className="size-4" />
               </button>
             </div>
@@ -244,7 +248,7 @@ export function AddDigitacaoModal({
                       />
                     )}
                     <label className={cn("grid gap-2", !effectiveStoreId && !selectedStoreId ? "opacity-50 pointer-events-none" : "")}>
-                      <span className="text-sm font-semibold text-zinc-800">Funcionário</span>
+                      <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Funcionário</span>
                       <CustomSelect
                         options={collaborators}
                         value={selectedCollabId}
@@ -299,12 +303,18 @@ export function AddDigitacaoModal({
                     </label>
 
                     <p className="text-xs text-zinc-400">
-                      Pressione <kbd className="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 font-mono font-bold text-zinc-600">Enter</kbd> ou clique em Adicionar para registrar e continuar.
+                        {successFlash && <Check className="size-5 shrink-0 text-emerald-500 dark:text-emerald-400" />}
+                      </span>
+                      {errorMsg && <p className="text-sm font-medium text-rose-600">{errorMsg}</p>}
+                    </label>
+
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                      Pressione <kbd className="rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-1.5 py-0.5 font-mono font-bold text-zinc-600 dark:text-zinc-300">Enter</kbd> ou clique em Adicionar para registrar e continuar.
                     </p>
 
                     <button type="button" onClick={handleAddClient}
                       disabled={isCreating || !clientName.trim()}
-                      className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-bold text-white shadow-md transition hover:bg-zinc-800 disabled:opacity-50 active:scale-[0.98]">
+                      className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 dark:bg-white px-5 text-sm font-bold text-white dark:text-zinc-950 shadow-md transition hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 active:scale-[0.98]">
                       {isCreating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
                       {isCreating ? "Salvando..." : "Adicionar"}
                     </button>
@@ -312,23 +322,23 @@ export function AddDigitacaoModal({
                     <AnimatePresence>
                       {registeredNames.length > 0 && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="overflow-hidden">
-                          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                             Registrados nessa sessão
                           </p>
-                          <div className="max-h-40 overflow-y-auto rounded-2xl border border-zinc-100 bg-zinc-50 divide-y divide-zinc-100">
-                            {registeredNames.map((item, i) => (
+                          <div className="max-h-40 overflow-y-auto rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 divide-y divide-zinc-100 dark:divide-zinc-800/50">
+                            {registeredNames.map((item) => (
                               <motion.div key={item.id}
                                 initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
                                 className="flex items-center justify-between gap-2 px-4 py-2.5">
                                 <div className="flex items-center gap-2">
-                                  <Check className="size-3.5 shrink-0 text-emerald-500" />
-                                  <span className="text-sm font-medium text-zinc-800">{item.name}</span>
+                                  <Check className="size-3.5 shrink-0 text-emerald-500 dark:text-emerald-400" />
+                                  <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{item.name}</span>
                                 </div>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteDigitacao(item.id)}
                                   disabled={deletingId === item.id}
-                                  className="flex size-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:bg-rose-50 hover:text-rose-500 disabled:opacity-50"
+                                  className="flex size-7 shrink-0 items-center justify-center rounded-full text-zinc-400 dark:text-zinc-500 transition hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400 disabled:opacity-50"
                                 >
                                   {deletingId === item.id ? (
                                     <Loader2 className="size-3.5 animate-spin" />

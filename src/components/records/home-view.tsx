@@ -278,7 +278,7 @@ export function HomeView() {
             isSubmitting={isCreating}
             onClose={() => setCardModalOpen(false)}
             onCreate={createRecord}
-            onCreated={(record) => showSuccess(record.operatorName)}
+            onCreated={(record) => showSuccess(record.operatorName)} stores={stores}
             stores={stores}
           />
 

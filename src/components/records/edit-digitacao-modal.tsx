@@ -116,21 +116,21 @@ export function EditDigitacaoModal({
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: "100%", opacity: 0, scale: 0.95 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="flex w-full max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-zinc-950 shadow-2xl sm:rounded-[2.5rem]"
+              className="flex w-full max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-white dark:bg-zinc-950 shadow-2xl sm:rounded-[2.5rem]"
               role="dialog"
               aria-modal="true"
             >
-              <div className="flex shrink-0 items-center justify-between border-b border-zinc-800 p-5">
+              <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 dark:border-zinc-800 p-5">
                 <div>
-                  <h2 className="text-xl font-bold tracking-tight text-white">Editar Digitação</h2>
-                  <p className="mt-1 text-sm text-zinc-400">Corrija o nome do cliente de {digitacao.operatorName}</p>
+                  <h2 className="text-xl font-bold tracking-tight text-zinc-950 dark:text-white">Editar Digitação</h2>
+                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Altere os dados ou exclua o registro</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {(user?.role === "GLOBAL_ADMIN" || user?.role === "MANAGER") && !confirmDelete ? (
                     <button
                       type="button"
                       onClick={() => setConfirmDelete(true)}
-                      className="flex size-10 items-center justify-center rounded-full text-rose-500 hover:bg-rose-500/10 hover:text-rose-400 transition"
+                      className="flex size-10 items-center justify-center rounded-full text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition"
                       title="Deletar digitação"
                     >
                       <Trash2 className="size-5" />
@@ -146,7 +146,7 @@ export function EditDigitacaoModal({
                       </button>
                       <button
                         onClick={() => setConfirmDelete(false)}
-                        className="rounded-full bg-zinc-800 p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-white"
+                        className="rounded-full bg-zinc-100 dark:bg-zinc-800 p-1.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-700 dark:hover:text-white"
                       >
                         <X className="size-4" />
                       </button>
@@ -157,7 +157,7 @@ export function EditDigitacaoModal({
                       type="button"
                       onClick={onClose}
                       disabled={isSubmitting || isDeleting}
-                      className="flex size-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 transition hover:bg-zinc-700 hover:text-white"
+                      className="flex size-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 transition hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-700 dark:hover:text-white"
                       aria-label="Fechar modal"
                     >
                       <X className="size-5" />
@@ -175,7 +175,7 @@ export function EditDigitacaoModal({
                   )}
 
                   <div>
-                    <label htmlFor="digClientName" className="mb-1.5 block text-sm font-semibold text-zinc-300">
+                    <label htmlFor="digClientName" className="mb-1.5 block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                       Nome do Cliente
                     </label>
                     <input
@@ -185,7 +185,7 @@ export function EditDigitacaoModal({
                       value={clientName}
                       onChange={(e) => setClientName(e.target.value)}
                       placeholder="Ex: Maria"
-                      className="h-14 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 text-lg font-medium text-zinc-100 outline-none transition duration-200 focus:border-white focus:ring-4 focus:ring-white/10"
+                      className="h-14 w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-5 text-lg font-medium text-zinc-900 dark:text-zinc-100 outline-none transition duration-200 focus:border-zinc-900 dark:focus:border-white focus:ring-4 focus:ring-zinc-900/10 dark:focus:ring-white/10"
                       autoComplete="off"
                       required
                     />
@@ -193,26 +193,23 @@ export function EditDigitacaoModal({
                 </form>
               </div>
 
-              <div className="shrink-0 border-t border-zinc-800 p-5">
+              <div className="shrink-0 border-t border-zinc-100 dark:border-zinc-800 p-5">
                 <button
                   type="submit"
                   form="edit-dig-form"
                   disabled={isSubmitting || isDeleting}
-                  className="group relative flex h-14 w-full items-center justify-center overflow-hidden rounded-2xl bg-white px-8 text-base font-semibold text-zinc-950 shadow-lg transition-all hover:-translate-y-0.5 hover:bg-zinc-100 hover:shadow-xl active:translate-y-0 active:shadow-md disabled:pointer-events-none disabled:opacity-70"
+                  className="group relative flex h-14 w-full items-center justify-center overflow-hidden rounded-2xl bg-zinc-900 dark:bg-white px-8 text-base font-semibold text-white dark:text-zinc-950 shadow-lg transition-all hover:-translate-y-0.5 hover:bg-zinc-800 dark:hover:bg-zinc-100 hover:shadow-xl active:translate-y-0 active:shadow-md disabled:pointer-events-none disabled:opacity-70"
                 >
-                  <span className="relative flex items-center justify-center gap-2">
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="size-5 animate-spin" />
-                        Salvando...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="size-5 transition-transform duration-300 group-hover:scale-110" />
-                        Confirmar e Salvar
-                      </>
-                    )}
-                  </span>
+                  <div className="absolute inset-0 flex items-center justify-center transition-all duration-300">
+                    <span className={isSubmitting || isDeleting ? "translate-y-8 opacity-0" : "translate-y-0 opacity-100"}>
+                      Salvar Alterações
+                    </span>
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center transition-all duration-300">
+                    <span className={isSubmitting || isDeleting ? "translate-y-0 opacity-100" : "-translate-y-8 opacity-0"}>
+                      Processando...
+                    </span>
+                  </div>
                 </button>
               </div>
             </motion.div>

@@ -221,29 +221,37 @@ export function AddRecordModal({
           />
           <motion.div
             key="rc-panel"
-            className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] border-t border-zinc-100 bg-white shadow-[0_-24px_80px_rgba(15,23,42,0.18)]"
-            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-            transition={{ type: "spring", stiffness: 400, damping: 38 }}
+            className="fixed bottom-0 left-0 right-0 z-[60] flex w-full flex-col overflow-hidden rounded-t-[2rem] bg-white dark:bg-zinc-950 shadow-2xl"
+            initial={{ y: "100%", opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: "100%", opacity: 0, scale: 0.95 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            role="dialog"
+            aria-modal="true"
           >
-            <div className="mx-auto mt-4 h-1 w-12 rounded-full bg-zinc-200" />
+            <div className="mx-auto mt-4 h-1 w-12 rounded-full bg-zinc-200 dark:bg-zinc-700" />
 
             {/* Header */}
-            <div className="flex items-center gap-3 border-b border-zinc-100 px-5 py-4">
+            <div className="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800 px-5 py-4">
               {step !== "select-collab" && (
                 <button type="button" onClick={goBack}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition hover:bg-zinc-50">
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 transition hover:bg-zinc-50 dark:hover:bg-zinc-800">
                   <ChevronLeft className="size-4" />
                 </button>
               )}
-              <div className="flex size-9 items-center justify-center rounded-xl bg-zinc-950 text-white shrink-0">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-zinc-900 dark:bg-zinc-800 text-white shrink-0">
                 <CreditCard className="size-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">{stepLabel}</p>
-                <h3 className="text-base font-bold text-zinc-950 truncate">{stepTitle}</h3>
+                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                  {step === "select-collab" ? "Passo 1 de 3" : step === "client-name" ? "Passo 2 de 3" : "Passo 3 de 3"}
+                </p>
+                <h3 className="text-base font-bold text-zinc-950 dark:text-white truncate">
+                  {step === "select-collab" ? "Quem está registrando?" : selectedCollabName}
+                </h3>
               </div>
               <button type="button" onClick={() => { if (!isSubmitting) onClose(); }}
-                className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-700">
+                className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 transition hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300">
                 <X className="size-4" />
               </button>
             </div>
@@ -268,7 +276,7 @@ export function AddRecordModal({
                       />
                     )}
                     <label className={cn("grid gap-2", !effectiveStoreId && !selectedStoreId ? "opacity-50 pointer-events-none" : "")}>
-                      <span className="text-sm font-semibold text-zinc-800">Funcionário</span>
+                      <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Funcionário</span>
                       <CustomSelect
                         options={collaborators}
                         value={selectedCollabId}
@@ -276,11 +284,11 @@ export function AddRecordModal({
                         placeholder={isLoadingCollabs ? "Carregando..." : (!effectiveStoreId && !selectedStoreId ? "Selecione uma unidade primeiro" : "Selecione o funcionário")}
                         disabled={isLoadingCollabs || (!effectiveStoreId && !selectedStoreId)}
                       />
-                      {errorMsg && <p className="text-sm font-medium text-rose-600">{errorMsg}</p>}
+                      {errorMsg && <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{errorMsg}</p>}
                     </label>
                     <button type="button" onClick={handleStep1}
                       disabled={!selectedCollabId || selectedCollabId.startsWith("__header_")}
-                      className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-bold text-white shadow-md transition hover:bg-zinc-800 disabled:opacity-50 active:scale-[0.98]">
+                      className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 dark:bg-white px-5 text-sm font-bold text-white dark:text-zinc-950 shadow-md transition hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 active:scale-[0.98]">
                       Continuar →
                     </button>
                   </motion.div>
@@ -294,27 +302,27 @@ export function AddRecordModal({
                     className="grid gap-4"
                   >
                     <label className="grid gap-2">
-                      <span className="text-sm font-semibold text-zinc-800">Nome do Cliente</span>
+                      <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Nome do Cliente</span>
                       <span className={cn(
-                        "flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 transition duration-200 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10",
-                        errorMsg ? "border-rose-300" : "border-zinc-200",
+                        "flex items-center gap-3 rounded-2xl border bg-white dark:bg-zinc-900 px-4 py-3 transition duration-200 focus-within:border-zinc-950 dark:focus-within:border-white focus-within:ring-4 focus-within:ring-zinc-950/10 dark:focus-within:ring-white/10",
+                        errorMsg ? "border-rose-300 dark:border-rose-700" : "border-zinc-200 dark:border-zinc-800",
                       )}>
-                        <UserRound className="size-5 shrink-0 text-zinc-400" />
+                        <UserRound className="size-5 shrink-0 text-zinc-400 dark:text-zinc-500" />
                         <input
                           ref={clientInputRef}
                           value={clientName}
                           onChange={(e) => { setClientName(e.target.value); setErrorMsg(null); }}
                           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleStep2(); } }}
                           placeholder="Ex: Helena Prado"
-                          className="min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
+                          className="min-w-0 flex-1 bg-transparent text-base text-zinc-950 dark:text-zinc-100 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
                           autoComplete="off"
                         />
                       </span>
-                      {errorMsg && <p className="text-sm font-medium text-rose-600">{errorMsg}</p>}
+                      {errorMsg && <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{errorMsg}</p>}
                     </label>
                     <button type="button" onClick={handleStep2}
                       disabled={!clientName.trim()}
-                      className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-bold text-white shadow-md transition hover:bg-zinc-800 disabled:opacity-50 active:scale-[0.98]">
+                      className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 dark:bg-white px-5 text-sm font-bold text-white dark:text-zinc-950 shadow-md transition hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 active:scale-[0.98]">
                       Continuar →
                     </button>
                   </motion.div>
@@ -327,36 +335,33 @@ export function AddRecordModal({
                     exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.2 }}
                     className="grid gap-4"
                   >
-                    {/* Summary pill */}
-                    <div className="rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
-                      <span className="font-semibold text-zinc-800">{selectedCollabName}</span>
+                    <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                      <span className="font-semibold text-zinc-800 dark:text-zinc-200">{selectedCollabName}</span>
                       {" · "}
                       <span>{clientName}</span>
                     </div>
 
-                    {/* Amount */}
                     <label className="grid gap-2">
-                      <span className="text-sm font-semibold text-zinc-800">Valor do Cartão</span>
-                      <span className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 transition duration-200 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
-                        <CreditCard className="size-5 shrink-0 text-zinc-400" />
+                      <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Valor do Cartão</span>
+                      <span className="flex items-center gap-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 transition duration-200 focus-within:border-zinc-950 dark:focus-within:border-white focus-within:ring-4 focus-within:ring-zinc-950/10 dark:focus-within:ring-white/10">
+                        <CreditCard className="size-5 shrink-0 text-zinc-400 dark:text-zinc-500" />
                         <input
                           ref={amountInputRef}
                           inputMode="numeric"
                           value={amount}
                           onChange={(e) => setAmount(formatCurrencyInput(e.target.value))}
                           placeholder="R$ 0,00"
-                          className="min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
+                          className="min-w-0 flex-1 bg-transparent text-base text-zinc-950 dark:text-zinc-100 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
                         />
                       </span>
                     </label>
 
-                    {/* Activated toggle */}
-                    <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50/80 px-4 py-3.5 transition hover:border-zinc-300 hover:bg-zinc-50">
+                    <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900 px-4 py-3.5 transition hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800">
                       <div className="relative">
                         <input type="checkbox" checked={activated} onChange={(e) => setActivated(e.target.checked)} className="peer sr-only" />
                         <div className={cn(
                           "flex size-6 items-center justify-center rounded-lg border-2 transition duration-200",
-                          activated ? "border-emerald-500 bg-emerald-500" : "border-zinc-300 bg-white"
+                          activated ? "border-emerald-500 bg-emerald-500" : "border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950"
                         )}>
                           {activated && <Check className="size-4 text-white" strokeWidth={3} />}
                         </div>
@@ -364,23 +369,17 @@ export function AddRecordModal({
                       <div className="flex-1">
                         <span className="text-sm font-semibold text-zinc-800">Cartão Ativado?</span>
                         <p className="mt-0.5 text-xs text-zinc-500">
-                          {activated ? "✓ Cartão será registrado como ativo" : "Marque se o cliente confirmou a ativação"}
-                        </p>
+                        <span className="block text-sm font-bold text-zinc-900 dark:text-zinc-100">Cartão Ativado</span>
+                        <span className="block text-xs text-zinc-500 dark:text-zinc-400">Ativação realizada junto ao caixa</span>
                       </div>
-                      <span className={cn(
-                        "rounded-full px-2.5 py-1 text-xs font-semibold transition",
-                        activated ? "bg-emerald-100 text-emerald-700" : "bg-zinc-200 text-zinc-500"
-                      )}>
-                        {activated ? "Ativo" : "Pendente"}
-                      </span>
                     </label>
 
                     {apiError && (
-                      <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{apiError}</div>
+                      <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{apiError}</p>
                     )}
 
                     <button type="button" onClick={handleSubmit} disabled={isSubmitting}
-                      className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-bold text-white shadow-md transition hover:bg-zinc-800 disabled:opacity-75 disabled:cursor-wait active:scale-[0.98]">
+                      className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 dark:bg-white px-5 text-sm font-bold text-white dark:text-zinc-950 shadow-md transition hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 active:scale-[0.98]">
                       {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
                       {isSubmitting ? "Salvando..." : "Salvar Registro"}
                     </button>

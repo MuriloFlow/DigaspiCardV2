@@ -141,37 +141,51 @@ function EditUserModal({
           </div>
 
           {role !== "GLOBAL_ADMIN" && (
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-zinc-600">Unidade (Loja)</label>
-              <CustomSelect
-                value={storeId}
-                onChange={setStoreId}
-                placeholder="Sem loja vinculada"
-                options={stores.map(s => ({ value: s.id, label: s.name }))}
-              />
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-zinc-600">Unidade (Loja)</label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <CustomSelect
+                      value={storeId}
+                      onChange={setStoreId}
+                      placeholder="Sem loja vinculada"
+                      options={stores.map(s => ({ value: s.id, label: s.name }))}
+                    />
+                  </div>
+                  {storeId && (
+                    <button 
+                      type="button" 
+                      onClick={() => setStoreId("")}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-400 transition hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200"
+                      title="Remover vínculo com unidade"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {role === "VM" && (
+                <p className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-2.5 text-xs font-medium text-pink-700">
+                  O cargo VM tem as mesmas permissões de Gerente de Unidade.
+                </p>
+              )}
+
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 transition hover:bg-zinc-100">
+                <div className={`relative flex size-9 items-center justify-center rounded-xl transition ${isPrimary ? "bg-amber-400" : "bg-zinc-200"}`}>
+                  <Star className={`size-5 ${isPrimary ? "fill-white text-white" : "text-zinc-400"}`} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-zinc-950">Gerente Principal</p>
+                  <p className="text-xs text-zinc-500">Responsável primário desta unidade</p>
+                </div>
+                <input type="checkbox" className="sr-only" checked={isPrimary} onChange={e => setIsPrimary(e.target.checked)} />
+                <div className={`flex h-5 w-9 items-center rounded-full transition-colors ${isPrimary ? "bg-emerald-500" : "bg-zinc-300"}`}>
+                  <div className={`size-4 rounded-full bg-white transition-transform ${isPrimary ? "translate-x-4" : "translate-x-1"}`} />
+                </div>
+              </label>
             </div>
-          )}
-
-          {role === "VM" && (
-            <p className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-2.5 text-xs font-medium text-pink-700">
-              O cargo VM tem as mesmas permissões de Gerente de Unidade.
-            </p>
-          )}
-
-          {(role === "MANAGER" || role === "VM") && (
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 transition hover:bg-zinc-100">
-              <div className={`relative flex size-9 items-center justify-center rounded-xl transition ${isPrimary ? "bg-amber-400" : "bg-zinc-200"}`}>
-                <Star className={`size-5 ${isPrimary ? "fill-white text-white" : "text-zinc-400"}`} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-zinc-950">Gerente Principal</p>
-                <p className="text-xs text-zinc-500">Responsável primário desta unidade</p>
-              </div>
-              <input type="checkbox" className="sr-only" checked={isPrimary} onChange={e => setIsPrimary(e.target.checked)} />
-              <div className={`h-5 w-9 rounded-full transition ${isPrimary ? "bg-amber-400" : "bg-zinc-300"}`}>
-                <div className={`mt-0.5 ml-0.5 size-4 rounded-full bg-white shadow transition-transform ${isPrimary ? "translate-x-4" : ""}`} />
-              </div>
-            </label>
           )}
 
           {error && <p className="rounded-xl bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-700">{error}</p>}
@@ -291,13 +305,27 @@ function CreateUserModal({
           </div>
           {role !== "GLOBAL_ADMIN" && (
             <div>
-              <label className="mb-1 block text-xs font-semibold text-zinc-600">Unidade (Obrigatório)</label>
-              <CustomSelect
-                value={storeId}
-                onChange={setStoreId}
-                placeholder="Selecione a loja..."
-                options={stores.map(s => ({ value: s.id, label: s.name }))}
-              />
+              <label className="mb-1 block text-xs font-semibold text-zinc-600">Unidade (Opcional)</label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <CustomSelect
+                    value={storeId}
+                    onChange={setStoreId}
+                    placeholder="Sem loja vinculada..."
+                    options={stores.map(s => ({ value: s.id, label: s.name }))}
+                  />
+                </div>
+                {storeId && (
+                  <button 
+                    type="button" 
+                    onClick={() => setStoreId("")}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-400 transition hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200"
+                    title="Remover vínculo com unidade"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -780,7 +808,7 @@ export function AdminPanel({
         {activeTab === "OVERVIEW" && selectedStoreId && (() => {
           const store = initialData.stores.find(s => s.id === selectedStoreId);
           const storeUsers = users.filter(u => u.store_id === selectedStoreId);
-          const managers = storeUsers.filter(u => u.role === "MANAGER");
+          const managers = storeUsers.filter(u => u.role === "MANAGER" || u.role === "REGIONAL_MANAGER" || u.role === "VM");
           const employees = storeUsers.filter(u => u.role === "EMPLOYEE");
           const primaryManager = managers.find(u => u.is_primary);
           const manager = primaryManager || managers[0];
@@ -1081,7 +1109,7 @@ export function AdminPanel({
                               <Bug className="size-4 shrink-0 fill-emerald-500/20 text-emerald-500" />
                             </span>
                           )}
-                          {u.role === "MANAGER" && u.is_primary && (
+                          {(u.role === "MANAGER" || u.role === "REGIONAL_MANAGER" || u.role === "VM") && u.is_primary && (
                             <span aria-label="Gerente Principal">
                               <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" />
                             </span>
