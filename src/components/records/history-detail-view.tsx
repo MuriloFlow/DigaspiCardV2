@@ -72,7 +72,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
         {(user?.role === "MANAGER" || user?.role === "GLOBAL_ADMIN") && (
           <button
             onClick={() => setIsModalOpen(true)}
-            className="group flex h-11 items-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/20"
+            className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/20"
           >
             <Users className="size-4" />
             Total de Clientes
@@ -120,6 +120,23 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
       </section>
 
       <section className="mt-8 grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
+        <div>
+          <div className="mb-4">
+            <p className="text-xs font-semibold uppercase text-zinc-500">
+              Timeline
+            </p>
+            <h2 className="mt-1 text-2xl font-semibold text-zinc-950">
+              Cartoes do dia
+            </h2>
+          </div>
+
+          <div className="grid gap-3">
+            {group.records.map((record, index) => (
+              <RecordCard key={record.id} record={record} index={index} />
+            ))}
+          </div>
+        </div>
+
         <div>
           <div className="mb-4">
             <p className="text-xs font-semibold uppercase text-zinc-500">
@@ -176,23 +193,6 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
                   Media por cartao: {formatCurrency(operator.averageInCents)}
                 </p>
               </article>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-4">
-            <p className="text-xs font-semibold uppercase text-zinc-500">
-              Timeline
-            </p>
-            <h2 className="mt-1 text-2xl font-semibold text-zinc-950">
-              Cartoes do dia
-            </h2>
-          </div>
-
-          <div className="grid gap-3">
-            {group.records.map((record, index) => (
-              <RecordCard key={record.id} record={record} index={index} />
             ))}
           </div>
         </div>
