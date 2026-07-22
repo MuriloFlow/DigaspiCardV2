@@ -127,7 +127,7 @@ export function EditRecordModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={!isSubmitting && !isDeleting ? onClose : undefined}
-            className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-md"
             aria-hidden="true"
           />
           <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center sm:inset-0 sm:items-center">
