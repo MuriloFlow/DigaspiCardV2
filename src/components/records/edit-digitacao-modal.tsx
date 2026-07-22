@@ -116,21 +116,21 @@ export function EditDigitacaoModal({
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: "100%", opacity: 0, scale: 0.95 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="flex w-full max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-2xl sm:rounded-[2.5rem]"
+              className="flex w-full max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-zinc-950 shadow-2xl sm:rounded-[2.5rem]"
               role="dialog"
               aria-modal="true"
             >
-              <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 p-5">
+              <div className="flex shrink-0 items-center justify-between border-b border-zinc-800 p-5">
                 <div>
-                  <h2 className="text-xl font-bold tracking-tight text-zinc-900">Editar Digitação</h2>
-                  <p className="mt-1 text-sm text-zinc-500">Corrija o nome do cliente de {digitacao.operatorName}</p>
+                  <h2 className="text-xl font-bold tracking-tight text-white">Editar Digitação</h2>
+                  <p className="mt-1 text-sm text-zinc-400">Corrija o nome do cliente de {digitacao.operatorName}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {(user?.role === "GLOBAL_ADMIN" || user?.role === "MANAGER") && !confirmDelete ? (
                     <button
                       type="button"
                       onClick={() => setConfirmDelete(true)}
-                      className="flex size-10 items-center justify-center rounded-full text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition"
+                      className="flex size-10 items-center justify-center rounded-full text-rose-500 hover:bg-rose-500/10 hover:text-rose-400 transition"
                       title="Deletar digitação"
                     >
                       <Trash2 className="size-5" />
@@ -146,7 +146,7 @@ export function EditDigitacaoModal({
                       </button>
                       <button
                         onClick={() => setConfirmDelete(false)}
-                        className="rounded-full bg-zinc-100 p-1.5 text-zinc-600 hover:bg-zinc-200"
+                        className="rounded-full bg-zinc-800 p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-white"
                       >
                         <X className="size-4" />
                       </button>
@@ -157,7 +157,7 @@ export function EditDigitacaoModal({
                       type="button"
                       onClick={onClose}
                       disabled={isSubmitting || isDeleting}
-                      className="flex size-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 transition hover:bg-zinc-200 hover:text-zinc-700"
+                      className="flex size-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 transition hover:bg-zinc-700 hover:text-white"
                       aria-label="Fechar modal"
                     >
                       <X className="size-5" />
@@ -175,7 +175,7 @@ export function EditDigitacaoModal({
                   )}
 
                   <div>
-                    <label htmlFor="digClientName" className="mb-1.5 block text-sm font-semibold text-zinc-700">
+                    <label htmlFor="digClientName" className="mb-1.5 block text-sm font-semibold text-zinc-300">
                       Nome do Cliente
                     </label>
                     <input
@@ -185,7 +185,7 @@ export function EditDigitacaoModal({
                       value={clientName}
                       onChange={(e) => setClientName(e.target.value)}
                       placeholder="Ex: Maria"
-                      className="h-14 w-full rounded-2xl border border-zinc-200 bg-white px-5 text-lg font-medium text-zinc-900 outline-none transition duration-200 focus:border-zinc-950 focus:ring-4 focus:ring-zinc-950/10"
+                      className="h-14 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 text-lg font-medium text-zinc-100 outline-none transition duration-200 focus:border-white focus:ring-4 focus:ring-white/10"
                       autoComplete="off"
                       required
                     />
@@ -193,12 +193,12 @@ export function EditDigitacaoModal({
                 </form>
               </div>
 
-              <div className="shrink-0 border-t border-zinc-100 bg-zinc-50/50 p-5">
+              <div className="shrink-0 border-t border-zinc-800 p-5">
                 <button
                   type="submit"
                   form="edit-dig-form"
                   disabled={isSubmitting || isDeleting}
-                  className="group relative flex h-14 w-full items-center justify-center overflow-hidden rounded-2xl bg-zinc-950 px-8 text-base font-semibold text-white shadow-lg shadow-zinc-900/20 transition-all hover:-translate-y-0.5 hover:bg-zinc-900 hover:shadow-xl hover:shadow-zinc-900/30 active:translate-y-0 active:shadow-md disabled:pointer-events-none disabled:opacity-70"
+                  className="group relative flex h-14 w-full items-center justify-center overflow-hidden rounded-2xl bg-white px-8 text-base font-semibold text-zinc-950 shadow-lg transition-all hover:-translate-y-0.5 hover:bg-zinc-100 hover:shadow-xl active:translate-y-0 active:shadow-md disabled:pointer-events-none disabled:opacity-70"
                 >
                   <span className="relative flex items-center justify-center gap-2">
                     {isSubmitting ? (

@@ -90,24 +90,29 @@ export function AddRecordModal({
           let lastGroup = "";
           for (const c of active) {
             const cfg = roleConfig[c.subRole ?? ""];
-            const groupLabel = cfg?.groupLabel ?? c.subRole ?? "Outros";
-            if (groupLabel !== lastGroup) {
-              result.push({ value: `__header_${groupLabel}`, label: groupLabel });
-              lastGroup = groupLabel;
-            }
             result.push({
-              value: c.id, label: c.name
+              value: c.id, 
+              label: c.name,
+              icon: cfg ? (
+                <span className={`inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${cfg.cls}`}>
+                  {cfg.label}
+                </span>
+              ) : undefined,
             });
           }
         }
         const managers = (managerData.managers ?? []) as { id: string; name: string; role: string }[];
         if (managers.length > 0) {
           managers.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-          result.push({ value: "__header_gerentes", label: "Gerentes" });
           for (const m of managers) {
             result.push({
               value: m.id,
-              label: m.name
+              label: m.name,
+              icon: (
+                <span className="inline-flex shrink-0 rounded-md bg-yellow-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-yellow-700">
+                  {m.role === "VM" ? "VM" : "Gerente"}
+                </span>
+              ),
             });
           }
         }

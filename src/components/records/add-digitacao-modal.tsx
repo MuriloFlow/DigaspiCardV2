@@ -8,6 +8,7 @@ import {
   Keyboard,
   Loader2,
   Plus,
+  Trash2,
   UserRound,
   X,
 } from "lucide-react";
@@ -26,7 +27,7 @@ export function AddDigitacaoModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const { createDigitacao, isCreating } = useDigitacoes();
+  const { createDigitacao, isCreating, refresh } = useDigitacoes();
 
   const [step, setStep] = useState<Step>("select-collab");
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -34,9 +35,10 @@ export function AddDigitacaoModal({
   const [selectedCollabId, setSelectedCollabId] = useState("");
   const [selectedCollabName, setSelectedCollabName] = useState("");
   const [clientName, setClientName] = useState("");
-  const [registeredNames, setRegisteredNames] = useState<string[]>([]);
+  const [registeredNames, setRegisteredNames] = useState<{id: string, name: string}[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successFlash, setSuccessFlash] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -77,25 +79,29 @@ export function AddDigitacaoModal({
           let lastGroup = "";
           for (const c of active) {
             const cfg = roleConfig[c.subRole ?? ""];
-            const groupLabel = cfg?.groupLabel ?? c.subRole ?? "Outros";
-            if (groupLabel !== lastGroup) {
-              result.push({ value: `__header_${groupLabel}`, label: groupLabel });
-              lastGroup = groupLabel;
-            }
             result.push({
               value: c.id,
               label: c.name,
+              icon: cfg ? (
+                <span className={`inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${cfg.cls}`}>
+                  {cfg.label}
+                </span>
+              ) : undefined,
             });
           }
         }
         const managers = (managerData.managers ?? []) as { id: string; name: string; role: string }[];
         if (managers.length > 0) {
           managers.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-          result.push({ value: "__header_gerentes", label: "Gerentes" });
           for (const m of managers) {
             result.push({
               value: m.id,
               label: m.name,
+              icon: (
+                <span className="inline-flex shrink-0 rounded-md bg-yellow-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-yellow-700">
+                  {m.role === "VM" ? "VM" : "Gerente"}
+                </span>
+              ),
             });
           }
         }
@@ -124,14 +130,28 @@ export function AddDigitacaoModal({
     if (!name) return;
     setErrorMsg(null);
     try {
-      await createDigitacao(selectedCollabId, name);
-      setRegisteredNames((prev) => [name, ...prev]);
+      const newDig = await createDigitacao(selectedCollabId, name);
+      setRegisteredNames((prev) => [{id: newDig.id, name}, ...prev]);
       setClientName("");
       setSuccessFlash(true);
       setTimeout(() => setSuccessFlash(false), 800);
       setTimeout(() => inputRef.current?.focus(), 50);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Erro ao salvar.");
+    }
+  }
+
+  async function handleDeleteDigitacao(id: string) {
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/digitacoes?id=${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Erro ao deletar");
+      setRegisteredNames((prev) => prev.filter(item => item.id !== id));
+      refresh(); // Update the context state manually
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -266,12 +286,26 @@ export function AddDigitacaoModal({
                             Registrados nessa sessão
                           </p>
                           <div className="max-h-40 overflow-y-auto rounded-2xl border border-zinc-100 bg-zinc-50 divide-y divide-zinc-100">
-                            {registeredNames.map((name, i) => (
-                              <motion.div key={`${name}-${i}`}
+                            {registeredNames.map((item, i) => (
+                              <motion.div key={item.id}
                                 initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-                                className="flex items-center gap-2 px-4 py-2.5">
-                                <Check className="size-3.5 shrink-0 text-emerald-500" />
-                                <span className="text-sm font-medium text-zinc-800">{name}</span>
+                                className="flex items-center justify-between gap-2 px-4 py-2.5">
+                                <div className="flex items-center gap-2">
+                                  <Check className="size-3.5 shrink-0 text-emerald-500" />
+                                  <span className="text-sm font-medium text-zinc-800">{item.name}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteDigitacao(item.id)}
+                                  disabled={deletingId === item.id}
+                                  className="flex size-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:bg-rose-50 hover:text-rose-500 disabled:opacity-50"
+                                >
+                                  {deletingId === item.id ? (
+                                    <Loader2 className="size-3.5 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="size-3.5" />
+                                  )}
+                                </button>
                               </motion.div>
                             ))}
                           </div>
