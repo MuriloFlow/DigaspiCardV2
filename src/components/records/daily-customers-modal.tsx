@@ -88,7 +88,7 @@ export function DailyCustomersModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={!isSubmitting ? onClose : undefined}
-            className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-md"
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md"
             aria-hidden="true"
           />
           <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center sm:inset-0 sm:items-center">
