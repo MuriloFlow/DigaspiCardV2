@@ -85,11 +85,6 @@ export function AddDigitacaoModal({
             result.push({
               value: c.id,
               label: c.name,
-              icon: cfg ? (
-                <span className={`inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${cfg.cls}`}>
-                  {cfg.label}
-                </span>
-              ) : undefined,
             });
           }
         }
@@ -101,11 +96,6 @@ export function AddDigitacaoModal({
             result.push({
               value: m.id,
               label: m.name,
-              icon: (
-                <span className="inline-flex shrink-0 rounded-md bg-yellow-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-yellow-700">
-                  {m.role === "VM" ? "VM" : "Gerente"}
-                </span>
-              ),
             });
           }
         }

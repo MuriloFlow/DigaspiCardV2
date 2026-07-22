@@ -96,12 +96,7 @@ export function AddRecordModal({
               lastGroup = groupLabel;
             }
             result.push({
-              value: c.id, label: c.name,
-              icon: cfg ? (
-                <span className={`inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${cfg.cls}`}>
-                  {cfg.label}
-                </span>
-              ) : undefined,
+              value: c.id, label: c.name
             });
           }
         }
@@ -111,12 +106,8 @@ export function AddRecordModal({
           result.push({ value: "__header_gerentes", label: "Gerentes" });
           for (const m of managers) {
             result.push({
-              value: m.id, label: m.name,
-              icon: (
-                <span className="inline-flex shrink-0 rounded-md bg-yellow-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-yellow-700">
-                  {m.role === "VM" ? "VM" : "Gerente"}
-                </span>
-              ),
+              value: m.id,
+              label: m.name
             });
           }
         }
