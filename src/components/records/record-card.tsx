@@ -99,29 +99,15 @@ export function RecordCard({
                 <p className="text-sm font-semibold text-zinc-950">
                   {formatCurrency(record.amountInCents)}
                 </p>
+                {/* Lápis sempre visível */}
                 <button
                   type="button"
                   aria-label="Editar registro"
                   onClick={() => setIsEditing(true)}
-                  className="flex size-8 items-center justify-center rounded-xl text-zinc-400 opacity-0 transition duration-200 hover:bg-blue-50 hover:text-blue-600 focus-visible:opacity-100 group-hover:opacity-100"
+                  className="flex size-8 items-center justify-center rounded-xl text-zinc-400 transition duration-200 hover:bg-zinc-100 hover:text-zinc-700"
                 >
                   <Edit2 className="size-4" />
                 </button>
-                {showDelete && canDelete && (
-                  <button
-                    type="button"
-                    aria-label="Deletar registro"
-                    onClick={() => setConfirmDelete(true)}
-                    disabled={isBeingDeleted}
-                    className="flex size-8 items-center justify-center rounded-xl text-zinc-400 opacity-0 transition duration-200 hover:bg-rose-50 hover:text-rose-600 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30 group-hover:opacity-100 disabled:cursor-not-allowed"
-                  >
-                    {isBeingDeleted ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="size-4" />
-                    )}
-                  </button>
-                )}
               </div>
             </div>
 

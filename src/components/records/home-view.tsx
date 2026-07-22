@@ -172,7 +172,7 @@ export function HomeView() {
           {/* Gráfico Digitações */}
           <OperatorPieChart
             operators={digitacaoOperators}
-            centerLabel="DIG"
+            centerLabel="DIGITAÇÕES"
             centerValue={formatInteger(digitacaoCount)}
             tooltipLabel="digitações"
             bare
@@ -181,6 +181,13 @@ export function HomeView() {
 
         {/* Métricas */}
         <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+            <MetricCard
+              label="Digitações Hoje"
+              value={formatInteger(digitacaoCount)}
+              detail={digitacaoCount === 1 ? "1 tentativa registrada" : `${formatInteger(digitacaoCount)} tentativas registradas`}
+              icon={Users}
+              tone="blue"
+            />
             <MetricCard
               label="Meta do Dia"
               value={`${formatInteger(todayCardsCount)} / ${formatInteger(finalGoal)}`}
@@ -194,17 +201,6 @@ export function HomeView() {
               detail="Volume histórico"
               icon={CreditCard}
               tone="dark"
-            />
-            <MetricCard
-              label={isGlobalAdmin ? "Loja Destaque" : "Líder Atual"}
-              value={summary.topOperator?.operatorName ?? "Sem dados"}
-              detail={
-                summary.topOperator
-                  ? `${formatInteger(summary.topOperator.count)} cartões`
-                  : "Aguardando registros"
-              }
-              icon={TrendingUp}
-              tone="green"
             />
           </div>
       </section>

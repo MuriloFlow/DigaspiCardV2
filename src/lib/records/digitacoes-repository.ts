@@ -8,6 +8,7 @@ export type Digitacao = {
   clientName: string;
   createdAt: string;
   storeId?: string;
+  subRole?: string;
 };
 
 type DbDigitacao = {
@@ -17,6 +18,7 @@ type DbDigitacao = {
   client_name: string;
   created_at: string;
   store_id: string;
+  collaborators?: { sub_role?: string } | null;
 };
 
 function toDigitacao(row: DbDigitacao): Digitacao {
@@ -27,13 +29,14 @@ function toDigitacao(row: DbDigitacao): Digitacao {
     clientName: row.client_name,
     createdAt: row.created_at,
     storeId: row.store_id,
+    subRole: row.collaborators?.sub_role ?? undefined,
   };
 }
 
 export async function listDigitacoes(storeId?: string | null): Promise<Digitacao[]> {
   let query = supabaseAdmin
     .from("digitacoes")
-    .select("*")
+    .select("*, collaborators(sub_role)")
     .order("created_at", { ascending: false });
 
   if (storeId) {

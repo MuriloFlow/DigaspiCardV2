@@ -19,6 +19,7 @@ export type Digitacao = {
   operatorName: string;
   clientName: string;
   createdAt: string;
+  subRole?: string;
 };
 
 type DigitacoesContextValue = {
@@ -63,16 +64,17 @@ export function DigitacoesProvider({ children }: { children: ReactNode }) {
   );
 
   const todayOperators = useMemo<OperatorSummary[]>(() => {
-    const map = new Map<string, { count: number; collaboratorId: string }>();
+    const map = new Map<string, { count: number; collaboratorId: string; subRole?: string }>();
     todayDigitacoes.forEach((d) => {
-      const cur = map.get(d.operatorName) ?? { count: 0, collaboratorId: d.collaboratorId };
-      map.set(d.operatorName, { count: cur.count + 1, collaboratorId: d.collaboratorId });
+      const cur = map.get(d.operatorName) ?? { count: 0, collaboratorId: d.collaboratorId, subRole: d.subRole };
+      map.set(d.operatorName, { count: cur.count + 1, collaboratorId: d.collaboratorId, subRole: cur.subRole ?? d.subRole });
     });
     const total = todayDigitacoes.length;
     return Array.from(map.entries())
       .map<OperatorSummary>(([name, val], idx) => ({
         operatorName: name,
         collaboratorId: val.collaboratorId,
+        subRole: val.subRole,
         count: val.count,
         totalInCents: 0,
         averageInCents: 0,

@@ -32,7 +32,7 @@ export function OperatorPieChart({
       <div className="relative mx-auto aspect-square w-full max-w-[280px] sm:max-w-[320px]">
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-xs font-semibold uppercase text-zinc-500">
+            <p className={`font-semibold uppercase text-zinc-500 ${centerLabel.length > 5 ? "text-[9px]" : "text-xs"}`}>
               {centerLabel}
             </p>
             <p className="mt-2 text-4xl font-semibold text-zinc-950 sm:text-5xl">
