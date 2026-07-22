@@ -18,7 +18,7 @@ export function DailyCustomersModal({
   dateKey,
   onClose,
 }: DailyCustomersModalProps) {
-  const { refresh } = useRecords();
+  const { records, dailyMetrics, refresh } = useRecords();
   const [customersCount, setCustomersCount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -27,13 +27,14 @@ export function DailyCustomersModal({
 
   useEffect(() => {
     if (open) {
-      setCustomersCount("");
+      const existingMetric = dailyMetrics.find((m) => m.dateKey === dateKey);
+      setCustomersCount(existingMetric && existingMetric.totalCustomers > 0 ? existingMetric.totalCustomers.toString() : "");
       setErrorMsg(null);
       setIsSubmitting(false);
       // Focus on input after animation
       setTimeout(() => inputRef.current?.focus(), 400);
     }
-  }, [open]);
+  }, [open, dateKey, dailyMetrics]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -87,7 +88,7 @@ export function DailyCustomersModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={!isSubmitting ? onClose : undefined}
-            className="fixed inset-0 z-50 bg-zinc-950/40 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-md"
             aria-hidden="true"
           />
           <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center sm:inset-0 sm:items-center">

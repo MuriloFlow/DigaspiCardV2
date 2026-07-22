@@ -15,6 +15,7 @@ export type OperatorRecord = {
   operatorName: string;
   clientName: string;
   amountInCents: number;
+  amountUsedInCents?: number;
   activated: boolean;
   activatedLater?: boolean;
   createdAt: string;

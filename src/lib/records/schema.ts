@@ -18,6 +18,12 @@ export const createRecordSchema = z
       .int("Valor do cartao precisa ser um numero inteiro em centavos.")
       .min(1, "Valor do cartao precisa ser maior que zero.")
       .max(99_999_999, "Valor do cartao excede o limite permitido."),
+    amountUsedInCents: z
+      .coerce
+      .number()
+      .int("Valor utilizado precisa ser um numero inteiro.")
+      .min(0, "Valor utilizado nǜo pode ser negativo.")
+      .optional(),
     activated: z.boolean().default(false),
   })
   .strict();

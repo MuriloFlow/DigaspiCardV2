@@ -84,7 +84,8 @@ export async function PATCH(request: Request) {
     await updateRecord(body.id, { 
       clientName: body.clientName, 
       activated: body.activated,
-      amountInCents: body.amountInCents 
+      amountInCents: body.amountInCents,
+      amountUsedInCents: body.amountUsedInCents !== undefined ? body.amountUsedInCents : undefined
     });
 
     const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;

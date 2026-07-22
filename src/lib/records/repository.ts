@@ -16,6 +16,7 @@ type DbRecord = {
   operator_name: string;
   client_name: string;
   amount_in_cents: number;
+  amount_used_in_cents?: number | null;
   activated: boolean;
   activated_later?: boolean;
   created_at: string;
@@ -29,6 +30,7 @@ function toOperatorRecord(row: DbRecord): OperatorRecord {
     operatorName: row.operator_name,
     clientName: row.client_name,
     amountInCents: row.amount_in_cents,
+    amountUsedInCents: row.amount_used_in_cents ?? undefined,
     activated: row.activated,
     activatedLater: row.activated_later,
     createdAt: row.created_at,
@@ -157,10 +159,11 @@ export async function deleteRecord(id: string, storeId?: string | null): Promise
   if (error) throw new Error(`Erro ao deletar registro: ${error.message}`);
 }
 
-export async function updateRecord(id: string, updates: { clientName?: string; activated?: boolean; amountInCents?: number }): Promise<void> {
+export async function updateRecord(id: string, updates: { clientName?: string; activated?: boolean; amountInCents?: number; amountUsedInCents?: number | null }): Promise<void> {
   const payload: Record<string, unknown> = {};
   if (updates.clientName !== undefined) payload.client_name = normalizePersonName(updates.clientName);
   if (updates.amountInCents !== undefined) payload.amount_in_cents = updates.amountInCents;
+  if (updates.amountUsedInCents !== undefined) payload.amount_used_in_cents = updates.amountUsedInCents;
 
   if (updates.activated !== undefined) {
     payload.activated = updates.activated;
