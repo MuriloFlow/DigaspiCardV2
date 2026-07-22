@@ -244,14 +244,14 @@ export function HistoryView() {
         </div>
 
         {/* Year Select */}
-        <div className="relative shrink-0 rounded-[1.5rem] border border-zinc-200 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.02)] transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
+        <div className="relative shrink-0 w-[100px] sm:w-[110px] rounded-[1.5rem] border border-zinc-200 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.02)] transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
           <select
             value={selectedYear ?? ""}
             onChange={(e) => {
               setSelectedYear(Number(e.target.value));
               setSearch("");
             }}
-            className="h-14 w-full min-w-[100px] appearance-none bg-transparent pl-5 pr-10 text-base font-semibold text-zinc-950 outline-none cursor-pointer"
+            className="h-14 w-full appearance-none bg-transparent pl-4 pr-9 text-base font-semibold text-zinc-950 outline-none cursor-pointer"
           >
             {availableYears.map((year) => (
               <option key={year} value={year}>
@@ -259,7 +259,7 @@ export function HistoryView() {
               </option>
             ))}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-5 -translate-y-1/2 text-zinc-400" />
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-5 -translate-y-1/2 text-zinc-400" />
         </div>
       </div>
 
