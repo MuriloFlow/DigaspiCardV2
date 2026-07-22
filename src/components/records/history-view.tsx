@@ -190,14 +190,14 @@ export function HistoryView() {
       ) : null}
 
       {/* Search and Year Select Container */}
-      <div className="mb-6 flex flex-row items-center gap-3">
+      <div className="mb-6 flex items-stretch gap-3">
         {/* Search */}
-        <div className="flex flex-1 items-center rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-3.5 shadow-[0_4px_24px_rgba(15,23,42,0.02)] transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
+        <div className="flex flex-1 items-center rounded-[1.5rem] border border-zinc-200 bg-white px-5 shadow-[0_4px_24px_rgba(15,23,42,0.02)] transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
           <Search className="size-5 shrink-0 text-zinc-400" />
           <input
             value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Pesquisar por mês..."
-            className="ml-3 min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
+            className="ml-3 h-14 min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
           />
           {search && (
             <button type="button" onClick={() => setSearch("")} className="ml-2 text-zinc-400 hover:text-zinc-700">
@@ -206,7 +206,7 @@ export function HistoryView() {
           )}
         </div>
 
-        {/* Year Select (Smaller width) */}
+        {/* Year Select */}
         <div className="relative shrink-0 rounded-[1.5rem] border border-zinc-200 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.02)] transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
           <select
             value={selectedYear ?? ""}
@@ -214,7 +214,7 @@ export function HistoryView() {
               setSelectedYear(Number(e.target.value));
               setSearch("");
             }}
-            className="h-full min-h-[52px] w-28 appearance-none bg-transparent pl-5 pr-10 text-base font-semibold text-zinc-950 outline-none"
+            className="h-14 w-full min-w-[100px] appearance-none bg-transparent pl-5 pr-10 text-base font-semibold text-zinc-950 outline-none cursor-pointer"
           >
             {availableYears.map((year) => (
               <option key={year} value={year}>
@@ -239,29 +239,29 @@ export function HistoryView() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.2) }}
-            className="group flex flex-col items-start rounded-[1.75rem] border border-zinc-800 bg-zinc-950 p-5 text-left shadow-lg transition duration-300 hover:-translate-y-1 hover:border-zinc-700 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-500/30"
+            className="group flex flex-col items-start rounded-[1.75rem] border border-zinc-200/80 bg-white p-5 text-left shadow-[0_14px_42px_rgba(15,23,42,0.05)] transition duration-300 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-[0_20px_54px_rgba(15,23,42,0.08)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-500/30"
           >
             <div className="flex w-full items-start justify-between">
-              <div className="flex size-12 items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 transition group-hover:bg-zinc-700 group-hover:text-white">
+              <div className="flex size-12 items-center justify-center rounded-2xl border border-zinc-100 bg-zinc-50 text-zinc-600 shadow-sm transition group-hover:bg-zinc-100 group-hover:text-zinc-900">
                 <CalendarDays className="size-5" />
               </div>
             </div>
 
             <div className="mt-5">
-              <h2 className="text-xl font-bold text-white transition group-hover:text-zinc-50">
+              <h2 className="text-xl font-bold text-zinc-950">
                 {monthGroup.label}
               </h2>
-              <p className="mt-1 text-sm font-medium text-zinc-400">
+              <p className="mt-1 text-sm font-medium text-zinc-500">
                 {monthGroup.count} {monthGroup.count === 1 ? 'cartão registrado' : 'cartões registrados'}
               </p>
             </div>
 
             <div className="mt-6 flex w-full items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 border border-emerald-200/60">
                 <span className="size-1.5 rounded-full bg-emerald-500" />
                 {monthGroup.activeCount} ATIVOS
               </span>
-              <div className="flex size-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 opacity-0 transition duration-300 group-hover:opacity-100 group-hover:text-white">
+              <div className="flex size-8 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 text-zinc-400 opacity-0 transition duration-300 group-hover:opacity-100 group-hover:text-zinc-700">
                 <ArrowRight className="size-4" />
               </div>
             </div>
