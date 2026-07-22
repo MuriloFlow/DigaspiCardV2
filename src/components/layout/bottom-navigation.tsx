@@ -35,14 +35,14 @@ const items: NavItem[] = [
     href: "/colaboradores",
     icon: Users,
     match: (path: string) => path.startsWith("/colaboradores"),
-    roles: ["GLOBAL_ADMIN", "MANAGER"],
+    roles: ["GLOBAL_ADMIN", "MANAGER", "REGIONAL_MANAGER", "TI_ADMIN"],
   },
   {
     label: "Lojas",
     href: "/admin",
     icon: Building,
     match: (path: string) => path.startsWith("/admin"),
-    roles: ["GLOBAL_ADMIN"],
+    roles: ["GLOBAL_ADMIN", "TI_ADMIN"],
   },
   {
     label: "Ranking",
@@ -77,10 +77,13 @@ export function BottomNavigation() {
     (item) => !item.roles || (user && item.roles.includes(user.role))
   );
 
-  const roleLabel = {
+  const roleLabel: Record<string, string> = {
     EMPLOYEE: "Funcionário",
     MANAGER: "Gerente",
+    VM: "VM",
     GLOBAL_ADMIN: "Admin Global",
+    TI_ADMIN: "TI (Dev)",
+    REGIONAL_MANAGER: "Regional",
   };
 
   return (
@@ -172,6 +175,8 @@ export function BottomNavigation() {
                     <span className={cn(
                       "mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
                       user.role === "GLOBAL_ADMIN" ? "bg-purple-100 text-purple-700" :
+                      user.role === "TI_ADMIN" ? "bg-emerald-100 text-emerald-700" :
+                      user.role === "REGIONAL_MANAGER" ? "bg-indigo-100 text-indigo-700" :
                       user.role === "MANAGER" ? "bg-blue-100 text-blue-700" :
                       "bg-zinc-100 text-zinc-600"
                     )}>
@@ -181,7 +186,7 @@ export function BottomNavigation() {
                 </div>
 
                 <div className="px-2 pb-2 space-y-1">
-                  {(user.role === "MANAGER" || user.role === "GLOBAL_ADMIN") && (
+                  {["MANAGER", "GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER", "VM"].includes(user.role) && (
                     <Link
                       href="/chamados/novo"
                       onClick={() => setShowSettings(false)}

@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       .select("goal")
       .eq("date_key", dateKey);
 
-    if (session.role !== "GLOBAL_ADMIN") {
+    if (!["GLOBAL_ADMIN", "TI_ADMIN"].includes(session.role)) {
         query = query.eq("store_id", session.storeId);
     } else {
         // Para admin global, a meta manual pode não fazer muito sentido ou seria a soma. 

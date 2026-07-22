@@ -34,9 +34,9 @@ export function RealtimeNotificationsProvider() {
         (payload) => {
           const newRecord = payload.new as { id: string; operator_name: string; store_id: string | null };
 
-          // Se for Admin Global, recebe de todas as lojas.
+          // Se for Admin Global, Regional ou TI, recebe de todas as lojas.
           // Se for de uma loja, recebe apenas se for da mesma loja.
-          if (user.role === "GLOBAL_ADMIN" || (user as any).store_id === newRecord.store_id) {
+          if (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(user.role) || (user as any).store_id === newRecord.store_id) {
             const notif: Notification = {
               id: newRecord.id,
               message: "Novo cartão aprovado!",
@@ -66,7 +66,7 @@ export function RealtimeNotificationsProvider() {
           // Se eu enviei, ignora
           if (newMsg.sender_name === user.username) return;
 
-          const isTI = user.role === "GLOBAL_ADMIN" || user.role === "MANAGER";
+          const isTI = ["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER", "MANAGER"].includes(user.role);
           
           // TI não recebe alerta de outro TI. Usuário não recebe de outro Usuário.
           if (isTI && newMsg.sender_type === "TI") return;

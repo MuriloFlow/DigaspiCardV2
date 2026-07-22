@@ -15,6 +15,7 @@ import type {
   OperatorRecord,
   RecordsPayload,
 } from "@/lib/records/types";
+import { useAuth } from "@/components/providers/auth-provider";
 
 type RecordsContextValue = RecordsPayload & {
   digitacoes: import("@/lib/records/digitacoes-repository").Digitacao[];
@@ -55,6 +56,7 @@ async function parseApiError(response: Response) {
 }
 
 export function RecordsProvider({ children }: { children: ReactNode }) {
+  const { selectedStoreId } = useAuth();
   const [records, setRecords] = useState<OperatorRecord[]>([]);
   const [digitacoes, setDigitacoes] = useState<import("@/lib/records/digitacoes-repository").Digitacao[]>([]);
   const [dailyMetrics, setDailyMetrics] = useState<import("@/lib/records/types").DailyMetric[]>([]);
@@ -68,7 +70,8 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     try {
-      const response = await fetch("/api/records", {
+      const url = selectedStoreId ? `/api/records?storeId=${selectedStoreId}` : "/api/records";
+      const response = await fetch(url, {
         cache: "no-store",
         headers: {
           Accept: "application/json",
@@ -106,13 +109,16 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     try {
+      const finalPayload = selectedStoreId 
+        ? { ...payload, storeId: selectedStoreId } 
+        : payload;
       const response = await fetch("/api/records", {
         method: "POST",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(finalPayload),
       });
 
       if (!response.ok) {
@@ -132,14 +138,15 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsCreating(false);
     }
-  }, []);
+  }, [selectedStoreId]);
 
   const deleteRecord = useCallback(async (id: string) => {
     setIsDeleting(id);
     setError(null);
 
     try {
-      const response = await fetch(`/api/records?id=${id}`, {
+      const url = selectedStoreId ? `/api/records?id=${id}&storeId=${selectedStoreId}` : `/api/records?id=${id}`;
+      const response = await fetch(url, {
         method: "DELETE",
         headers: {
           Accept: "application/json",
@@ -165,7 +172,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsDeleting(null);
     }
-  }, []);
+  }, [selectedStoreId]);
 
   const value = useMemo<RecordsContextValue>(
     () => ({

@@ -24,12 +24,19 @@ function forbidden(msg = "Acesso negado.") {
   return NextResponse.json({ message: msg }, { status: 403, headers: noStore });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getSession();
     if (!session) return forbidden();
 
-    const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
+    const url = new URL(request.url);
+    const queryStoreId = url.searchParams.get("storeId");
+
+    let storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) ? null : session.storeId;
+    if ((["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) && queryStoreId) {
+      storeId = queryStoreId;
+    }
+
     const collaborators = await listCollaborators(storeId);
     return NextResponse.json({ collaborators }, { headers: noStore });
   } catch (error) {
@@ -54,14 +61,14 @@ export async function POST(request: Request) {
 
     // Controle de acesso por ação
     const isEmployee = session.role === "EMPLOYEE";
-    const isGlobalAdmin = session.role === "GLOBAL_ADMIN";
-    const storeId = isGlobalAdmin ? null : session.storeId;
+    const isGlobalOrRegional = ["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role);
+    const storeId = isGlobalOrRegional ? null : session.storeId;
 
     if (action === "create") {
       if (isEmployee) return forbidden("Funcionários não podem criar colaboradores.");
 
-      // GLOBAL_ADMIN pode especificar a loja. MANAGER usa a própria loja.
-      const targetStoreId = isGlobalAdmin
+      // GLOBAL_ADMIN e REGIONAL_MANAGER podem especificar a loja. MANAGER usa a própria loja.
+      const targetStoreId = isGlobalOrRegional
         ? (body.storeId as string)
         : session.storeId;
 

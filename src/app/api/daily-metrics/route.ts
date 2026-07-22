@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const session = await getSession();
-    if (!session || (session.role !== "MANAGER" && session.role !== "GLOBAL_ADMIN")) {
+    if (!session || (session.role !== "MANAGER" && session.role !== "GLOBAL_ADMIN" && session.role !== "REGIONAL_MANAGER")) {
       return NextResponse.json({ message: "Acesso negado." }, { status: 403 });
     }
 
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Dados inválidos." }, { status: 400 });
     }
 
-    const storeId = session.role === "GLOBAL_ADMIN" ? payloadStoreId : session.storeId;
+    const storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) ? payloadStoreId : session.storeId;
     
     if (!storeId) {
        return NextResponse.json({ message: "Loja não identificada." }, { status: 400 });

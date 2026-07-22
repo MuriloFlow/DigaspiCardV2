@@ -45,9 +45,9 @@ export function EditRecordModal({
   useEffect(() => {
     if (open && record) {
       setClientName(record.clientName);
-      setAmount((record.amountInCents / 100).toString().replace(".", ","));
+      setAmount(formatCurrencyInput(record.amountInCents.toString()));
       setActivated(record.activated);
-      setAmountUsed(record.amountUsedInCents ? (record.amountUsedInCents / 100).toString().replace(".", ",") : "");
+      setAmountUsed(record.amountUsedInCents ? formatCurrencyInput(record.amountUsedInCents.toString()) : "");
       setErrorMsg(null);
       setIsSubmitting(false);
       setConfirmDelete(false);

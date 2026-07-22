@@ -11,12 +11,18 @@ const noStore = { "Cache-Control": "no-store, max-age=0" };
  * Retorna os usuários MANAGER e VM da loja do usuário logado.
  * Usado no modal de registro de cartão para incluir gerentes na lista de seleção.
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getSession();
     if (!session) return NextResponse.json({ message: "Acesso negado." }, { status: 403, headers: noStore });
 
-    const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
+    const url = new URL(request.url);
+    const queryStoreId = url.searchParams.get("storeId");
+
+    let storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) ? null : session.storeId;
+    if ((["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) && queryStoreId) {
+      storeId = queryStoreId;
+    }
 
     let query = supabaseAdmin
       .from("app_users")

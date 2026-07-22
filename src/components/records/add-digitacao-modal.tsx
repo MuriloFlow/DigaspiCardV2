@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useDigitacoes } from "@/components/providers/digitacoes-provider";
+import { useAuth } from "@/components/providers/auth-provider";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { cn } from "@/lib/utils/cn";
 
@@ -28,6 +29,7 @@ export function AddDigitacaoModal({
   onClose: () => void;
 }) {
   const { createDigitacao, isCreating, refresh } = useDigitacoes();
+  const { selectedStoreId } = useAuth();
 
   const [step, setStep] = useState<Step>("select-collab");
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -54,9 +56,11 @@ export function AddDigitacaoModal({
     if (collaborators.length > 0) return;
     setIsLoadingCollabs(true);
 
+    const storeQuery = selectedStoreId ? `?storeId=${selectedStoreId}` : "";
+
     Promise.all([
-      fetch("/api/collaborators").then((r) => r.json()),
-      fetch("/api/managers").then((r) => r.json()).catch(() => ({ managers: [] })),
+      fetch(`/api/collaborators${storeQuery}`).then((r) => r.json()),
+      fetch(`/api/managers${storeQuery}`).then((r) => r.json()).catch(() => ({ managers: [] })),
     ])
       .then(([collabData, managerData]) => {
         type RoleConfig = { label: string; groupLabel: string; cls: string; order: number };

@@ -1,4 +1,4 @@
-export type Role = "EMPLOYEE" | "GLOBAL_ADMIN" | "MANAGER";
+export type Role = "EMPLOYEE" | "GLOBAL_ADMIN" | "MANAGER" | "TI_ADMIN" | "REGIONAL_MANAGER" | "VM";
 
 export type AppUser = {
   id: string;

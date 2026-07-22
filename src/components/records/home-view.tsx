@@ -15,6 +15,7 @@ import { AddRecordModal } from "./add-record-modal";
 import { RecordCard } from "./record-card";
 import { ActionSelectionSheet } from "./action-selection-sheet";
 import { AddDigitacaoModal } from "./add-digitacao-modal";
+import { StoreSelector } from "./store-selector";
 import {
   aggregateByOperator,
   aggregateByStore,
@@ -33,8 +34,23 @@ export function HomeView() {
     createRecord,
   } = useRecords();
   const { todayOperators: digitacaoOperators, todayCount: digitacaoCount, isLoading: digLoading } = useDigitacoes();
-  const { user } = useAuth();
+  const { user, selectedStoreId, setSelectedStoreId } = useAuth();
+  
   const isGlobalAdmin = user?.role === "GLOBAL_ADMIN";
+  const isRegionalManager = user?.role === "REGIONAL_MANAGER" || user?.role === "TI_ADMIN";
+  const isGlobalOrRegional = isGlobalAdmin || isRegionalManager;
+  const isViewingGlobal = isGlobalOrRegional && !selectedStoreId;
+  const canRegister = !isGlobalAdmin; // Apenas GLOBAL_ADMIN não registra, Regional/TI pode.
+
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (isGlobalOrRegional) {
+      fetch("/api/stores")
+        .then(res => res.json())
+        .then(data => setStores(data.stores ?? []))
+        .catch(() => {});
+    }
+  }, [isGlobalOrRegional]);
 
   // Modal states
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -47,8 +63,8 @@ export function HomeView() {
   const todayKey = toDateKey(new Date().toISOString());
   const todayRecords = useMemo(() => records.filter(r => toDateKey(r.createdAt) === todayKey), [records, todayKey]);
   const todayOperators = useMemo(() => {
-    return isGlobalAdmin ? aggregateByStore(todayRecords) : aggregateByOperator(todayRecords);
-  }, [todayRecords, isGlobalAdmin]);
+    return isViewingGlobal ? aggregateByStore(todayRecords) : aggregateByOperator(todayRecords);
+  }, [todayRecords, isViewingGlobal]);
   const todayCardsCount = todayRecords.length;
 
   useEffect(() => {
@@ -65,7 +81,7 @@ export function HomeView() {
   }, [todayKey]);
 
   const dailyGoal = useMemo(() => {
-    const storeCount = isGlobalAdmin
+    const storeCount = isViewingGlobal
       ? Math.max(1, new Set(records.map(r => r.storeName).filter(Boolean)).size)
       : 1;
 
@@ -105,16 +121,24 @@ export function HomeView() {
 
   return (
     <PageContainer>
+      {isGlobalOrRegional && (
+        <StoreSelector 
+          stores={stores} 
+          selectedStoreId={selectedStoreId} 
+          onChange={setSelectedStoreId} 
+        />
+      )}
+      
       <PageHeader
-        eyebrow={isGlobalAdmin ? "Visão Consolidada da Rede" : "Painel operacional"}
-        title={isGlobalAdmin ? "Dashboard Global" : "Performance de operadores"}
-        description={isGlobalAdmin
+        eyebrow={isViewingGlobal ? "Visão Consolidada da Rede" : (selectedStoreId ? "Visão da Unidade" : "Painel operacional")}
+        title={isViewingGlobal ? "Dashboard Global" : "Performance de operadores"}
+        description={isViewingGlobal
           ? "Visão agregada de todos os cartões da rede. Para registrar cartões, acesse uma unidade específica."
           : "Registros, valores e ranking em uma interface limpa para acompanhamento diario."
         }
       />
 
-      {isGlobalAdmin && (
+      {isGlobalAdmin && isViewingGlobal && (
         <div className="mb-6 flex items-center gap-3 rounded-[1.5rem] bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700">
           <Building className="size-4 shrink-0" />
           <span>Você está no painel de <strong>Administrador Global</strong>. O registro de cartões é feito pelos operadores de cada unidade.</span>
@@ -233,7 +257,7 @@ export function HomeView() {
         )}
       </section>
 
-      {!isGlobalAdmin && (
+      {canRegister && (
         <>
           {/* FAB abre o action sheet */}
           <FloatingActionButton onClick={() => setSheetOpen(true)} />

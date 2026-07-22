@@ -6,6 +6,11 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
+const inputCurrencyFormatter = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 const integerFormatter = new Intl.NumberFormat("pt-BR");
 
 export function formatCurrency(cents: number) {
@@ -22,7 +27,7 @@ export function parseCurrencyInput(value: string) {
 }
 
 export function formatCurrencyInput(value: string) {
-  return formatCurrency(parseCurrencyInput(value));
+  return inputCurrencyFormatter.format(parseCurrencyInput(value) / 100);
 }
 
 export function toDateKey(isoDate: string) {

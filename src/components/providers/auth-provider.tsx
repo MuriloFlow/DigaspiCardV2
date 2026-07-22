@@ -3,17 +3,20 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
-type User = {
+export type User = {
   id: string;
   username: string;
   name?: string;
-  role: "EMPLOYEE" | "MANAGER" | "GLOBAL_ADMIN" | "TI_ADMIN";
+  role: "EMPLOYEE" | "MANAGER" | "GLOBAL_ADMIN" | "TI_ADMIN" | "REGIONAL_MANAGER" | "VM";
+  storeId: string | null;
 };
 
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
   logout: () => Promise<void>;
+  selectedStoreId: string | null;
+  setSelectedStoreId: (id: string | null) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +30,7 @@ export function AuthProvider({
 }) {
   const [user, setUser] = useState<User | null>(initialUser);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const router = useRouter();
 
   const logout = async () => {
@@ -41,7 +45,7 @@ export function AuthProvider({
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, logout, selectedStoreId, setSelectedStoreId }}>
       {children}
     </AuthContext.Provider>
   );

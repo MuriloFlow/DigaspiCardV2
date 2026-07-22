@@ -12,6 +12,7 @@ import {
 import type { OperatorSummary } from "@/lib/records/types";
 import { getOperatorColor } from "@/lib/records/colors";
 import { toDateKey } from "@/lib/utils/format";
+import { useAuth } from "@/components/providers/auth-provider";
 
 export type Digitacao = {
   id: string;
@@ -36,13 +37,15 @@ type DigitacoesContextValue = {
 const DigitacoesContext = createContext<DigitacoesContextValue | null>(null);
 
 export function DigitacoesProvider({ children }: { children: ReactNode }) {
+  const { selectedStoreId } = useAuth();
   const [digitacoes, setDigitacoes] = useState<Digitacao[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/digitacoes", { cache: "no-store" });
+      const url = selectedStoreId ? `/api/digitacoes?storeId=${selectedStoreId}` : "/api/digitacoes";
+      const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json() as { digitacoes: Digitacao[] };
       setDigitacoes(data.digitacoes);
@@ -51,7 +54,7 @@ export function DigitacoesProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedStoreId]);
 
   useEffect(() => {
     void load();
@@ -87,10 +90,14 @@ export function DigitacoesProvider({ children }: { children: ReactNode }) {
   const createDigitacao = useCallback(async (collaboratorId: string, clientName: string): Promise<Digitacao> => {
     setIsCreating(true);
     try {
+      const payload = selectedStoreId 
+        ? { collaboratorId, clientName, storeId: selectedStoreId }
+        : { collaboratorId, clientName };
+      
       const res = await fetch("/api/digitacoes", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ collaboratorId, clientName }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const err = await res.json() as { message?: string };
@@ -102,7 +109,7 @@ export function DigitacoesProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsCreating(false);
     }
-  }, []);
+  }, [selectedStoreId]);
 
   const value = useMemo<DigitacoesContextValue>(
     () => ({

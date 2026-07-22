@@ -6,7 +6,7 @@ import { createStore, updateStore, deleteStore, createUser, updateUser, toggleUs
 import {
   Building, Users, Key, Save, Loader2, Plus, TrendingUp,
   ShieldCheck, ShieldOff, ArrowLeft, BarChart2, CheckCircle2, Search, Trash2, Target,
-  CreditCard, ChevronRight, Edit2, X, Star, Eye, EyeOff
+  CreditCard, ChevronRight, Edit2, X, Star, Eye, EyeOff, Bug
 } from "lucide-react";
 import { CustomSelect } from "@/components/ui/custom-select";
 
@@ -47,7 +47,7 @@ function EditUserModal({
         username,
         password_plain: password || undefined,
         role,
-        store_id: role === "GLOBAL_ADMIN" ? null : storeId || null,
+        store_id: !["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(role) ? storeId || null : null,
         is_primary: isPrimary,
       });
       setIsSuccess(true);
@@ -140,7 +140,7 @@ function EditUserModal({
             />
           </div>
 
-          {role !== "GLOBAL_ADMIN" && (
+          {!["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(role) && (
             <div>
               <label className="mb-1 block text-xs font-semibold text-zinc-600">Unidade (Loja)</label>
               <CustomSelect
@@ -214,7 +214,7 @@ function CreateUserModal({
         username,
         password_plain: password,
         role,
-        store_id: role === "GLOBAL_ADMIN" ? null : storeId || null,
+        store_id: !["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(role) ? storeId || null : null,
         is_primary: false,
       });
       setIsSuccess(true);
@@ -283,11 +283,13 @@ function CreateUserModal({
               options={[
                 { value: "MANAGER", label: "Gerente de Unidade" },
                 { value: "VM", label: "VM (Gerente)" },
+                { value: "REGIONAL_MANAGER", label: "Gerente Regional" },
                 { value: "GLOBAL_ADMIN", label: "Admin Global" },
+                { value: "TI_ADMIN", label: "TI (Dev)" },
               ]}
             />
           </div>
-          {role !== "GLOBAL_ADMIN" && (
+          {!["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(role) && (
             <div>
               <label className="mb-1 block text-xs font-semibold text-zinc-600">Unidade (Obrigatório)</label>
               <CustomSelect
@@ -600,6 +602,7 @@ export function AdminPanel({
   } | null>(null);
   const [storeMetricsLoading, setStoreMetricsLoading] = useState(false);
   const [storeSearch, setStoreSearch] = useState("");
+  const [userStoreFilter, setUserStoreFilter] = useState("all");
 
   async function openStoreDetail(storeId: string) {
     setSelectedStoreId(storeId);
@@ -667,12 +670,16 @@ export function AdminPanel({
     MANAGER: "Gerente",
     VM: "VM",
     EMPLOYEE: "Funcionário",
+    REGIONAL_MANAGER: "Gerente Regional",
+    TI_ADMIN: "TI (Dev)",
   };
   const roleColor: Record<string, string> = {
     GLOBAL_ADMIN: "bg-purple-100 text-purple-700",
     MANAGER: "bg-blue-100 text-blue-700",
     VM: "bg-pink-100 text-pink-700",
     EMPLOYEE: "bg-zinc-100 text-zinc-600",
+    REGIONAL_MANAGER: "bg-indigo-100 text-indigo-700",
+    TI_ADMIN: "bg-emerald-100 text-emerald-700",
   };
 
   return (
@@ -693,10 +700,10 @@ export function AdminPanel({
       </AnimatePresence>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-2xl bg-zinc-100 p-1 w-fit flex-wrap">
+      <div className="flex gap-1 rounded-2xl bg-zinc-100 p-1 w-full max-w-full overflow-x-auto hide-scrollbar sm:w-fit sm:overflow-visible">
         {tabs.map((tab) => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${activeTab === tab.id ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-950"}`}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all shrink-0 ${activeTab === tab.id ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-950"}`}
           >
             <tab.icon className="size-4" />
             {tab.label}
@@ -776,9 +783,6 @@ export function AdminPanel({
           const employees = storeUsers.filter(u => u.role === "EMPLOYEE");
           const primaryManager = managers.find(u => u.is_primary);
           const manager = primaryManager || managers[0];
-
-          const rl: Record<string, string> = { GLOBAL_ADMIN: "Admin", MANAGER: "Gerente", EMPLOYEE: "Funcionário" };
-          const rc: Record<string, string> = { GLOBAL_ADMIN: "bg-purple-100 text-purple-700", MANAGER: "bg-blue-100 text-blue-700", EMPLOYEE: "bg-zinc-100 text-zinc-600" };
 
           return (
             <motion.div
@@ -1031,7 +1035,7 @@ export function AdminPanel({
                         <button onClick={() => setEditingStore(s)} className="flex size-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-blue-50 hover:text-blue-600 transition">
                           <Edit2 className="size-4" />
                         </button>
-                        <button onClick={() => setConfirmDeleteStoreId(s.id)} className="flex size-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-rose-50 hover:text-rose-600 transition">
+                        <button onClick={() => setConfirmDeleteStoreId(s.id)} className="flex size-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-rose-50 hover:bg-rose-600 transition">
                           <Trash2 className="size-4" />
                         </button>
                       </div>
@@ -1071,6 +1075,11 @@ export function AdminPanel({
                     <li key={u.id} className={`rounded-xl border px-4 py-3 transition ${u.is_active ? "border-zinc-100 bg-zinc-50" : "border-zinc-200 bg-zinc-100 opacity-60"}`}>
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
+                          {u.role === "TI_ADMIN" && (
+                            <span aria-label="TI">
+                              <Bug className="size-4 shrink-0 fill-emerald-500/20 text-emerald-500" />
+                            </span>
+                          )}
                           {u.role === "MANAGER" && u.is_primary && (
                             <span aria-label="Gerente Principal">
                               <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" />

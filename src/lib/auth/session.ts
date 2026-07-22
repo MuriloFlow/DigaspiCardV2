@@ -8,7 +8,7 @@ const key = new TextEncoder().encode(secretKey);
 export type SessionPayload = {
   id: string;
   username: string;
-  role: "EMPLOYEE" | "MANAGER" | "GLOBAL_ADMIN" | "TI_ADMIN";
+  role: "EMPLOYEE" | "MANAGER" | "GLOBAL_ADMIN" | "TI_ADMIN" | "REGIONAL_MANAGER" | "VM";
   storeId: string | null;
   expiresAt: Date;
 };

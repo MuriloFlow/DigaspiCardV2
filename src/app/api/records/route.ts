@@ -15,12 +15,18 @@ function forbidden(msg = "Acesso negado.") {
   return NextResponse.json({ message: msg }, { status: 403, headers: noStore });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getSession();
     if (!session) return forbidden("Sessão inválida.");
 
-    const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
+    const url = new URL(request.url);
+    const queryStoreId = url.searchParams.get("storeId");
+
+    let storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) ? null : session.storeId;
+    if ((["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) && queryStoreId) {
+      storeId = queryStoreId;
+    }
     const [records, digitacoes, dailyMetrics] = await Promise.all([
       listRecords(storeId),
       listDigitacoes(storeId),
@@ -47,8 +53,15 @@ export async function POST(request: Request) {
     const session = await getSession();
     if (!session) return forbidden("Sessão inválida.");
 
-    // storeId vem SEMPRE do JWT — nunca do body do cliente
-    const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
+    let storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) ? null : session.storeId;
+    
+    // Para roles globais/regionais, permite pegar o storeId do body
+    if (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) {
+      const parsedBody = body as { storeId?: string };
+      if (parsedBody.storeId) {
+        storeId = parsedBody.storeId;
+      }
+    }
 
     const record = await createRecord(body, storeId);
     
@@ -88,7 +101,11 @@ export async function PATCH(request: Request) {
       amountUsedInCents: body.amountUsedInCents !== undefined ? body.amountUsedInCents : undefined
     });
 
-    const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
+    let storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) ? null : session.storeId;
+    if (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) {
+      const parsedBody = body as { storeId?: string };
+      if (parsedBody.storeId) storeId = parsedBody.storeId;
+    }
     const [records, digitacoes, dailyMetrics] = await Promise.all([
       listRecords(storeId),
       listDigitacoes(storeId),
@@ -112,10 +129,16 @@ export async function DELETE(request: Request) {
     const session = await getSession();
     if (!session) return forbidden("Sessão inválida.");
 
-    // EMPLOYEE não pode deletar
-    if (session.role === "EMPLOYEE") return forbidden("Sem permissão para deletar registros.");
+    // EMPLOYEE não deleta
+    if (session.role === "EMPLOYEE") {
+      return forbidden("Sem permissão para deletar registros.");
+    }
 
-    const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
+    let storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) ? null : session.storeId;
+    if (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) {
+      const queryStoreId = searchParams.get("storeId");
+      if (queryStoreId) storeId = queryStoreId;
+    }
     await deleteRecord(id, storeId);
     
     const [records, digitacoes, dailyMetrics] = await Promise.all([

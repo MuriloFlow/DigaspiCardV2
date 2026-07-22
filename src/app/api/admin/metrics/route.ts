@@ -10,7 +10,7 @@ const noStore = { "Cache-Control": "no-store, max-age=0" };
 export async function GET(request: Request) {
   try {
     const session = await getSession();
-    if (!session || session.role !== "GLOBAL_ADMIN") {
+    if (!session || !["GLOBAL_ADMIN", "TI_ADMIN"].includes(session.role)) {
       return NextResponse.json({ message: "Acesso restrito ao Admin Global." }, { status: 403 });
     }
 

@@ -17,12 +17,19 @@ function forbidden(msg = "Acesso negado.") {
   return NextResponse.json({ message: msg }, { status: 403, headers: noStore });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getSession();
     if (!session) return forbidden("Sessão inválida.");
 
-    const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
+    const url = new URL(request.url);
+    const queryStoreId = url.searchParams.get("storeId");
+
+    let storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) ? null : session.storeId;
+    if ((["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) && queryStoreId) {
+      storeId = queryStoreId;
+    }
+
     const digitacoes = await listDigitacoes(storeId);
     return NextResponse.json({ digitacoes }, { headers: noStore });
   } catch (error) {
@@ -34,7 +41,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  let body: { collaboratorId?: string; clientName?: string } = {};
+  let body: { collaboratorId?: string; clientName?: string; storeId?: string } = {};
   try {
     body = await request.json();
   } catch {
@@ -44,7 +51,13 @@ export async function POST(request: Request) {
   try {
     const session = await getSession();
     if (!session) return forbidden("Sessão inválida.");
-    if (!session.storeId) return forbidden("Admin global não pode registrar digitações diretamente.");
+
+    let storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) ? null : session.storeId;
+    if (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) {
+      if (body.storeId) storeId = body.storeId;
+    }
+
+    if (!storeId) return forbidden("Selecione uma loja para registrar a digitação.");
 
     const { collaboratorId, clientName } = body;
     if (!collaboratorId || !clientName?.trim()) {
@@ -55,7 +68,7 @@ export async function POST(request: Request) {
     }
 
     // Busca o nome do colaborador para gravar operatorName
-    const collabs = await listCollaborators(session.storeId);
+    const collabs = await listCollaborators(storeId);
     const collab = collabs.find((c) => c.id === collaboratorId);
     if (!collab) {
       return NextResponse.json({ message: "Colaborador não encontrado." }, { status: 404, headers: noStore });
@@ -65,10 +78,10 @@ export async function POST(request: Request) {
       collaboratorId,
       clientName: clientName.trim(),
       operatorName: collab.name,
-      storeId: session.storeId,
+      storeId: storeId,
     });
 
-    const digitacoes = await listDigitacoes(session.storeId);
+    const digitacoes = await listDigitacoes(storeId);
     return NextResponse.json({ digitacao, digitacoes }, { status: 201, headers: noStore });
   } catch (error) {
     return NextResponse.json(
@@ -88,7 +101,11 @@ export async function PATCH(request: Request) {
 
     await updateDigitacao(body.id, { clientName: body.clientName });
 
-    const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
+    let storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) ? null : session.storeId;
+    if (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) {
+      if (body.storeId) storeId = body.storeId;
+    }
+
     const digitacoes = await listDigitacoes(storeId);
     return NextResponse.json({ digitacoes, success: true }, { headers: noStore });
   } catch (error) {
@@ -110,7 +127,12 @@ export async function DELETE(request: Request) {
 
     if (session.role === "EMPLOYEE") return forbidden("Sem permissão para deletar registros.");
 
-    const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
+    let storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) ? null : session.storeId;
+    if (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) {
+      const queryStoreId = searchParams.get("storeId");
+      if (queryStoreId) storeId = queryStoreId;
+    }
+
     await deleteDigitacao(id, storeId);
     
     const digitacoes = await listDigitacoes(storeId);

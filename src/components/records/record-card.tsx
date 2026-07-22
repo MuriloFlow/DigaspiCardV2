@@ -63,9 +63,21 @@ export function RecordCard({
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <p className="text-sm font-semibold text-zinc-950">
-                  {formatCurrency(record.amountInCents)}
-                </p>
+                <div className="flex flex-col items-end">
+                  <p className="text-sm font-semibold text-zinc-950">
+                    {formatCurrency(record.amountInCents)}
+                  </p>
+                  {record.amountUsedInCents != null && record.amountUsedInCents > 0 && (
+                    <>
+                      <p className="text-xs font-medium text-emerald-600">
+                        Uso: {formatCurrency(record.amountUsedInCents)}
+                      </p>
+                      <p className="text-[11px] font-semibold text-amber-500 mt-0.5">
+                        Disp: {formatCurrency(record.amountInCents - record.amountUsedInCents)}
+                      </p>
+                    </>
+                  )}
+                </div>
                 {/* Lápis sempre visível */}
                 <button
                   type="button"
