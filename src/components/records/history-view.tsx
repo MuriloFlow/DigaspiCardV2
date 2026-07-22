@@ -107,6 +107,7 @@ export function HistoryView() {
           const taxaAproveitamento = totalClientes > 0 ? ((totalCartoes + totalDigitacoes) / totalClientes) * 100 : 0;
           const taxaAprovacao = (totalCartoes + totalDigitacoes) > 0 ? (totalCartoes / (totalCartoes + totalDigitacoes)) * 100 : 0;
           const cartoesAtivosPerc = totalCartoes > 0 ? (activeMonth.activeCount / totalCartoes) * 100 : 0;
+          const ativosNoCaixaPerc = totalCartoes > 0 ? (activeMonth.activeLaterCount / totalCartoes) * 100 : 0;
           const ticketMedio = totalCartoes > 0 ? activeMonth.totalInCents / totalCartoes : 0;
           
           const prevCartoes = previousMonthGroup?.count || 0;
@@ -123,6 +124,7 @@ export function HistoryView() {
               taxaAproveitamento={taxaAproveitamento}
               taxaAprovacao={taxaAprovacao}
               cartoesAtivosPerc={cartoesAtivosPerc}
+              ativosNoCaixaPerc={ativosNoCaixaPerc}
               ticketMedio={ticketMedio}
               crescimentoCartoes={crescimentoCartoes}
               crescimentoValor={crescimentoValor}
@@ -130,7 +132,7 @@ export function HistoryView() {
           );
         })()}
 
-        <div className="mb-6 flex items-center rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-3.5 shadow-sm transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
+        <div className="mb-6 flex min-w-0 items-center rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-3.5 shadow-sm transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
           <Search className="size-5 shrink-0 text-zinc-400" />
           <input
             value={search} onChange={(e) => setSearch(e.target.value)}
@@ -229,12 +231,12 @@ export function HistoryView() {
       {/* Search and Year Select Container */}
       <div className="mb-6 flex items-stretch gap-3">
         {/* Search */}
-        <div className="flex flex-1 items-center rounded-[1.5rem] border border-zinc-200 bg-white px-5 shadow-[0_4px_24px_rgba(15,23,42,0.02)] transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
+        <div className="flex flex-1 min-w-0 items-center rounded-[1.5rem] border border-zinc-200 bg-white px-5 shadow-[0_4px_24px_rgba(15,23,42,0.02)] transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
           <Search className="size-5 shrink-0 text-zinc-400" />
           <input
             value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Pesquisar por mês..."
-            className="ml-3 h-14 min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
+            className="ml-3 h-14 w-full min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
           />
           {search && (
             <button type="button" onClick={() => setSearch("")} className="ml-2 text-zinc-400 hover:text-zinc-700">

@@ -188,7 +188,8 @@ export function groupRecordsByMonth(
       records: items,
       digitacoes: digs,
       count: items.length,
-      activeCount: items.filter((r) => r.activated).length,
+      activeCount: items.filter((r) => r.activated && !r.activatedLater).length,
+      activeLaterCount: items.filter((r) => r.activatedLater).length,
       totalInCents: items.reduce((total, r) => total + r.amountInCents, 0),
       totalCustomers,
       dateGroups: groupRecordsByDate(items), // Could also group digitacoes by date if needed later

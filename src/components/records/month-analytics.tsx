@@ -21,6 +21,7 @@ type MonthAnalyticsProps = {
   taxaAproveitamento: number;
   taxaAprovacao: number;
   cartoesAtivosPerc: number;
+  ativosNoCaixaPerc: number;
   ticketMedio: number;
   crescimentoCartoes: number; // % month over month
   crescimentoValor: number; // % month over month
@@ -33,6 +34,7 @@ export function MonthAnalytics({
   taxaAproveitamento,
   taxaAprovacao,
   cartoesAtivosPerc,
+  ativosNoCaixaPerc,
   ticketMedio,
   crescimentoCartoes,
   crescimentoValor,
@@ -74,11 +76,18 @@ export function MonthAnalytics({
       description: "Aprovados vs Digitações",
     },
     {
-      title: "Cartões Ativos",
+      title: "Ativados no ato",
       value: `${cartoesAtivosPerc.toFixed(1)}%`,
       icon: Percent,
       color: "bg-pink-500",
-      description: "Ativados no ato",
+      description: "Ativados na adesão",
+    },
+    {
+      title: "Ativados no caixa",
+      value: `${ativosNoCaixaPerc.toFixed(1)}%`,
+      icon: Percent,
+      color: "bg-fuchsia-500",
+      description: "Ativados pós-adesão",
     },
     {
       title: "Cresc. Cartões (M/M)",

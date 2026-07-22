@@ -17,6 +17,7 @@ type DbRecord = {
   client_name: string;
   amount_in_cents: number;
   activated: boolean;
+  activated_later?: boolean;
   created_at: string;
   collaborators?: { sub_role: string } | null;
 };
@@ -29,6 +30,7 @@ function toOperatorRecord(row: DbRecord): OperatorRecord {
     clientName: row.client_name,
     amountInCents: row.amount_in_cents,
     activated: row.activated,
+    activatedLater: row.activated_later,
     createdAt: row.created_at,
     storeName: (row as any).stores?.name,
     subRole: row.collaborators?.sub_role ?? undefined,
@@ -158,8 +160,22 @@ export async function deleteRecord(id: string, storeId?: string | null): Promise
 export async function updateRecord(id: string, updates: { clientName?: string; activated?: boolean; amountInCents?: number }): Promise<void> {
   const payload: Record<string, unknown> = {};
   if (updates.clientName !== undefined) payload.client_name = normalizePersonName(updates.clientName);
-  if (updates.activated !== undefined) payload.activated = updates.activated;
   if (updates.amountInCents !== undefined) payload.amount_in_cents = updates.amountInCents;
+
+  if (updates.activated !== undefined) {
+    payload.activated = updates.activated;
+    
+    // Check old record to set activated_later
+    const { data: oldRecord } = await supabaseAdmin.from("records").select("activated").eq("id", id).single();
+    if (oldRecord) {
+      if (!oldRecord.activated && updates.activated) {
+        payload.activated_later = true;
+      } else if (!updates.activated) {
+        payload.activated_later = false;
+      }
+    }
+  }
+
   if (Object.keys(payload).length === 0) return;
 
   const { error } = await supabaseAdmin.from("records").update(payload).eq("id", id);

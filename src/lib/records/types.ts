@@ -16,6 +16,7 @@ export type OperatorRecord = {
   clientName: string;
   amountInCents: number;
   activated: boolean;
+  activatedLater?: boolean;
   createdAt: string;
   storeName?: string;
   subRole?: string;
@@ -58,6 +59,7 @@ export type MonthGroup = {
   digitacoes: import("./digitacoes-repository").Digitacao[];
   count: number;
   activeCount: number;
+  activeLaterCount: number;
   totalInCents: number;
   totalCustomers: number;
   dateGroups: DateGroup[];
