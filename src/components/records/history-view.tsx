@@ -49,6 +49,45 @@ export function HistoryView() {
     return forYear.filter(mg => mg.label.toLowerCase().includes(query));
   }, [monthGroups, search, selectedYear]);
 
+  const yearMetrics = useMemo(() => {
+    if (!selectedYear || !filteredMonths.length) return null;
+
+    let totalCartoes = 0;
+    let totalDigitacoes = 0;
+    let totalClientes = 0;
+    let activeCount = 0;
+    let activeLaterCount = 0;
+    let totalInCents = 0;
+
+    for (const month of filteredMonths) {
+      totalCartoes += month.count;
+      totalDigitacoes += month.digitacoes.length;
+      totalClientes += month.totalCustomers;
+      activeCount += month.activeCount;
+      activeLaterCount += month.activeLaterCount;
+      totalInCents += month.totalInCents;
+    }
+
+    const taxaAproveitamento = totalClientes > 0 ? ((totalCartoes + totalDigitacoes) / totalClientes) * 100 : 0;
+    const taxaAprovacao = (totalCartoes + totalDigitacoes) > 0 ? (totalCartoes / (totalCartoes + totalDigitacoes)) * 100 : 0;
+    const cartoesAtivosPerc = totalCartoes > 0 ? (activeCount / totalCartoes) * 100 : 0;
+    const ativosNoCaixaPerc = totalCartoes > 0 ? (activeLaterCount / totalCartoes) * 100 : 0;
+    const ticketMedio = totalCartoes > 0 ? totalInCents / totalCartoes : 0;
+
+    return {
+      totalCartoes,
+      totalDigitacoes,
+      totalClientes,
+      taxaAproveitamento,
+      taxaAprovacao,
+      cartoesAtivosPerc,
+      ativosNoCaixaPerc,
+      ticketMedio,
+      crescimentoCartoes: 0,
+      crescimentoValor: 0,
+    };
+  }, [filteredMonths, selectedYear]);
+
   // When drilled down into a month, filter its days
   const activeMonth = useMemo(() => {
     if (!activeMonthKey) return null;
@@ -286,6 +325,15 @@ export function HistoryView() {
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-5 -translate-y-1/2 text-zinc-400" />
         </div>
       </div>
+
+      {yearMetrics && !search && (
+        <div className="mb-8">
+          <h2 className="mb-4 text-xl font-bold tracking-tight text-zinc-950">
+            Resumo do Ano ({selectedYear})
+          </h2>
+          <MonthAnalytics {...yearMetrics} />
+        </div>
+      )}
 
       {/* Months Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
