@@ -122,11 +122,13 @@ export function HomeView() {
   return (
     <PageContainer>
       {isGlobalOrRegional && (
-        <StoreSelector 
-          stores={stores} 
-          selectedStoreId={selectedStoreId} 
-          onChange={setSelectedStoreId} 
-        />
+        <div className="mb-6">
+          <StoreSelector 
+            stores={stores} 
+            selectedStoreId={selectedStoreId} 
+            onChange={setSelectedStoreId} 
+          />
+        </div>
       )}
       
       <PageHeader
@@ -277,12 +279,14 @@ export function HomeView() {
             onClose={() => setCardModalOpen(false)}
             onCreate={createRecord}
             onCreated={(record) => showSuccess(record.operatorName)}
+            stores={stores}
           />
 
           {/* Modal Digitação em lote */}
           <AddDigitacaoModal
             open={digitacaoModalOpen}
             onClose={() => setDigitacaoModalOpen(false)}
+            stores={stores}
           />
         </>
       )}

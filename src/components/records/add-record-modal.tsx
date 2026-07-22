@@ -16,6 +16,7 @@ import { formatCurrencyInput, parseCurrencyInput } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { useAuth } from "@/components/providers/auth-provider";
+import { StoreSelector } from "./store-selector";
 
 type Step = "select-collab" | "client-name" | "value-activated";
 type Collaborator = { value: string; label: string; icon?: React.ReactNode };
@@ -26,6 +27,7 @@ type AddRecordModalProps = {
   onClose: () => void;
   onCreate: (payload: CreateRecordPayload) => Promise<OperatorRecord>;
   onCreated?: (record: OperatorRecord) => void;
+  stores?: { id: string; name: string }[];
 };
 
 export function AddRecordModal({
@@ -34,11 +36,13 @@ export function AddRecordModal({
   onClose,
   onCreate,
   onCreated,
+  stores = [],
 }: AddRecordModalProps) {
   const [step, setStep] = useState<Step>("select-collab");
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [isLoadingCollabs, setIsLoadingCollabs] = useState(false);
   const { selectedStoreId } = useAuth();
+  const [localStoreId, setLocalStoreId] = useState<string | null>(null);
 
   const [selectedCollabId, setSelectedCollabId] = useState("");
   const [selectedCollabName, setSelectedCollabName] = useState("");
@@ -53,7 +57,9 @@ export function AddRecordModal({
 
   const amountInCents = useMemo(() => parseCurrencyInput(amount), [amount]);
 
-  // Load collaborators on open
+  const effectiveStoreId = selectedStoreId || localStoreId;
+
+  // Reset state on open
   useEffect(() => {
     if (!open) return;
     setStep("select-collab");
@@ -64,11 +70,21 @@ export function AddRecordModal({
     setActivated(false);
     setErrorMsg(null);
     setApiError(null);
+    setLocalStoreId(null);
+  }, [open]);
 
-    if (collaborators.length > 0) return;
+  // Load collaborators when effectiveStoreId changes
+  useEffect(() => {
+    if (!open) return;
+    
+    if (!effectiveStoreId && !selectedStoreId) {
+      setCollaborators([]);
+      return; // Force selecting a store first
+    }
+
     setIsLoadingCollabs(true);
 
-    const storeQuery = selectedStoreId ? `?storeId=${selectedStoreId}` : "";
+    const storeQuery = effectiveStoreId ? `?storeId=${effectiveStoreId}` : "";
 
     Promise.all([
       fetch(`/api/collaborators${storeQuery}`).then((r) => r.json()),
@@ -243,14 +259,22 @@ export function AddRecordModal({
                     exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.2 }}
                     className="grid gap-4"
                   >
-                    <label className="grid gap-2">
+                    {!selectedStoreId && stores.length > 0 && (
+                      <StoreSelector
+                        stores={stores}
+                        selectedStoreId={localStoreId}
+                        onChange={setLocalStoreId}
+                        allowAll={false}
+                      />
+                    )}
+                    <label className={cn("grid gap-2", !effectiveStoreId && !selectedStoreId ? "opacity-50 pointer-events-none" : "")}>
                       <span className="text-sm font-semibold text-zinc-800">Funcionário</span>
                       <CustomSelect
                         options={collaborators}
                         value={selectedCollabId}
                         onChange={(v) => { setSelectedCollabId(v); setErrorMsg(null); }}
-                        placeholder={isLoadingCollabs ? "Carregando..." : "Selecione o funcionário"}
-                        disabled={isLoadingCollabs}
+                        placeholder={isLoadingCollabs ? "Carregando..." : (!effectiveStoreId && !selectedStoreId ? "Selecione uma unidade primeiro" : "Selecione o funcionário")}
+                        disabled={isLoadingCollabs || (!effectiveStoreId && !selectedStoreId)}
                       />
                       {errorMsg && <p className="text-sm font-medium text-rose-600">{errorMsg}</p>}
                     </label>

@@ -6,23 +6,24 @@ type StoreSelectorProps = {
   stores: { id: string; name: string }[];
   selectedStoreId: string | null;
   onChange: (id: string | null) => void;
+  allowAll?: boolean;
 };
 
-export function StoreSelector({ stores, selectedStoreId, onChange }: StoreSelectorProps) {
+export function StoreSelector({ stores, selectedStoreId, onChange, allowAll = true }: StoreSelectorProps) {
   if (!stores.length) return null;
 
-  const options = [
+  const options = allowAll ? [
     { value: "all", label: "Todas as unidades (Rede)" },
     ...stores.map((s) => ({ value: s.id, label: s.name })),
-  ];
+  ] : stores.map((s) => ({ value: s.id, label: s.name }));
 
   return (
-    <div className="mb-6 flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       <CustomSelect
         options={options}
-        value={selectedStoreId ?? "all"}
+        value={selectedStoreId ?? (allowAll ? "all" : "")}
         onChange={(val) => onChange(val === "all" ? null : val)}
-        placeholder="Escolha a Unidade"
+        placeholder="Selecione a Unidade"
       />
     </div>
   );

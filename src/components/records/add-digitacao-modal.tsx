@@ -16,6 +16,7 @@ import { useDigitacoes } from "@/components/providers/digitacoes-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { cn } from "@/lib/utils/cn";
+import { StoreSelector } from "./store-selector";
 
 type Step = "select-collab" | "add-clients";
 
@@ -24,9 +25,11 @@ type Collaborator = { value: string; label: string; icon?: React.ReactNode };
 export function AddDigitacaoModal({
   open,
   onClose,
+  stores = [],
 }: {
   open: boolean;
   onClose: () => void;
+  stores?: { id: string; name: string }[];
 }) {
   const { createDigitacao, isCreating, refresh } = useDigitacoes();
   const { selectedStoreId } = useAuth();
@@ -34,6 +37,8 @@ export function AddDigitacaoModal({
   const [step, setStep] = useState<Step>("select-collab");
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [isLoadingCollabs, setIsLoadingCollabs] = useState(false);
+  const [localStoreId, setLocalStoreId] = useState<string | null>(null);
+  
   const [selectedCollabId, setSelectedCollabId] = useState("");
   const [selectedCollabName, setSelectedCollabName] = useState("");
   const [clientName, setClientName] = useState("");
@@ -44,6 +49,9 @@ export function AddDigitacaoModal({
 
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const effectiveStoreId = selectedStoreId || localStoreId;
+
+  // Reset state on open
   useEffect(() => {
     if (!open) return;
     setStep("select-collab");
@@ -52,11 +60,21 @@ export function AddDigitacaoModal({
     setClientName("");
     setRegisteredNames([]);
     setErrorMsg(null);
+    setLocalStoreId(null);
+  }, [open]);
 
-    if (collaborators.length > 0) return;
+  // Load collaborators when effectiveStoreId changes
+  useEffect(() => {
+    if (!open) return;
+    
+    if (!effectiveStoreId && !selectedStoreId) {
+      setCollaborators([]);
+      return; // Force selecting a store first
+    }
+
     setIsLoadingCollabs(true);
 
-    const storeQuery = selectedStoreId ? `?storeId=${selectedStoreId}` : "";
+    const storeQuery = effectiveStoreId ? `?storeId=${effectiveStoreId}` : "";
 
     Promise.all([
       fetch(`/api/collaborators${storeQuery}`).then((r) => r.json()),
@@ -217,14 +235,22 @@ export function AddDigitacaoModal({
                     exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.2 }}
                     className="grid gap-4"
                   >
-                    <label className="grid gap-2">
+                    {!selectedStoreId && stores.length > 0 && (
+                      <StoreSelector
+                        stores={stores}
+                        selectedStoreId={localStoreId}
+                        onChange={setLocalStoreId}
+                        allowAll={false}
+                      />
+                    )}
+                    <label className={cn("grid gap-2", !effectiveStoreId && !selectedStoreId ? "opacity-50 pointer-events-none" : "")}>
                       <span className="text-sm font-semibold text-zinc-800">Funcionário</span>
                       <CustomSelect
                         options={collaborators}
                         value={selectedCollabId}
                         onChange={(v) => { setSelectedCollabId(v); setErrorMsg(null); }}
-                        placeholder={isLoadingCollabs ? "Carregando..." : "Selecione o funcionário"}
-                        disabled={isLoadingCollabs}
+                        placeholder={isLoadingCollabs ? "Carregando..." : (!effectiveStoreId && !selectedStoreId ? "Selecione uma unidade primeiro" : "Selecione o funcionário")}
+                        disabled={isLoadingCollabs || (!effectiveStoreId && !selectedStoreId)}
                       />
                       {errorMsg && <p className="text-sm font-medium text-rose-600">{errorMsg}</p>}
                     </label>
