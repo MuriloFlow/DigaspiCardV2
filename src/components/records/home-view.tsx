@@ -6,12 +6,15 @@ import { CreditCard, RefreshCw, TrendingUp, Users, Building, Target, Bug } from 
 import { OperatorPieChart } from "@/components/charts/operator-pie-chart";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { useRecords } from "@/components/providers/records-provider";
+import { useDigitacoes } from "@/components/providers/digitacoes-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { MetricCard } from "@/components/ui/metric-card";
 import { AddRecordModal } from "./add-record-modal";
 import { RecordCard } from "./record-card";
+import { ActionSelectionSheet } from "./action-selection-sheet";
+import { AddDigitacaoModal } from "./add-digitacao-modal";
 import {
   aggregateByOperator,
   aggregateByStore,
@@ -29,13 +32,18 @@ export function HomeView() {
     refresh,
     createRecord,
   } = useRecords();
+  const { todayOperators: digitacaoOperators, todayCount: digitacaoCount, isLoading: digLoading } = useDigitacoes();
   const { user } = useAuth();
   const isGlobalAdmin = user?.role === "GLOBAL_ADMIN";
-  const [modalOpen, setModalOpen] = useState(false);
+
+  // Modal states
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [cardModalOpen, setCardModalOpen] = useState(false);
+  const [digitacaoModalOpen, setDigitacaoModalOpen] = useState(false);
+
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [manualGoal, setManualGoal] = useState<number | null>(null);
 
-  // Lógica de Reset às 00:00: Filtrar apenas registros de hoje para o gráfico
   const todayKey = toDateKey(new Date().toISOString());
   const todayRecords = useMemo(() => records.filter(r => toDateKey(r.createdAt) === todayKey), [records, todayKey]);
   const todayOperators = useMemo(() => {
@@ -57,33 +65,25 @@ export function HomeView() {
   }, [todayKey]);
 
   const dailyGoal = useMemo(() => {
-    // Para Admin Global, a meta base é a soma da meta de cada loja existente
-    const storeCount = isGlobalAdmin 
+    const storeCount = isGlobalAdmin
       ? Math.max(1, new Set(records.map(r => r.storeName).filter(Boolean)).size)
       : 1;
 
-    const day = new Date().getDay(); // 0 = Domingo, 1 = Segunda, ..., 5 = Sexta, 6 = Sábado
-    let baseGoal = 12 * storeCount; // Padrão: Domingo a Quinta
-    if (day === 5) baseGoal = 15 * storeCount; // Sexta-feira
-    if (day === 6) baseGoal = 30 * storeCount; // Sábado
+    const day = new Date().getDay();
+    let baseGoal = 12 * storeCount;
+    if (day === 5) baseGoal = 15 * storeCount;
+    if (day === 6) baseGoal = 30 * storeCount;
 
     if (records.length === 0) return baseGoal;
 
-    // Pega a data do registro mais antigo e calcula os dias totais de uso do sistema
     const oldestDate = new Date(records[records.length - 1].createdAt);
     const msDiff = Date.now() - oldestDate.getTime();
     const daysSinceFirst = Math.max(1, Math.ceil(msDiff / (1000 * 60 * 60 * 24)));
-    
-    // Se for sistema novo (menos de 7 dias de histórico), usamos puramente a meta do dia
-    if (daysSinceFirst <= 7) {
-      return baseGoal;
-    }
 
-    // Média diária do período todo + 15% de meta de crescimento
+    if (daysSinceFirst <= 7) return baseGoal;
+
     const avgDaily = records.length / daysSinceFirst;
     const dynamicGoal = Math.max(1, Math.ceil(avgDaily * 1.15));
-
-    // A meta nunca pode ser inferior à meta padrão daquele dia
     return Math.max(baseGoal, dynamicGoal);
   }, [records]);
 
@@ -148,44 +148,58 @@ export function HomeView() {
         ) : null}
       </AnimatePresence>
 
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
-        <OperatorPieChart
-          operators={todayOperators}
-          centerLabel="Hoje"
-          centerValue={formatInteger(todayCardsCount)}
-          className="min-h-[420px]"
-        />
+      {/* ── Dois gráficos de pizza lado a lado ── */}
+      <section className="mb-6">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-[1fr_1fr_360px] lg:items-stretch">
+          {/* Pizza Cartões */}
+          <OperatorPieChart
+            operators={todayOperators}
+            centerLabel="Cartões"
+            centerValue={formatInteger(todayCardsCount)}
+            className="min-h-0"
+          />
 
-        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-          <MetricCard
-            label="Meta do Dia"
-            value={`${formatInteger(todayCardsCount)} / ${formatInteger(finalGoal)}`}
-            detail={todayCardsCount >= finalGoal ? "Meta atingida! 🎉" : `${Math.round((todayCardsCount / finalGoal) * 100)}% concluída`}
-            icon={Target}
-            tone={todayCardsCount >= finalGoal ? "green" : "blue"}
+          {/* Pizza Digitações */}
+          <OperatorPieChart
+            operators={digitacaoOperators}
+            centerLabel="DIG"
+            centerValue={formatInteger(digitacaoCount)}
+            tooltipLabel="digitações"
+            className="min-h-0"
           />
-          <MetricCard
-            label="Valor total da rede"
-            value={formatCurrency(summary.totalAmountInCents)}
-            detail="Volume histórico"
-            icon={CreditCard}
-            tone="dark"
-          />
-          <MetricCard
-            label={isGlobalAdmin ? "Loja Destaque" : "Líder Atual"}
-            value={summary.topOperator?.operatorName ?? "Sem dados"}
-            detail={
-              summary.topOperator
-                ? `${formatInteger(summary.topOperator.count)} cartões`
-                : "Aguardando registros"
-            }
-            icon={TrendingUp}
-            tone="green"
-          />
+
+          {/* Métricas (ocupa coluna extra em lg) */}
+          <div className="col-span-2 grid gap-3 sm:grid-cols-3 lg:col-span-1 lg:grid-cols-1">
+            <MetricCard
+              label="Meta do Dia"
+              value={`${formatInteger(todayCardsCount)} / ${formatInteger(finalGoal)}`}
+              detail={todayCardsCount >= finalGoal ? "Meta atingida! 🎉" : `${Math.round((todayCardsCount / finalGoal) * 100)}% concluída`}
+              icon={Target}
+              tone={todayCardsCount >= finalGoal ? "green" : "blue"}
+            />
+            <MetricCard
+              label="Valor total da rede"
+              value={formatCurrency(summary.totalAmountInCents)}
+              detail="Volume histórico"
+              icon={CreditCard}
+              tone="dark"
+            />
+            <MetricCard
+              label={isGlobalAdmin ? "Loja Destaque" : "Líder Atual"}
+              value={summary.topOperator?.operatorName ?? "Sem dados"}
+              detail={
+                summary.topOperator
+                  ? `${formatInteger(summary.topOperator.count)} cartões`
+                  : "Aguardando registros"
+              }
+              icon={TrendingUp}
+              tone="green"
+            />
+          </div>
         </div>
       </section>
 
-      <section className="mt-8">
+      <section className="mt-2">
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase text-zinc-500">
@@ -215,13 +229,30 @@ export function HomeView() {
 
       {!isGlobalAdmin && (
         <>
-          <FloatingActionButton onClick={() => setModalOpen(true)} />
+          {/* FAB abre o action sheet */}
+          <FloatingActionButton onClick={() => setSheetOpen(true)} />
+
+          {/* Menu de seleção — Cartão ou Digitação */}
+          <ActionSelectionSheet
+            open={sheetOpen}
+            onClose={() => setSheetOpen(false)}
+            onSelectCard={() => setCardModalOpen(true)}
+            onSelectDigitacao={() => setDigitacaoModalOpen(true)}
+          />
+
+          {/* Modal Registrar Cartão */}
           <AddRecordModal
-            open={modalOpen}
+            open={cardModalOpen}
             isSubmitting={isCreating}
-            onClose={() => setModalOpen(false)}
+            onClose={() => setCardModalOpen(false)}
             onCreate={createRecord}
             onCreated={(record) => showSuccess(record.operatorName)}
+          />
+
+          {/* Modal Digitação em lote */}
+          <AddDigitacaoModal
+            open={digitacaoModalOpen}
+            onClose={() => setDigitacaoModalOpen(false)}
           />
         </>
       )}

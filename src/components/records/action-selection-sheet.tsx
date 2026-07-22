@@ -1,0 +1,111 @@
+"use client";
+
+import { AnimatePresence, motion } from "motion/react";
+import { CreditCard, Keyboard, X } from "lucide-react";
+
+type ActionSelectionSheetProps = {
+  open: boolean;
+  onClose: () => void;
+  onSelectCard: () => void;
+  onSelectDigitacao: () => void;
+};
+
+export function ActionSelectionSheet({
+  open,
+  onClose,
+  onSelectCard,
+  onSelectDigitacao,
+}: ActionSelectionSheetProps) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            key="sheet-backdrop"
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+
+          {/* Bottom Sheet */}
+          <motion.div
+            key="sheet-panel"
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-[2rem] border-t border-zinc-200 bg-white px-5 pb-10 pt-5 shadow-[0_-24px_70px_rgba(15,23,42,0.14)]"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 420, damping: 38 }}
+          >
+            {/* Handle bar */}
+            <div className="mx-auto mb-5 h-1 w-12 rounded-full bg-zinc-200" />
+
+            {/* Title row */}
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  Novo Registro
+                </p>
+                <h3 className="mt-0.5 text-xl font-bold text-zinc-950">
+                  O que deseja registrar?
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex size-9 items-center justify-center rounded-full border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-700"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* Options */}
+            <div className="grid gap-3">
+              {/* Registro de Cartão */}
+              <motion.button
+                type="button"
+                onClick={() => { onClose(); setTimeout(onSelectCard, 80); }}
+                whileTap={{ scale: 0.97 }}
+                className="group flex items-center gap-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-left transition hover:border-zinc-950 hover:bg-zinc-950 hover:text-white"
+              >
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white transition group-hover:bg-white group-hover:text-zinc-950">
+                  <CreditCard className="size-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-bold text-zinc-950 transition group-hover:text-white">
+                    Registro de Cartão
+                  </p>
+                  <p className="mt-0.5 text-sm text-zinc-500 transition group-hover:text-zinc-300">
+                    Cartão aprovado e valor confirmado
+                  </p>
+                </div>
+              </motion.button>
+
+              {/* Digitação */}
+              <motion.button
+                type="button"
+                onClick={() => { onClose(); setTimeout(onSelectDigitacao, 80); }}
+                whileTap={{ scale: 0.97 }}
+                className="group flex items-center gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition hover:border-amber-500 hover:bg-amber-500 hover:text-white"
+              >
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white transition group-hover:bg-white group-hover:text-amber-600">
+                  <Keyboard className="size-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-bold text-amber-900 transition group-hover:text-white">
+                    Digitação
+                  </p>
+                  <p className="mt-0.5 text-sm text-amber-700 transition group-hover:text-amber-100">
+                    Tentativa não aprovada — registrar em lote
+                  </p>
+                </div>
+              </motion.button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}

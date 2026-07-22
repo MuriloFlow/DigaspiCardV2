@@ -11,6 +11,7 @@ type OperatorPieChartProps = {
   operators: OperatorSummary[];
   centerLabel: string;
   centerValue: string;
+  tooltipLabel?: string;
   className?: string;
 };
 
@@ -18,6 +19,7 @@ export function OperatorPieChart({
   operators,
   centerLabel,
   centerValue,
+  tooltipLabel = "cartões",
   className,
 }: OperatorPieChartProps) {
   const hasData = operators.length > 0;
@@ -51,7 +53,7 @@ export function OperatorPieChart({
                 cursor={false}
                 wrapperStyle={{ zIndex: 100 }}
                 formatter={(value, name) => [
-                  `${formatInteger(Number(value))} cartões`,
+                  `${formatInteger(Number(value))} ${tooltipLabel}`,
                   String(name),
                 ]}
                 contentStyle={{
@@ -102,7 +104,7 @@ export function OperatorPieChart({
               <SubRoleTag subRole={operator.subRole} />
             </div>
             <span className="shrink-0 text-sm font-semibold text-zinc-950">
-              {formatInteger(operator.count)} {operator.count === 1 ? "cartão" : "cartões"}
+              {formatInteger(operator.count)} {operator.count === 1 ? tooltipLabel.replace(/s$/, "") : tooltipLabel}
             </span>
           </div>
         ))}
