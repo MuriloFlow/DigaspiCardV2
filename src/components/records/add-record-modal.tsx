@@ -1,23 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, CreditCard, Loader2, UserRound, X, AlertTriangle } from "lucide-react";
-import { createRecordSchema } from "@/lib/records/schema";
-import type {
-  CreateRecordPayload,
-  OperatorRecord,
-} from "@/lib/records/types";
 import {
-  formatCurrencyInput,
-  parseCurrencyInput,
-} from "@/lib/utils/format";
+  Check,
+  ChevronLeft,
+  CreditCard,
+  Loader2,
+  UserRound,
+  X,
+} from "lucide-react";
+import { createRecordSchema } from "@/lib/records/schema";
+import type { CreateRecordPayload, OperatorRecord } from "@/lib/records/types";
+import { formatCurrencyInput, parseCurrencyInput } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import { CustomSelect } from "@/components/ui/custom-select";
 
-type FieldErrors = Partial<
-  Record<"operatorName" | "clientName" | "amountInCents", string>
->;
+type Step = "select-collab" | "client-name" | "value-activated";
+type Collaborator = { value: string; label: string; icon?: React.ReactNode };
 
 type AddRecordModalProps = {
   open: boolean;
@@ -27,14 +27,6 @@ type AddRecordModalProps = {
   onCreated?: (record: OperatorRecord) => void;
 };
 
-type SimilarResult = { id: string; name: string; similarity: number };
-
-function FieldError({ children }: { children?: string }) {
-  return children ? (
-    <p className="mt-2 text-sm font-medium text-rose-600">{children}</p>
-  ) : null;
-}
-
 export function AddRecordModal({
   open,
   isSubmitting,
@@ -42,308 +34,339 @@ export function AddRecordModal({
   onCreate,
   onCreated,
 }: AddRecordModalProps) {
-  const firstInputRef = useRef<HTMLInputElement>(null);
-  const [operatorName, setOperatorName] = useState("");
+  const [step, setStep] = useState<Step>("select-collab");
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [isLoadingCollabs, setIsLoadingCollabs] = useState(false);
+
+  const [selectedCollabId, setSelectedCollabId] = useState("");
+  const [selectedCollabName, setSelectedCollabName] = useState("");
   const [clientName, setClientName] = useState("");
   const [amount, setAmount] = useState("");
   const [activated, setActivated] = useState(false);
-  const [errors, setErrors] = useState<FieldErrors>({});
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const [collaborators, setCollaborators] = useState<{ value: string; label: string; icon?: React.ReactNode }[]>([]);
-  const [isLoadingCollaborators, setIsLoadingCollaborators] = useState(false);
+
+  const clientInputRef = useRef<HTMLInputElement>(null);
+  const amountInputRef = useRef<HTMLInputElement>(null);
 
   const amountInCents = useMemo(() => parseCurrencyInput(amount), [amount]);
 
-  useEffect(() => {
-    if (open && collaborators.length === 0) {
-      setIsLoadingCollaborators(true);
-
-      Promise.all([
-        fetch("/api/collaborators").then(r => r.json()),
-        fetch("/api/managers").then(r => r.json()).catch(() => ({ managers: [] })),
-      ])
-        .then(([collabData, managerData]) => {
-          // ── Mapa de configuração de cargos de colaboradores ───────────────
-          type RoleConfig = { label: string; groupLabel: string; cls: string; order: number };
-          const roleConfig: Record<string, RoleConfig> = {
-            "Funcionario Operacional": { label: "Operador",       groupLabel: "Operadores",     cls: "bg-purple-100 text-purple-700",  order: 0 },
-            "Caixa":                   { label: "Caixa",          groupLabel: "Caixa",           cls: "bg-blue-100 text-blue-700",      order: 1 },
-            "Lider de Caixa":          { label: "Líder de Caixa", groupLabel: "Líder de Caixa",  cls: "bg-rose-100 text-rose-700",      order: 2 },
-            "VM":                      { label: "VM",             groupLabel: "VM",              cls: "bg-pink-100 text-pink-700",      order: 3 },
-            "Vendedor":                { label: "Vendedor",       groupLabel: "Vendedores",      cls: "bg-emerald-100 text-emerald-700", order: 4 },
-          };
-
-          const result: { value: string; label: string; icon?: React.ReactNode; isHeader?: boolean }[] = [];
-
-          // ── Colaboradores agrupados e ordenados ───────────────────────────
-          if (collabData.collaborators) {
-            const active = (collabData.collaborators as { id: string; name: string; subRole?: string; isActive: boolean }[])
-              .filter(c => c.isActive);
-
-            active.sort((a, b) => {
-              const oA = roleConfig[a.subRole ?? ""]?.order ?? 99;
-              const oB = roleConfig[b.subRole ?? ""]?.order ?? 99;
-              if (oA !== oB) return oA - oB;
-              return a.name.localeCompare(b.name, "pt-BR");
-            });
-
-            let lastGroup = "";
-            for (const c of active) {
-              const cfg = roleConfig[c.subRole ?? ""];
-              const groupLabel = cfg?.groupLabel ?? c.subRole ?? "Outros";
-              if (groupLabel !== lastGroup) {
-                result.push({ value: `__header_${groupLabel}`, label: groupLabel, isHeader: true });
-                lastGroup = groupLabel;
-              }
-              result.push({
-                value: c.id,
-                label: c.name,
-                icon: cfg ? (
-                  <span className={`inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${cfg.cls}`}>
-                    {cfg.label}
-                  </span>
-                ) : undefined,
-              });
-            }
-          }
-
-          // ── Gerentes ao final (MANAGER e VM juntos, ordenados A-Z) ────────
-          const managers = (managerData.managers ?? []) as { id: string; name: string; role: "MANAGER" | "VM" }[];
-          if (managers.length > 0) {
-            managers.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-            result.push({ value: "__header_gerentes", label: "Gerentes", isHeader: true });
-            for (const m of managers) {
-              const tagLabel = m.role === "VM" ? "VM" : "Gerente";
-              result.push({
-                value: m.id,
-                label: m.name,
-                icon: (
-                  <span className="inline-flex shrink-0 rounded-md bg-yellow-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-yellow-700">
-                    {tagLabel}
-                  </span>
-                ),
-              });
-            }
-          }
-
-          setCollaborators(result);
-        })
-        .catch(() => {})
-        .finally(() => setIsLoadingCollaborators(false));
-    }
-  }, [open, collaborators.length]);
-
-
+  // Load collaborators on open
   useEffect(() => {
     if (!open) return;
-    const timeout = window.setTimeout(() => firstInputRef.current?.focus(), 80);
-    return () => window.clearTimeout(timeout);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !isSubmitting) onClose();
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSubmitting, onClose, open]);
-
-  useEffect(() => {
-    if (open) {
-      const timeout = window.setTimeout(() => {
-        setErrors({});
-        setApiError(null);
-        setSaved(false);
-      }, 0);
-      return () => window.clearTimeout(timeout);
-    }
-    const timeout = window.setTimeout(() => {
-      setOperatorName("");
-      setClientName("");
-      setAmount("");
-      setActivated(false);
-    }, 180);
-    return () => window.clearTimeout(timeout);
-  }, [open]);
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+    setStep("select-collab");
+    setSelectedCollabId("");
+    setSelectedCollabName("");
+    setClientName("");
+    setAmount("");
+    setActivated(false);
+    setErrorMsg(null);
     setApiError(null);
-    setSaved(false);
 
+    if (collaborators.length > 0) return;
+    setIsLoadingCollabs(true);
+
+    Promise.all([
+      fetch("/api/collaborators").then((r) => r.json()),
+      fetch("/api/managers").then((r) => r.json()).catch(() => ({ managers: [] })),
+    ])
+      .then(([collabData, managerData]) => {
+        type RoleConfig = { label: string; groupLabel: string; cls: string; order: number };
+        const roleConfig: Record<string, RoleConfig> = {
+          "Funcionario Operacional": { label: "Operador", groupLabel: "Operadores", cls: "bg-purple-100 text-purple-700", order: 0 },
+          Caixa: { label: "Caixa", groupLabel: "Caixa", cls: "bg-blue-100 text-blue-700", order: 1 },
+          "Lider de Caixa": { label: "Líder de Caixa", groupLabel: "Líder de Caixa", cls: "bg-rose-100 text-rose-700", order: 2 },
+          VM: { label: "VM", groupLabel: "VM", cls: "bg-pink-100 text-pink-700", order: 3 },
+          Vendedor: { label: "Vendedor", groupLabel: "Vendedores", cls: "bg-emerald-100 text-emerald-700", order: 4 },
+        };
+        const result: Collaborator[] = [];
+        if (collabData.collaborators) {
+          const active = (collabData.collaborators as { id: string; name: string; subRole?: string; isActive: boolean }[]).filter((c) => c.isActive);
+          active.sort((a, b) => {
+            const oA = roleConfig[a.subRole ?? ""]?.order ?? 99;
+            const oB = roleConfig[b.subRole ?? ""]?.order ?? 99;
+            return oA !== oB ? oA - oB : a.name.localeCompare(b.name, "pt-BR");
+          });
+          let lastGroup = "";
+          for (const c of active) {
+            const cfg = roleConfig[c.subRole ?? ""];
+            const groupLabel = cfg?.groupLabel ?? c.subRole ?? "Outros";
+            if (groupLabel !== lastGroup) {
+              result.push({ value: `__header_${groupLabel}`, label: groupLabel });
+              lastGroup = groupLabel;
+            }
+            result.push({
+              value: c.id, label: c.name,
+              icon: cfg ? (
+                <span className={`inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${cfg.cls}`}>
+                  {cfg.label}
+                </span>
+              ) : undefined,
+            });
+          }
+        }
+        const managers = (managerData.managers ?? []) as { id: string; name: string; role: string }[];
+        if (managers.length > 0) {
+          managers.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+          result.push({ value: "__header_gerentes", label: "Gerentes" });
+          for (const m of managers) {
+            result.push({
+              value: m.id, label: m.name,
+              icon: (
+                <span className="inline-flex shrink-0 rounded-md bg-yellow-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-yellow-700">
+                  {m.role === "VM" ? "VM" : "Gerente"}
+                </span>
+              ),
+            });
+          }
+        }
+        setCollaborators(result);
+      })
+      .finally(() => setIsLoadingCollabs(false));
+  }, [open]);
+
+  // Auto-focus on step transitions
+  useEffect(() => {
+    if (step === "client-name") setTimeout(() => clientInputRef.current?.focus(), 120);
+    if (step === "value-activated") setTimeout(() => amountInputRef.current?.focus(), 120);
+  }, [step]);
+
+  // ESC to close
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape" && !isSubmitting) onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, isSubmitting, onClose]);
+
+  // ── Step handlers ──────────────────────────────────────────────
+
+  function handleStep1() {
+    if (!selectedCollabId || selectedCollabId.startsWith("__header_")) {
+      setErrorMsg("Selecione um funcionário."); return;
+    }
+    const collab = collaborators.find((c) => c.value === selectedCollabId);
+    setSelectedCollabName(collab?.label ?? "");
+    setErrorMsg(null);
+    setStep("client-name");
+  }
+
+  function handleStep2() {
+    if (!clientName.trim()) { setErrorMsg("Digite o nome do cliente."); return; }
+    setErrorMsg(null);
+    setStep("value-activated");
+  }
+
+  async function handleSubmit() {
+    setApiError(null);
     const validation = createRecordSchema.safeParse({
-      collaboratorId: operatorName,
+      collaboratorId: selectedCollabId,
       clientName,
       amountInCents,
       activated,
     });
-
     if (!validation.success) {
-      const nextErrors: FieldErrors = {};
-      validation.error.issues.forEach((issue) => {
-        const field = issue.path[0] as string;
-        if (field === "collaboratorId") nextErrors.operatorName = issue.message;
-        else if (field === "clientName" || field === "amountInCents") nextErrors[field] = issue.message;
-      });
-      setErrors(nextErrors);
+      const issue = validation.error.issues[0];
+      setApiError(issue?.message ?? "Dados inválidos.");
       return;
     }
-
-    setErrors({});
-
     try {
       const record = await onCreate(validation.data);
-      setSaved(true);
       onCreated?.(record);
-      window.setTimeout(onClose, 420);
-    } catch (error) {
-      setApiError(
-        error instanceof Error
-          ? error.message
-          : "Nao foi possivel salvar o registro.",
-      );
+      setTimeout(onClose, 400);
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : "Não foi possível salvar o registro.");
     }
   }
 
+  function goBack() {
+    setErrorMsg(null);
+    if (step === "client-name") setStep("select-collab");
+    if (step === "value-activated") setStep("client-name");
+  }
+
+  // Step label for header eyebrow
+  const stepLabel = step === "select-collab" ? "Passo 1 de 3" : step === "client-name" ? "Passo 2 de 3" : "Passo 3 de 3";
+  const stepTitle = step === "select-collab"
+    ? "Quem está registrando?"
+    : step === "client-name"
+      ? selectedCollabName
+      : selectedCollabName;
+
   return (
     <AnimatePresence>
-      {open ? (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <motion.button
-            aria-label="Fechar modal"
-            className="absolute inset-0 bg-black/60 backdrop-blur-md"
-            type="button"
+      {open && (
+        <>
+          <motion.div
+            key="rc-backdrop"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => { if (!isSubmitting) onClose(); }}
           />
-
           <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="new-record-title"
-            initial={{ opacity: 0, y: 18, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 14, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 420, damping: 34 }}
-            className="relative w-full max-w-lg rounded-[2rem] border border-zinc-200 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.22)]"
+            key="rc-panel"
+            className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] border-t border-zinc-100 bg-white shadow-[0_-24px_80px_rgba(15,23,42,0.18)]"
+            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 400, damping: 38 }}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-zinc-100 px-6 py-5">
-              <div>
-                <p className="text-xs font-semibold uppercase text-zinc-500">Novo registro</p>
-                <h2 id="new-record-title" className="mt-1 text-2xl font-semibold text-zinc-950">
-                  Registrar cartao
-                </h2>
+            <div className="mx-auto mt-4 h-1 w-12 rounded-full bg-zinc-200" />
+
+            {/* Header */}
+            <div className="flex items-center gap-3 border-b border-zinc-100 px-5 py-4">
+              {step !== "select-collab" && (
+                <button type="button" onClick={goBack}
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition hover:bg-zinc-50">
+                  <ChevronLeft className="size-4" />
+                </button>
+              )}
+              <div className="flex size-9 items-center justify-center rounded-xl bg-zinc-950 text-white shrink-0">
+                <CreditCard className="size-5" />
               </div>
-              <button
-                type="button" aria-label="Fechar" disabled={isSubmitting} onClick={onClose}
-                className="flex size-10 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition duration-300 hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/15 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <X aria-hidden="true" className="size-5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">{stepLabel}</p>
+                <h3 className="text-base font-bold text-zinc-950 truncate">{stepTitle}</h3>
+              </div>
+              <button type="button" onClick={() => { if (!isSubmitting) onClose(); }}
+                className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-700">
+                <X className="size-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid gap-5 px-6 py-6">
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-zinc-800">Nome do Funcionário</span>
-                <CustomSelect
-                  options={collaborators}
-                  value={operatorName}
-                  onChange={setOperatorName}
-                  placeholder={isLoadingCollaborators ? "Carregando funcionários..." : "Selecione o funcionário"}
-                  disabled={isLoadingCollaborators}
-                />
-                <FieldError>{errors.operatorName}</FieldError>
-              </label>
+            {/* Body */}
+            <div className="px-5 py-5 pb-10">
+              <AnimatePresence mode="wait">
 
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-zinc-800">Nome do Cliente</span>
-                <span className={cn(
-                  "flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10",
-                  errors.clientName ? "border-rose-300" : "border-zinc-200",
-                )}>
-                  <UserRound aria-hidden="true" className="size-5 shrink-0 text-zinc-400" />
-                  <input value={clientName}
-                    onChange={(event) => setClientName(event.target.value)}
-                    placeholder="Ex: Helena Prado"
-                    className="min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
-                    autoComplete="off" />
-                </span>
-                <FieldError>{errors.clientName}</FieldError>
-              </label>
+                {/* ── Step 1: Select Collaborator ── */}
+                {step === "select-collab" && (
+                  <motion.div key="s1"
+                    initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.2 }}
+                    className="grid gap-4"
+                  >
+                    <label className="grid gap-2">
+                      <span className="text-sm font-semibold text-zinc-800">Funcionário</span>
+                      <CustomSelect
+                        options={collaborators}
+                        value={selectedCollabId}
+                        onChange={(v) => { setSelectedCollabId(v); setErrorMsg(null); }}
+                        placeholder={isLoadingCollabs ? "Carregando..." : "Selecione o funcionário"}
+                        disabled={isLoadingCollabs}
+                      />
+                      {errorMsg && <p className="text-sm font-medium text-rose-600">{errorMsg}</p>}
+                    </label>
+                    <button type="button" onClick={handleStep1}
+                      disabled={!selectedCollabId || selectedCollabId.startsWith("__header_")}
+                      className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-bold text-white shadow-md transition hover:bg-zinc-800 disabled:opacity-50 active:scale-[0.98]">
+                      Continuar →
+                    </button>
+                  </motion.div>
+                )}
 
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-zinc-800">Valor do Cartao</span>
-                <span className={cn(
-                  "flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10",
-                  errors.amountInCents ? "border-rose-300" : "border-zinc-200",
-                )}>
-                  <CreditCard aria-hidden="true" className="size-5 shrink-0 text-zinc-400" />
-                  <input inputMode="numeric" value={amount}
-                    onChange={(event) => setAmount(formatCurrencyInput(event.target.value))}
-                    placeholder="R$ 0,00"
-                    className="min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400" />
-                </span>
-                <FieldError>{errors.amountInCents}</FieldError>
-              </label>
+                {/* ── Step 2: Client Name ── */}
+                {step === "client-name" && (
+                  <motion.div key="s2"
+                    initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.2 }}
+                    className="grid gap-4"
+                  >
+                    <label className="grid gap-2">
+                      <span className="text-sm font-semibold text-zinc-800">Nome do Cliente</span>
+                      <span className={cn(
+                        "flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 transition duration-200 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10",
+                        errorMsg ? "border-rose-300" : "border-zinc-200",
+                      )}>
+                        <UserRound className="size-5 shrink-0 text-zinc-400" />
+                        <input
+                          ref={clientInputRef}
+                          value={clientName}
+                          onChange={(e) => { setClientName(e.target.value); setErrorMsg(null); }}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleStep2(); } }}
+                          placeholder="Ex: Helena Prado"
+                          className="min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
+                          autoComplete="off"
+                        />
+                      </span>
+                      {errorMsg && <p className="text-sm font-medium text-rose-600">{errorMsg}</p>}
+                    </label>
+                    <button type="button" onClick={handleStep2}
+                      disabled={!clientName.trim()}
+                      className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-bold text-white shadow-md transition hover:bg-zinc-800 disabled:opacity-50 active:scale-[0.98]">
+                      Continuar →
+                    </button>
+                  </motion.div>
+                )}
 
-              {/* Activated checkbox */}
-              <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50/80 px-4 py-3.5 transition duration-300 hover:border-zinc-300 hover:bg-zinc-50">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={activated}
-                    onChange={(e) => setActivated(e.target.checked)}
-                    className="peer sr-only"
-                  />
-                  <div className={cn(
-                    "flex size-6 items-center justify-center rounded-lg border-2 transition duration-200",
-                    activated
-                      ? "border-emerald-500 bg-emerald-500"
-                      : "border-zinc-300 bg-white"
-                  )}>
-                    {activated && <Check className="size-4 text-white" strokeWidth={3} />}
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <span className="text-sm font-semibold text-zinc-800">Cartão Ativado?</span>
-                  <p className="mt-0.5 text-xs text-zinc-500">
-                    {activated ? "✓ Cartão será registrado como ativo" : "Marque se o cliente confirmou a ativação"}
-                  </p>
-                </div>
-                <span className={cn(
-                  "rounded-full px-2.5 py-1 text-xs font-semibold transition",
-                  activated ? "bg-emerald-100 text-emerald-700" : "bg-zinc-200 text-zinc-500"
-                )}>
-                  {activated ? "Ativo" : "Pendente"}
-                </span>
-              </label>
+                {/* ── Step 3: Value + Activated ── */}
+                {step === "value-activated" && (
+                  <motion.div key="s3"
+                    initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.2 }}
+                    className="grid gap-4"
+                  >
+                    {/* Summary pill */}
+                    <div className="rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+                      <span className="font-semibold text-zinc-800">{selectedCollabName}</span>
+                      {" · "}
+                      <span>{clientName}</span>
+                    </div>
 
-              {apiError ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{apiError}</div>
-              ) : null}
+                    {/* Amount */}
+                    <label className="grid gap-2">
+                      <span className="text-sm font-semibold text-zinc-800">Valor do Cartão</span>
+                      <span className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 transition duration-200 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
+                        <CreditCard className="size-5 shrink-0 text-zinc-400" />
+                        <input
+                          ref={amountInputRef}
+                          inputMode="numeric"
+                          value={amount}
+                          onChange={(e) => setAmount(formatCurrencyInput(e.target.value))}
+                          placeholder="R$ 0,00"
+                          className="min-w-0 flex-1 bg-transparent text-base text-zinc-950 outline-none placeholder:text-zinc-400"
+                        />
+                      </span>
+                    </label>
 
-              {saved ? (
-                <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-                  <Check aria-hidden="true" className="size-4" />
-                  Registro salvo com sucesso.
-                </div>
-              ) : null}
+                    {/* Activated toggle */}
+                    <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50/80 px-4 py-3.5 transition hover:border-zinc-300 hover:bg-zinc-50">
+                      <div className="relative">
+                        <input type="checkbox" checked={activated} onChange={(e) => setActivated(e.target.checked)} className="peer sr-only" />
+                        <div className={cn(
+                          "flex size-6 items-center justify-center rounded-lg border-2 transition duration-200",
+                          activated ? "border-emerald-500 bg-emerald-500" : "border-zinc-300 bg-white"
+                        )}>
+                          {activated && <Check className="size-4 text-white" strokeWidth={3} />}
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-sm font-semibold text-zinc-800">Cartão Ativado?</span>
+                        <p className="mt-0.5 text-xs text-zinc-500">
+                          {activated ? "✓ Cartão será registrado como ativo" : "Marque se o cliente confirmou a ativação"}
+                        </p>
+                      </div>
+                      <span className={cn(
+                        "rounded-full px-2.5 py-1 text-xs font-semibold transition",
+                        activated ? "bg-emerald-100 text-emerald-700" : "bg-zinc-200 text-zinc-500"
+                      )}>
+                        {activated ? "Ativo" : "Pendente"}
+                      </span>
+                    </label>
 
-              <button type="submit" disabled={isSubmitting}
-                className="mt-1 inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-[0_18px_38px_rgba(17,24,39,0.18)] transition duration-300 hover:-translate-y-0.5 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/15 active:translate-y-0 disabled:cursor-wait disabled:opacity-75">
-                {isSubmitting ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : <Check aria-hidden="true" className="size-4" />}
-                {isSubmitting ? "Salvando..." : "Salvar registro"}
-              </button>
-            </form>
+                    {apiError && (
+                      <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{apiError}</div>
+                    )}
+
+                    <button type="button" onClick={handleSubmit} disabled={isSubmitting}
+                      className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-bold text-white shadow-md transition hover:bg-zinc-800 disabled:opacity-75 disabled:cursor-wait active:scale-[0.98]">
+                      {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+                      {isSubmitting ? "Salvando..." : "Salvar Registro"}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </motion.div>
-        </motion.div>
-      ) : null}
+        </>
+      )}
     </AnimatePresence>
   );
 }
