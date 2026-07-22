@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { buildRecordsPayload } from "@/lib/records/domain";
 import { createRecord, listRecords, deleteRecord, updateRecord } from "@/lib/records/repository";
+import { listDigitacoes } from "@/lib/records/digitacoes-repository";
+import { listDailyMetrics } from "@/lib/records/daily-metrics-repository";
 import { getSession } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
@@ -18,8 +20,13 @@ export async function GET() {
     const session = await getSession();
     if (!session) return forbidden("Sessão inválida.");
 
-    const records = await listRecords(session.role === "GLOBAL_ADMIN" ? null : session.storeId);
-    return NextResponse.json(buildRecordsPayload(records), { headers: noStore });
+    const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
+    const [records, digitacoes, dailyMetrics] = await Promise.all([
+      listRecords(storeId),
+      listDigitacoes(storeId),
+      listDailyMetrics(storeId)
+    ]);
+    return NextResponse.json(buildRecordsPayload(records, digitacoes, dailyMetrics), { headers: noStore });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "Erro ao carregar registros." },
@@ -44,9 +51,14 @@ export async function POST(request: Request) {
     const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
 
     const record = await createRecord(body, storeId);
-    const records = await listRecords(storeId);
+    
+    const [records, digitacoes, dailyMetrics] = await Promise.all([
+      listRecords(storeId),
+      listDigitacoes(storeId),
+      listDailyMetrics(storeId)
+    ]);
 
-    return NextResponse.json({ record, ...buildRecordsPayload(records) }, { status: 201, headers: noStore });
+    return NextResponse.json({ record, ...buildRecordsPayload(records, digitacoes, dailyMetrics) }, { status: 201, headers: noStore });
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
@@ -76,7 +88,11 @@ export async function PATCH(request: Request) {
     });
 
     const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
-    const records = await listRecords(storeId);
+    const [records, digitacoes, dailyMetrics] = await Promise.all([
+      listRecords(storeId),
+      listDigitacoes(storeId),
+      listDailyMetrics(storeId)
+    ]);
     return NextResponse.json({ records, success: true }, { headers: noStore });
   } catch (error) {
     return NextResponse.json(
@@ -100,8 +116,13 @@ export async function DELETE(request: Request) {
 
     const storeId = session.role === "GLOBAL_ADMIN" ? null : session.storeId;
     await deleteRecord(id, storeId);
-    const records = await listRecords(storeId);
-    return NextResponse.json(buildRecordsPayload(records), { headers: noStore });
+    
+    const [records, digitacoes, dailyMetrics] = await Promise.all([
+      listRecords(storeId),
+      listDigitacoes(storeId),
+      listDailyMetrics(storeId)
+    ]);
+    return NextResponse.json(buildRecordsPayload(records, digitacoes, dailyMetrics), { headers: noStore });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "Erro ao deletar." },

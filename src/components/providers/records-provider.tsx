@@ -17,6 +17,8 @@ import type {
 } from "@/lib/records/types";
 
 type RecordsContextValue = RecordsPayload & {
+  digitacoes: import("@/lib/records/digitacoes-repository").Digitacao[];
+  dailyMetrics: import("@/lib/records/types").DailyMetric[];
   isCreating: boolean;
   isLoading: boolean;
   isDeleting: string | null;
@@ -54,6 +56,8 @@ async function parseApiError(response: Response) {
 
 export function RecordsProvider({ children }: { children: ReactNode }) {
   const [records, setRecords] = useState<OperatorRecord[]>([]);
+  const [digitacoes, setDigitacoes] = useState<import("@/lib/records/digitacoes-repository").Digitacao[]>([]);
+  const [dailyMetrics, setDailyMetrics] = useState<import("@/lib/records/types").DailyMetric[]>([]);
   const [summary, setSummary] = useState<DashboardSummary>(emptySummary);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -77,6 +81,8 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
 
       const data = (await response.json()) as RecordsPayload;
       setRecords(data.records);
+      setDigitacoes(data.digitacoes ?? []);
+      setDailyMetrics(data.dailyMetrics ?? []);
       setSummary(data.summary);
     } catch (loadError) {
       let errorMessage = "Não foi possível carregar os registros.";
@@ -118,6 +124,8 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       };
 
       setRecords(data.records);
+      setDigitacoes(data.digitacoes ?? []);
+      setDailyMetrics(data.dailyMetrics ?? []);
       setSummary(data.summary);
 
       return data.record;
@@ -144,6 +152,8 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
 
       const data = (await response.json()) as RecordsPayload;
       setRecords(data.records);
+      setDigitacoes(data.digitacoes ?? []);
+      setDailyMetrics(data.dailyMetrics ?? []);
       setSummary(data.summary);
     } catch (deleteError) {
       setError(
@@ -160,6 +170,8 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
   const value = useMemo<RecordsContextValue>(
     () => ({
       records,
+      digitacoes,
+      dailyMetrics,
       summary,
       isCreating,
       isLoading,
@@ -169,7 +181,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       deleteRecord,
       refresh: loadRecords,
     }),
-    [createRecord, deleteRecord, error, isCreating, isDeleting, isLoading, loadRecords, records, summary],
+    [createRecord, deleteRecord, error, isCreating, isDeleting, isLoading, loadRecords, records, digitacoes, dailyMetrics, summary],
   );
 
   return (

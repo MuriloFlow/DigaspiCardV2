@@ -11,9 +11,14 @@ import { MetricCard } from "@/components/ui/metric-card";
 import { getDateGroup } from "@/lib/records/domain";
 import { formatCurrency, formatInteger } from "@/lib/utils/format";
 import { RecordCard } from "./record-card";
+import { useAuth } from "@/components/providers/auth-provider";
+import { DailyCustomersModal } from "./daily-customers-modal";
+import { useState } from "react";
 
 export function HistoryDetailView({ dateKey }: { dateKey: string }) {
+  const { user } = useAuth();
   const { records, isLoading } = useRecords();
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const group = useMemo(
     () => getDateGroup(records, dateKey),
     [dateKey, records],
@@ -63,6 +68,22 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
         eyebrow={group.relativeLabel}
         title={group.label}
         description="Participacao percentual, volume e valor por operador no dia selecionado."
+      >
+        {(user?.role === "MANAGER" || user?.role === "GLOBAL_ADMIN") && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="group flex h-11 items-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/20"
+          >
+            <Users className="size-4" />
+            Total de Clientes
+          </button>
+        )}
+      </PageHeader>
+
+      <DailyCustomersModal 
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        dateKey={dateKey}
       />
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">

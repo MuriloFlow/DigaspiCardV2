@@ -9,16 +9,19 @@ import { useRecords } from "@/components/providers/records-provider";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
 import { groupRecordsByMonth } from "@/lib/records/domain";
 import { formatCurrency, formatInteger } from "@/lib/utils/format";
+import { MonthAnalytics } from "./month-analytics";
 
 export function HistoryView() {
-  const { records, isLoading, error, refresh } = useRecords();
+  const { records, digitacoes, dailyMetrics, isLoading, error, refresh } = useRecords();
   const [search, setSearch] = useState("");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   
   // Controls which month is currently opened (drill-down state)
   const [activeMonthKey, setActiveMonthKey] = useState<string | null>(null);
 
-  const monthGroups = useMemo(() => groupRecordsByMonth(records), [records]);
+  const monthGroups = useMemo(() => {
+    return groupRecordsByMonth(records, digitacoes, dailyMetrics);
+  }, [records, digitacoes, dailyMetrics]);
 
   const availableYears = useMemo(() => {
     const years = new Set(monthGroups.map((g) => g.year));
@@ -83,7 +86,6 @@ export function HistoryView() {
             <div className="flex size-8 items-center justify-center rounded-full bg-zinc-100 transition group-hover:bg-zinc-200">
               <ArrowLeft className="size-4" />
             </div>
-            Voltar para {activeMonth.year}
           </button>
         </div>
 
@@ -92,6 +94,41 @@ export function HistoryView() {
           title={`Mês de ${activeMonth.label}`}
           description={`Total de ${activeMonth.count} cartões registrados neste mês.`}
         />
+
+        {/* Analytics 9 Cards */}
+        {(() => {
+          const activeIndex = monthGroups.findIndex(g => g.monthKey === activeMonth.monthKey);
+          const previousMonthGroup = monthGroups[activeIndex + 1];
+          
+          const totalCartoes = activeMonth.count;
+          const totalDigitacoes = activeMonth.digitacoes.length;
+          const totalClientes = activeMonth.totalCustomers;
+          
+          const taxaAproveitamento = totalClientes > 0 ? ((totalCartoes + totalDigitacoes) / totalClientes) * 100 : 0;
+          const taxaAprovacao = (totalCartoes + totalDigitacoes) > 0 ? (totalCartoes / (totalCartoes + totalDigitacoes)) * 100 : 0;
+          const cartoesAtivosPerc = totalCartoes > 0 ? (activeMonth.activeCount / totalCartoes) * 100 : 0;
+          const ticketMedio = totalCartoes > 0 ? activeMonth.totalInCents / totalCartoes : 0;
+          
+          const prevCartoes = previousMonthGroup?.count || 0;
+          const crescimentoCartoes = prevCartoes > 0 ? ((totalCartoes - prevCartoes) / prevCartoes) * 100 : totalCartoes > 0 ? 100 : 0;
+          
+          const prevValor = previousMonthGroup?.totalInCents || 0;
+          const crescimentoValor = prevValor > 0 ? ((activeMonth.totalInCents - prevValor) / prevValor) * 100 : activeMonth.totalInCents > 0 ? 100 : 0;
+
+          return (
+            <MonthAnalytics 
+              totalCartoes={totalCartoes}
+              totalDigitacoes={totalDigitacoes}
+              totalClientes={totalClientes}
+              taxaAproveitamento={taxaAproveitamento}
+              taxaAprovacao={taxaAprovacao}
+              cartoesAtivosPerc={cartoesAtivosPerc}
+              ticketMedio={ticketMedio}
+              crescimentoCartoes={crescimentoCartoes}
+              crescimentoValor={crescimentoValor}
+            />
+          );
+        })()}
 
         <div className="mb-6 flex items-center rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-3.5 shadow-sm transition duration-300 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/10">
           <Search className="size-5 shrink-0 text-zinc-400" />

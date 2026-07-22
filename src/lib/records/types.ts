@@ -42,14 +42,24 @@ export type DateGroup = {
   operators: OperatorSummary[];
 };
 
+export type DailyMetric = {
+  id: string;
+  storeId: string;
+  dateKey: string;
+  totalCustomers: number;
+  createdAt: string;
+};
+
 export type MonthGroup = {
   monthKey: string;
   label: string;
   year: number;
   records: OperatorRecord[];
+  digitacoes: import("./digitacoes-repository").Digitacao[];
   count: number;
   activeCount: number;
   totalInCents: number;
+  totalCustomers: number;
   dateGroups: DateGroup[];
 };
 
@@ -62,6 +72,8 @@ export type DashboardSummary = {
 
 export type RecordsPayload = {
   records: OperatorRecord[];
+  digitacoes: import("./digitacoes-repository").Digitacao[];
+  dailyMetrics: import("./types").DailyMetric[];
   summary: DashboardSummary;
 };
 

@@ -138,39 +138,79 @@ export function groupRecordsByDate(records: OperatorRecord[]) {
   }));
 }
 
-export function groupRecordsByMonth(records: OperatorRecord[]): MonthGroup[] {
+export function groupRecordsByMonth(
+  records: OperatorRecord[],
+  digitacoes: import("./digitacoes-repository").Digitacao[] = [],
+  dailyMetrics: import("./types").DailyMetric[] = []
+): MonthGroup[] {
   const months = new Map<string, OperatorRecord[]>();
+  const digitacoesByMonth = new Map<string, import("./digitacoes-repository").Digitacao[]>();
+  const customersByMonth = new Map<string, number>();
 
+  // Group records by month
   sortRecordsByNewest(records).forEach((record) => {
     const monthKey = toMonthKey(record.createdAt);
     const current = months.get(monthKey) ?? [];
     months.set(monthKey, [...current, record]);
   });
 
-  return Array.from(months.entries()).map<MonthGroup>(([monthKey, items]) => {
+  // Group digitacoes by month
+  digitacoes.forEach((dig) => {
+    const monthKey = toMonthKey(dig.createdAt);
+    const current = digitacoesByMonth.get(monthKey) ?? [];
+    digitacoesByMonth.set(monthKey, [...current, dig]);
+  });
+
+  // Group dailyMetrics by month
+  dailyMetrics.forEach((metric) => {
+    const monthKey = toMonthKey(metric.dateKey);
+    const current = customersByMonth.get(monthKey) ?? 0;
+    customersByMonth.set(monthKey, current + metric.totalCustomers);
+  });
+
+  // Create a combined list of all monthKeys
+  const allMonthKeys = new Set([
+    ...months.keys(),
+    ...digitacoesByMonth.keys(),
+    ...customersByMonth.keys(),
+  ]);
+
+  return Array.from(allMonthKeys).map<MonthGroup>((monthKey) => {
     const [yearStr] = monthKey.split("-");
+    const items = months.get(monthKey) ?? [];
+    const digs = digitacoesByMonth.get(monthKey) ?? [];
+    const totalCustomers = customersByMonth.get(monthKey) ?? 0;
+
     return {
       monthKey,
       label: formatMonth(monthKey),
       year: Number(yearStr),
       records: items,
+      digitacoes: digs,
       count: items.length,
-      activeCount: items.filter(r => r.activated).length,
+      activeCount: items.filter((r) => r.activated).length,
       totalInCents: items.reduce((total, r) => total + r.amountInCents, 0),
-      dateGroups: groupRecordsByDate(items),
+      totalCustomers,
+      dateGroups: groupRecordsByDate(items), // Could also group digitacoes by date if needed later
     };
-  });
+  }).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
 }
 
 export function getDateGroup(records: OperatorRecord[], dateKey: string) {
   return groupRecordsByDate(records).find((group) => group.dateKey === dateKey);
 }
 
-export function buildRecordsPayload(records: OperatorRecord[]): RecordsPayload {
+export function buildRecordsPayload(
+  records: OperatorRecord[],
+  digitacoes: import("./digitacoes-repository").Digitacao[] = [],
+  dailyMetrics: import("./types").DailyMetric[] = []
+): RecordsPayload {
   const sortedRecords = sortRecordsByNewest(records);
 
   return {
     records: sortedRecords,
+    digitacoes,
+    dailyMetrics,
     summary: buildDashboardSummary(sortedRecords),
   };
 }
