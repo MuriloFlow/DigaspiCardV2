@@ -114,45 +114,45 @@ export function HistoryView() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.25) }}
-              className="flex flex-col gap-4 rounded-[1.5rem] border border-zinc-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between shadow-sm transition duration-300 hover:shadow-md hover:border-zinc-300"
             >
               <Link
                 href={`/historico/${dayGroup.dateKey}`}
-                className="flex min-w-0 items-center gap-4 outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/15"
+                className="group flex flex-col gap-6 rounded-[1.75rem] border border-zinc-200/80 bg-white p-5 shadow-[0_14px_42px_rgba(15,23,42,0.04)] transition duration-300 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-[0_20px_54px_rgba(15,23,42,0.06)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-500/30"
               >
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-600 transition group-hover:bg-zinc-200">
+              {/* Top: Icon + Date */}
+              <div className="flex items-center gap-4">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-100 bg-zinc-50 text-zinc-600 shadow-sm transition group-hover:bg-zinc-100 group-hover:text-zinc-900">
                   <CalendarDays className="size-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                  <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">
                     {dayGroup.relativeLabel}
                   </p>
-                  <h3 className="text-base font-bold text-zinc-950">
+                  <h3 className="text-lg font-bold text-zinc-950">
                     {dayGroup.label}
                   </h3>
                 </div>
-              </Link>
+              </div>
               
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="flex items-center gap-4 sm:mr-2">
-                  <div className="text-right">
+              {/* Bottom: Metrics + Arrow */}
+              <div className="flex w-full items-end justify-between">
+                <div className="flex items-center">
+                  <div className="text-right pr-4">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Cartões</p>
-                    <p className="text-sm font-semibold text-zinc-950">{formatInteger(dayGroup.count)}</p>
+                    <p className="text-base font-bold text-zinc-950">{formatInteger(dayGroup.count)}</p>
                   </div>
-                  <div className="w-px h-6 bg-zinc-200" />
-                  <div className="text-right">
+                  <div className="w-px h-8 bg-zinc-200" />
+                  <div className="text-left pl-4">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Valor</p>
-                    <p className="text-sm font-semibold text-zinc-950">{formatCurrency(dayGroup.totalInCents)}</p>
+                    <p className="text-base font-bold text-zinc-950">{formatCurrency(dayGroup.totalInCents)}</p>
                   </div>
                 </div>
-                <Link
-                  href={`/historico/${dayGroup.dateKey}`}
-                  className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white shadow-sm transition hover:bg-zinc-800 sm:w-auto sm:px-4 sm:gap-2"
-                >
-                  <span className="hidden text-sm font-semibold sm:block">Detalhes</span>
-                  <ArrowRight className="size-4" />
-                </Link>
+
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white shadow-sm transition group-hover:bg-zinc-800">
+                  <ArrowRight className="size-5" />
+                </div>
               </div>
+            </Link>
             </motion.div>
           ))}
 
