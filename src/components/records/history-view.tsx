@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, CalendarDays, ChevronDown, RefreshCw, Search, X,
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRecords } from "@/components/providers/records-provider";
+import { sumDigitacoes } from "@/lib/records/digitacoes-utils";
 import { DigitacoesListModal } from "./digitacoes-list-modal";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
 import { groupRecordsByMonth } from "@/lib/records/domain";
@@ -14,7 +15,7 @@ import { formatCurrency, formatInteger } from "@/lib/utils/format";
 import { MonthAnalytics } from "./month-analytics";
 
 export function HistoryView() {
-  const { user } = useAuth();
+  const { user, selectedStoreId } = useAuth();
   const { records, digitacoes, dailyMetrics, isLoading, error, refresh } = useRecords();
   const [search, setSearch] = useState("");
   const [digitacoesModalOpen, setDigitacoesModalOpen] = useState(false);
@@ -61,7 +62,7 @@ export function HistoryView() {
 
     for (const month of filteredMonths) {
       totalCartoes += month.count;
-      totalDigitacoes += month.digitacoes.length;
+      totalDigitacoes += sumDigitacoes(month.digitacoes);
       totalClientes += month.totalCustomers;
       activeCount += month.activeCount;
       activeLaterCount += month.activeLaterCount;
@@ -154,7 +155,7 @@ export function HistoryView() {
           const previousMonthGroup = monthGroups[activeIndex + 1];
           
           const totalCartoes = activeMonth.count;
-          const totalDigitacoes = activeMonth.digitacoes.length;
+          const totalDigitacoes = sumDigitacoes(activeMonth.digitacoes);
           const totalClientes = activeMonth.totalCustomers;
           
           const taxaAproveitamento = totalClientes > 0 ? ((totalCartoes + totalDigitacoes) / totalClientes) * 100 : 0;
@@ -322,7 +323,6 @@ export function HistoryView() {
               </option>
             ))}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-5 -translate-y-1/2 text-zinc-400" />
         </div>
       </div>
 
@@ -335,54 +335,63 @@ export function HistoryView() {
         </div>
       )}
 
-      {/* Months Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredMonths.map((monthGroup, index) => (
-          <motion.button
-            key={monthGroup.monthKey}
-            type="button"
-            onClick={() => {
-              setActiveMonthKey(monthGroup.monthKey);
-              setSearch("");
-            }}
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.2) }}
-            className="group flex flex-col items-start rounded-[1.75rem] border border-zinc-200/80 bg-white p-5 text-left shadow-[0_14px_42px_rgba(15,23,42,0.05)] transition duration-300 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-[0_20px_54px_rgba(15,23,42,0.08)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-500/30"
-          >
-            <div className="flex w-full items-start justify-between">
-              <div className="flex size-12 items-center justify-center rounded-2xl border border-zinc-100 bg-zinc-50 text-zinc-600 shadow-sm transition group-hover:bg-zinc-100 group-hover:text-zinc-900">
-                <CalendarDays className="size-5" />
-              </div>
-            </div>
-
-            <div className="mt-5">
-              <h2 className="text-xl font-bold text-zinc-950">
-                {monthGroup.label}
-              </h2>
-              <p className="mt-1 text-sm font-medium text-zinc-500">
-                {monthGroup.count} {monthGroup.count === 1 ? 'cartão registrado' : 'cartões registrados'}
-              </p>
-            </div>
-
-            <div className="mt-6 flex w-full items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 border border-emerald-200/60">
-                <span className="size-1.5 rounded-full bg-emerald-500" />
-                {monthGroup.activeCount} ATIVOS
-              </span>
-              <div className="flex size-8 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 text-zinc-400 opacity-0 transition duration-300 group-hover:opacity-100 group-hover:text-zinc-700">
-                <ArrowRight className="size-4" />
-              </div>
-            </div>
-          </motion.button>
-        ))}
-      </div>
-
-      {!filteredMonths.length ? (
+      {/* Se estiver vendo 'Todas as unidades', não mostramos os cards mensais */}
+      {!selectedStoreId && user && ["GLOBAL_ADMIN", "REGIONAL_MANAGER", "TI_ADMIN"].includes(user.role) ? (
         <div className="rounded-[1.5rem] border border-dashed border-zinc-300 bg-white px-5 py-10 text-center text-sm font-medium text-zinc-500">
-          {search ? "Nenhum resultado encontrado para esta busca." : "Nenhum registro para este ano."}
+          Selecione uma unidade no topo para visualizar os registros de cada mês.
         </div>
-      ) : null}
+      ) : (
+        <>
+          {/* Months Grid */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredMonths.map((monthGroup, index) => (
+              <motion.button
+                key={monthGroup.monthKey}
+                type="button"
+                onClick={() => {
+                  setActiveMonthKey(monthGroup.monthKey);
+                  setSearch("");
+                }}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.2) }}
+                className="group flex flex-col items-start rounded-[1.75rem] border border-zinc-200/80 bg-white p-5 text-left shadow-[0_14px_42px_rgba(15,23,42,0.05)] transition duration-300 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-[0_20px_54px_rgba(15,23,42,0.08)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-500/30"
+              >
+                <div className="flex w-full items-start justify-between">
+                  <div className="flex size-12 items-center justify-center rounded-2xl border border-zinc-100 bg-zinc-50 text-zinc-600 shadow-sm transition group-hover:bg-zinc-100 group-hover:text-zinc-900">
+                    <CalendarDays className="size-5" />
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <h2 className="text-xl font-bold text-zinc-950">
+                    {monthGroup.label}
+                  </h2>
+                  <p className="mt-1 text-sm font-medium text-zinc-500">
+                    {monthGroup.count} {monthGroup.count === 1 ? 'cartão registrado' : 'cartões registrados'}
+                  </p>
+                </div>
+
+                <div className="mt-6 flex w-full items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 border border-emerald-200/60">
+                    <span className="size-1.5 rounded-full bg-emerald-500" />
+                    {monthGroup.activeCount} ATIVOS
+                  </span>
+                  <div className="flex size-8 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 text-zinc-400 opacity-0 transition duration-300 group-hover:opacity-100 group-hover:text-zinc-700">
+                    <ArrowRight className="size-4" />
+                  </div>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+
+          {!filteredMonths.length ? (
+            <div className="rounded-[1.5rem] border border-dashed border-zinc-300 bg-white px-5 py-10 text-center text-sm font-medium text-zinc-500 mt-4">
+              {search ? "Nenhum resultado encontrado para esta busca." : "Nenhum registro para este ano."}
+            </div>
+          ) : null}
+        </>
+      )}
     </PageContainer>
   );
 }

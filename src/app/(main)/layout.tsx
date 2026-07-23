@@ -3,6 +3,8 @@ import { MainThemeProvider } from "@/components/providers/main-theme-provider";
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
 import { NotificationGate } from "@/components/layout/notification-gate";
 import { getSession } from "@/lib/auth/session";
+import { supabaseAdmin } from "@/lib/supabase/server";
+import { GlobalStoreSelector } from "@/components/layout/global-store-selector";
 
 import { DailyMetricsReminder } from "@/components/layout/daily-metrics-reminder";
 
@@ -12,9 +14,12 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const themeCookie = cookieStore.get("theme")?.value;
   const initialTheme = (themeCookie === "dark" || themeCookie === "light") ? themeCookie : "dark";
 
+  const { data: stores } = await supabaseAdmin.from("stores").select("id, name").order("name");
+
   return (
     <MainThemeProvider initialTheme={initialTheme}>
       <div className="flex min-h-screen flex-col">
+        <GlobalStoreSelector stores={stores || []} />
         {session && <DailyMetricsReminder />}
         {children}
       </div>

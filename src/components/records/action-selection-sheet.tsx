@@ -1,13 +1,16 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { CreditCard, Keyboard, X } from "lucide-react";
+import { CreditCard, Keyboard, X, Store, ArrowRightLeft } from "lucide-react";
+import { useAuth } from "@/components/providers/auth-provider";
 
 type ActionSelectionSheetProps = {
   open: boolean;
   onClose: () => void;
   onSelectCard: () => void;
   onSelectDigitacao: () => void;
+  onSelectDigitacaoCaixa: () => void;
+  onSelectTroca: () => void;
 };
 
 export function ActionSelectionSheet({
@@ -15,7 +18,11 @@ export function ActionSelectionSheet({
   onClose,
   onSelectCard,
   onSelectDigitacao,
+  onSelectDigitacaoCaixa,
+  onSelectTroca,
 }: ActionSelectionSheetProps) {
+  const { user } = useAuth();
+  const isManagerOrAbove = user && ["MANAGER", "REGIONAL_MANAGER", "TI_ADMIN", "GLOBAL_ADMIN"].includes(user.role);
   return (
     <AnimatePresence>
       {open && (
@@ -102,6 +109,47 @@ export function ActionSelectionSheet({
                   </p>
                 </div>
               </motion.button>
+              {/* Digitação Caixa */}
+              <motion.button
+                type="button"
+                onClick={() => { onClose(); setTimeout(onSelectDigitacaoCaixa, 80); }}
+                whileTap={{ scale: 0.97 }}
+                className="group flex items-center gap-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-left transition hover:border-zinc-300 hover:bg-zinc-100"
+              >
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white transition group-hover:scale-105">
+                  <Store className="size-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-bold text-zinc-950">
+                    Digitação Caixa
+                  </p>
+                  <p className="mt-0.5 text-sm text-zinc-500">
+                    Registrar digitações direto no caixa
+                  </p>
+                </div>
+              </motion.button>
+
+              {/* Troca (Apenas Gerentes/Admin) */}
+              {isManagerOrAbove && (
+                <motion.button
+                  type="button"
+                  onClick={() => { onClose(); setTimeout(onSelectTroca, 80); }}
+                  whileTap={{ scale: 0.97 }}
+                  className="group flex items-center gap-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-left transition hover:border-zinc-300 hover:bg-zinc-100"
+                >
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white transition group-hover:scale-105">
+                    <ArrowRightLeft className="size-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-bold text-zinc-950">
+                      Troca
+                    </p>
+                    <p className="mt-0.5 text-sm text-zinc-500">
+                      Registrar troca efetuada (Apenas Gerentes)
+                    </p>
+                  </div>
+                </motion.button>
+              )}
             </div>
           </motion.div>
         </>

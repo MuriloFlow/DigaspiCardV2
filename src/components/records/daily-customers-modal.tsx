@@ -97,26 +97,26 @@ export function DailyCustomersModal({
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: "100%", opacity: 0, scale: 0.95 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="flex w-full max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-white dark:bg-zinc-950 shadow-2xl sm:rounded-[2.5rem]"
+              className="flex w-full max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-2xl sm:rounded-[2.5rem]"
               role="dialog"
               aria-modal="true"
               aria-labelledby="modal-title"
             >
-              <div className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-100 dark:border-zinc-800 px-6">
-                <h2 id="modal-title" className="text-lg font-bold text-zinc-950 dark:text-white">
+              <div className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-100 px-6">
+                <h2 id="modal-title" className="text-lg font-bold text-zinc-950 ">
                   Fluxo de Caixa (Clientes do dia)
                 </h2>
                 <button
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="flex size-8 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-50"
+                  className="flex size-8 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-100 :bg-zinc-800 hover:text-zinc-600 :text-zinc-300 disabled:opacity-50"
                 >
                   <X className="size-5" />
                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto px-6 py-6">
-                <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
+                <p className="mb-6 text-sm text-zinc-500 ">
                   Insira o número total de clientes que passaram no caixa neste dia. Essa métrica será usada para calcular a Taxa de Aproveitamento.
                 </p>
 
@@ -124,7 +124,7 @@ export function DailyCustomersModal({
                   <div>
                     <label
                       htmlFor="customers"
-                      className="mb-2 flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300"
+                      className="mb-2 flex items-center gap-2 text-sm font-semibold text-zinc-700 "
                     >
                       <Users className="size-4 text-zinc-400" />
                       Total de clientes
@@ -141,10 +141,10 @@ export function DailyCustomersModal({
                           if (errorMsg) setErrorMsg(null);
                         }}
                         className={cn(
-                          "w-full rounded-2xl border-2 bg-transparent px-5 py-4 text-xl font-bold text-zinc-950 dark:text-white transition placeholder:font-medium placeholder:text-zinc-300 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-4",
+                          "w-full rounded-2xl border-2 bg-transparent px-5 py-4 text-xl font-bold text-zinc-950 transition placeholder:font-medium placeholder:text-zinc-300 :text-zinc-600 focus:outline-none focus:ring-4",
                           errorMsg
                             ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
-                            : "border-zinc-200 dark:border-zinc-800 focus:border-zinc-950 dark:focus:border-white focus:ring-zinc-950/10 dark:focus:ring-white/10",
+                            : "border-zinc-200 focus:border-zinc-950 :border-white focus:ring-zinc-950/10 :ring-white/10",
                         )}
                         placeholder="Ex: 150"
                         disabled={isSubmitting}
@@ -174,7 +174,7 @@ export function DailyCustomersModal({
                   type="button"
                   onClick={handleSubmit}
                   disabled={isSubmitting || !customersCount}
-                  className="group relative flex w-full h-[52px] items-center justify-center gap-2 overflow-hidden rounded-2xl bg-zinc-950 px-6 font-semibold text-white transition disabled:opacity-50"
+                  className="group relative flex w-full h-[52px] items-center justify-center gap-2 overflow-hidden rounded-2xl bg-black px-6 font-semibold text-[#ffffff] transition disabled:opacity-50"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     {isSubmitting ? (

@@ -25,6 +25,8 @@ export const createRecordSchema = z
       .min(0, "Valor utilizado nǜo pode ser negativo.")
       .optional(),
     activated: z.boolean().default(false),
+    dateKey: z.string().optional(),
+    storeId: z.string().optional(),
   })
   .strict();
 

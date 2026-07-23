@@ -98,7 +98,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedStoreId]);
 
   useEffect(() => {
     void Promise.resolve().then(loadRecords);

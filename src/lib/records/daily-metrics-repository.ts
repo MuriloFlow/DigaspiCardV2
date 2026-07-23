@@ -7,6 +7,7 @@ type DbDailyMetric = {
   store_id: string;
   date_key: string;
   total_customers: number;
+  total_trocas?: number;
   created_at: string;
 };
 
@@ -16,6 +17,7 @@ function toDailyMetric(row: DbDailyMetric): DailyMetric {
     storeId: row.store_id,
     dateKey: row.date_key,
     totalCustomers: row.total_customers,
+    totalTrocas: row.total_trocas ?? 0,
     createdAt: row.created_at,
   };
 }

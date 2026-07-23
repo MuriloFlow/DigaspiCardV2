@@ -13,12 +13,14 @@ import type { OperatorSummary } from "@/lib/records/types";
 import { getOperatorColor } from "@/lib/records/colors";
 import { toDateKey } from "@/lib/utils/format";
 import { useAuth } from "@/components/providers/auth-provider";
+import { getDigitacaoQuantity, sumDigitacoes } from "@/lib/records/digitacoes-utils";
 
 export type Digitacao = {
   id: string;
   collaboratorId: string;
   operatorName: string;
   clientName: string;
+  quantity: number;
   createdAt: string;
   subRole?: string;
 };
@@ -30,7 +32,7 @@ type DigitacoesContextValue = {
   todayCount: number;
   isLoading: boolean;
   isCreating: boolean;
-  createDigitacao: (collaboratorId: string, clientName: string) => Promise<Digitacao>;
+  createDigitacao: (collaboratorId: string, clientName: string, dateKey?: string) => Promise<Digitacao>;
   refresh: () => Promise<void>;
 };
 
@@ -70,9 +72,9 @@ export function DigitacoesProvider({ children }: { children: ReactNode }) {
     const map = new Map<string, { count: number; collaboratorId: string; subRole?: string }>();
     todayDigitacoes.forEach((d) => {
       const cur = map.get(d.operatorName) ?? { count: 0, collaboratorId: d.collaboratorId, subRole: d.subRole };
-      map.set(d.operatorName, { count: cur.count + 1, collaboratorId: d.collaboratorId, subRole: cur.subRole ?? d.subRole });
+      map.set(d.operatorName, { count: cur.count + getDigitacaoQuantity(d), collaboratorId: d.collaboratorId, subRole: cur.subRole ?? d.subRole });
     });
-    const total = todayDigitacoes.length;
+    const total = sumDigitacoes(todayDigitacoes);
     return Array.from(map.entries())
       .map<OperatorSummary>(([name, val], idx) => ({
         operatorName: name,
@@ -87,16 +89,18 @@ export function DigitacoesProvider({ children }: { children: ReactNode }) {
       .sort((a, b) => b.count - a.count);
   }, [todayDigitacoes]);
 
-  const createDigitacao = useCallback(async (collaboratorId: string, clientName: string): Promise<Digitacao> => {
+  const createDigitacao = useCallback(async (collaboratorId: string, clientName: string, dateKey?: string): Promise<Digitacao> => {
     setIsCreating(true);
     try {
-      const payload = selectedStoreId 
+      const payload: any = selectedStoreId 
         ? { collaboratorId, clientName, storeId: selectedStoreId }
         : { collaboratorId, clientName };
       
+      if (dateKey) payload.dateKey = dateKey;
+
       const res = await fetch("/api/digitacoes", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
@@ -116,7 +120,7 @@ export function DigitacoesProvider({ children }: { children: ReactNode }) {
       digitacoes,
       todayDigitacoes,
       todayOperators,
-      todayCount: todayDigitacoes.length,
+      todayCount: sumDigitacoes(todayDigitacoes),
       isLoading,
       isCreating,
       createDigitacao,

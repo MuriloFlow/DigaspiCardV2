@@ -115,27 +115,48 @@ export function buildDashboardSummary(
   };
 }
 
-export function groupRecordsByDate(records: OperatorRecord[]) {
+export function groupRecordsByDate(
+  records: OperatorRecord[],
+  digitacoes: import("./digitacoes-repository").Digitacao[] = [],
+  dailyMetrics: import("./types").DailyMetric[] = []
+) {
   const groups = new Map<string, OperatorRecord[]>();
+  const allDateKeys = new Set<string>();
 
   sortRecordsByNewest(records).forEach((record) => {
     const dateKey = toDateKey(record.createdAt);
+    allDateKeys.add(dateKey);
     const current = groups.get(dateKey) ?? [];
     groups.set(dateKey, [...current, record]);
   });
 
-  return Array.from(groups.entries()).map<DateGroup>(([dateKey, items]) => ({
-    dateKey,
-    label: formatLongDate(dateKey),
-    relativeLabel: formatRelativeDate(dateKey),
-    records: items,
-    count: items.length,
-    totalInCents: items.reduce(
-      (total, record) => total + record.amountInCents,
-      0,
-    ),
-    operators: aggregateByOperator(items),
-  }));
+  digitacoes.forEach((dig) => {
+    allDateKeys.add(toDateKey(dig.createdAt));
+  });
+
+  // Não incluímos dailyMetrics.forEach(...) aqui, 
+  // senão dias sem cartões/digitações mas com métricas vão aparecer sozinhos no histórico.
+  // dailyMetrics.forEach((metric) => {
+  //   allDateKeys.add(metric.dateKey);
+  // });
+
+  return Array.from(allDateKeys)
+    .sort((a, b) => b.localeCompare(a))
+    .map<DateGroup>((dateKey) => {
+      const items = groups.get(dateKey) ?? [];
+      return {
+        dateKey,
+        label: formatLongDate(dateKey),
+        relativeLabel: formatRelativeDate(dateKey),
+        records: items,
+        count: items.length,
+        totalInCents: items.reduce(
+          (total, record) => total + record.amountInCents,
+          0,
+        ),
+        operators: aggregateByOperator(items),
+      };
+    });
 }
 
 export function groupRecordsByMonth(
@@ -172,7 +193,7 @@ export function groupRecordsByMonth(
   const allMonthKeys = new Set([
     ...months.keys(),
     ...digitacoesByMonth.keys(),
-    ...customersByMonth.keys(),
+    // Não incluímos customersByMonth.keys() para meses sem dados reais desaparecerem
   ]);
 
   return Array.from(allMonthKeys).map<MonthGroup>((monthKey) => {
@@ -180,6 +201,8 @@ export function groupRecordsByMonth(
     const items = months.get(monthKey) ?? [];
     const digs = digitacoesByMonth.get(monthKey) ?? [];
     const totalCustomers = customersByMonth.get(monthKey) ?? 0;
+
+    const monthMetrics = dailyMetrics.filter(m => m.dateKey.startsWith(monthKey));
 
     return {
       monthKey,
@@ -192,13 +215,20 @@ export function groupRecordsByMonth(
       activeLaterCount: items.filter((r) => r.activatedLater).length,
       totalInCents: items.reduce((total, r) => total + r.amountInCents, 0),
       totalCustomers,
-      dateGroups: groupRecordsByDate(items), // Could also group digitacoes by date if needed later
+      dateGroups: groupRecordsByDate(items, digs, monthMetrics),
     };
   }).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
 }
 
-export function getDateGroup(records: OperatorRecord[], dateKey: string) {
-  return groupRecordsByDate(records).find((group) => group.dateKey === dateKey);
+export function getDateGroup(
+  records: OperatorRecord[],
+  dateKey: string,
+  digitacoes: import("./digitacoes-repository").Digitacao[] = [],
+  dailyMetrics: import("./types").DailyMetric[] = []
+) {
+  return groupRecordsByDate(records, digitacoes, dailyMetrics).find(
+    (group) => group.dateKey === dateKey
+  );
 }
 
 export function buildRecordsPayload(

@@ -10,13 +10,24 @@ CREATE TABLE IF NOT EXISTS digitacoes (
   collaborator_id uuid NOT NULL REFERENCES collaborators(id) ON DELETE RESTRICT,
   operator_name text NOT NULL,
   client_name   text NOT NULL,
+  quantity      integer NOT NULL DEFAULT 1 CHECK (quantity > 0),
   created_at    timestamptz DEFAULT now() NOT NULL
 );
+
+ALTER TABLE digitacoes
+  ADD COLUMN IF NOT EXISTS quantity integer NOT NULL DEFAULT 1;
+
+ALTER TABLE digitacoes
+  DROP CONSTRAINT IF EXISTS digitacoes_quantity_check;
+
+ALTER TABLE digitacoes
+  ADD CONSTRAINT digitacoes_quantity_check CHECK (quantity > 0);
 
 -- 2. Índices para performance
 CREATE INDEX IF NOT EXISTS idx_digitacoes_store_id      ON digitacoes(store_id);
 CREATE INDEX IF NOT EXISTS idx_digitacoes_collab_id     ON digitacoes(collaborator_id);
 CREATE INDEX IF NOT EXISTS idx_digitacoes_created_at    ON digitacoes(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_digitacoes_store_created ON digitacoes(store_id, created_at DESC);
 
 -- 3. RLS
 ALTER TABLE digitacoes ENABLE ROW LEVEL SECURITY;

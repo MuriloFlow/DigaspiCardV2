@@ -30,8 +30,22 @@ export function AuthProvider({
 }) {
   const [user, setUser] = useState<User | null>(initialUser);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  const [selectedStoreId, setSelectedStoreIdState] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("@muriloflow:selectedStoreId");
+    if (saved) setSelectedStoreIdState(saved);
+  }, []);
+
+  const setSelectedStoreId = (id: string | null) => {
+    setSelectedStoreIdState(id);
+    if (id) {
+      localStorage.setItem("@muriloflow:selectedStoreId", id);
+    } else {
+      localStorage.removeItem("@muriloflow:selectedStoreId");
+    }
+  };
 
   const logout = async () => {
     setIsLoading(true);

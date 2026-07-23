@@ -274,7 +274,7 @@ function CollaboratorOptionsModal({
 export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?: string | null }) {
   const { user } = useAuth();
   
-  const isGlobalAdmin = props.isGlobalAdmin ?? user?.role === "GLOBAL_ADMIN";
+  const isGlobalAdmin = props.isGlobalAdmin ?? !!(user?.role && ["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(user.role));
   const userStoreId = props.userStoreId ?? (user as any)?.store_id ?? null;
 
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);

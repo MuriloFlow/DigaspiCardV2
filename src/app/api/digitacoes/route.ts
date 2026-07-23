@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  let body: { collaboratorId?: string; clientName?: string; storeId?: string } = {};
+  let body: { collaboratorId?: string; clientName?: string; storeId?: string; dateKey?: string } = {};
   try {
     body = await request.json();
   } catch {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 
     if (!storeId) return forbidden("Selecione uma loja para registrar a digitação.");
 
-    const { collaboratorId, clientName } = body;
+    const { collaboratorId, clientName, dateKey } = body;
     if (!collaboratorId || !clientName?.trim()) {
       return NextResponse.json(
         { message: "collaboratorId e clientName são obrigatórios." },
@@ -79,6 +79,7 @@ export async function POST(request: Request) {
       clientName: clientName.trim(),
       operatorName: collab.name,
       storeId: storeId,
+      dateKey,
     });
 
     const digitacoes = await listDigitacoes(storeId);

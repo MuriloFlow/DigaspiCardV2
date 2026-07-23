@@ -179,6 +179,22 @@ input:-webkit-autofill:active{
     -webkit-text-fill-color: #ffffff !important;
 }
 
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--chat-scrollbar, rgba(161, 161, 170, 0.4));
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(113, 113, 122, 0.6);
+}
+
 /* Oculta o BottomNavigation quando o chat estiver aberto */
 body.chat-open #bottom-nav {
   opacity: 0;

@@ -38,9 +38,13 @@ export function EditRecordModal({
   const amountInCents = useMemo(() => parseCurrencyInput(amount), [amount]);
   const amountUsedInCents = useMemo(() => parseCurrencyInput(amountUsed), [amountUsed]);
   
-  const isManagerOrAdmin = user?.role === "MANAGER" || user?.role === "GLOBAL_ADMIN";
+  const isManagerOrAdmin = user?.role === "MANAGER" || user?.role === "GLOBAL_ADMIN" || user?.role === "TI_ADMIN" || user?.role === "REGIONAL_MANAGER";
+  const isEmployee = user?.role === "EMPLOYEE" || user?.role === "VM";
   const hasAmountUsed = record?.amountUsedInCents ? record.amountUsedInCents > 0 : false;
   const canToggleActive = isManagerOrAdmin || !hasAmountUsed;
+  // Employees cannot edit amounts — only managers/admins can
+  const canEditAmount = isManagerOrAdmin;
+  const canEditAmountUsed = isManagerOrAdmin;
 
   useEffect(() => {
     if (open && record) {
@@ -90,11 +94,12 @@ export function EditRecordModal({
       const payload: any = {
         id: record.id,
         clientName: clientName.trim(),
-        amountInCents,
+        // Employees cannot change the amount — keep original
+        amountInCents: canEditAmount ? amountInCents : record.amountInCents,
         activated,
       };
 
-      if (isManagerOrAdmin && activated) {
+      if (canEditAmountUsed && activated) {
         payload.amountUsedInCents = amountUsedInCents > 0 ? amountUsedInCents : null;
       }
 
@@ -146,7 +151,7 @@ export function EditRecordModal({
                   <p className="mt-1 text-sm text-zinc-500">Corrija os dados do cartão de {record.operatorName}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {(user?.role === "GLOBAL_ADMIN" || user?.role === "MANAGER") && !confirmDelete ? (
+                  {isManagerOrAdmin && !confirmDelete ? (
                     <button
                       type="button"
                       onClick={() => setConfirmDelete(true)}
@@ -226,9 +231,15 @@ export function EditRecordModal({
                             type="text"
                             inputMode="decimal"
                             value={amount}
-                            onChange={(e) => setAmount(formatCurrencyInput(e.target.value))}
+                            onChange={(e) => canEditAmount && setAmount(formatCurrencyInput(e.target.value))}
+                            readOnly={!canEditAmount}
                             placeholder="0,00"
-                            className="h-14 w-full rounded-2xl border border-zinc-200 bg-white pl-10 pr-4 text-lg font-medium text-zinc-900 outline-none transition duration-200 focus:border-zinc-950 focus:ring-4 focus:ring-zinc-950/10"
+                            className={cn(
+                              "h-14 w-full rounded-2xl border border-zinc-200 pl-10 pr-4 text-lg font-medium text-zinc-900 outline-none transition duration-200",
+                              canEditAmount
+                                ? "bg-white focus:border-zinc-950 focus:ring-4 focus:ring-zinc-950/10"
+                                : "bg-zinc-50 cursor-not-allowed text-zinc-500"
+                            )}
                             required
                           />
                         </div>
@@ -261,15 +272,18 @@ export function EditRecordModal({
                       </div>
                     </div>
                     
-                    {/* Campos extras para Gerentes/Admin se o cartão estiver Ativo */}
-                    {isManagerOrAdmin && activated && (
+                    {/* Campos extras se o cartão estiver Ativo */}
+                    {activated && (
                       <motion.div 
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         className="pt-2 border-t border-zinc-100"
                       >
                         <label htmlFor="amountUsed" className="mb-1.5 block text-sm font-semibold text-zinc-700">
-                          Valor Utilizado pelo Cliente (Opcional)
+                          Valor Utilizado pelo Cliente
+                          {!canEditAmountUsed && (
+                            <span className="ml-1.5 text-[10px] font-normal text-zinc-400 uppercase tracking-wide">somente leitura</span>
+                          )}
                         </label>
                         <div className="relative">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-zinc-400">
@@ -280,13 +294,21 @@ export function EditRecordModal({
                             type="text"
                             inputMode="decimal"
                             value={amountUsed}
-                            onChange={(e) => setAmountUsed(formatCurrencyInput(e.target.value))}
+                            onChange={(e) => canEditAmountUsed && setAmountUsed(formatCurrencyInput(e.target.value))}
+                            readOnly={!canEditAmountUsed}
                             placeholder="0,00"
-                            className="h-14 w-full rounded-2xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-lg font-medium text-zinc-900 outline-none transition duration-200 focus:border-zinc-950 focus:ring-4 focus:ring-zinc-950/10 focus:bg-white"
+                            className={cn(
+                              "h-14 w-full rounded-2xl border border-zinc-200 pl-10 pr-4 text-lg font-medium text-zinc-900 outline-none transition duration-200",
+                              canEditAmountUsed
+                                ? "bg-zinc-50 focus:border-zinc-950 focus:ring-4 focus:ring-zinc-950/10 focus:bg-white"
+                                : "bg-zinc-100 cursor-not-allowed text-zinc-500"
+                            )}
                           />
                         </div>
                         <p className="mt-2 text-xs text-zinc-500">
-                          Informar o valor utilizado bloqueia a remoção do status "Ativo" por operadores.
+                          {canEditAmountUsed
+                            ? 'Informar o valor utilizado bloqueia a remoção do status "Ativo" por operadores.'
+                            : 'Apenas gerentes podem alterar o valor utilizado.'}
                         </p>
                       </motion.div>
                     )}

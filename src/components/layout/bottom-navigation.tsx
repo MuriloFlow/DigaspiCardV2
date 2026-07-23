@@ -173,7 +173,7 @@ export function BottomNavigation() {
                   <div className="text-center">
                     <h3 className="flex items-center justify-center gap-1.5 text-base font-bold text-zinc-950">
                       {user.role === "TI_ADMIN" && <Bug className="size-4 shrink-0 fill-emerald-500/20 text-emerald-500" />}
-                      {user.is_primary && <Star className="size-4 shrink-0 fill-amber-400 text-amber-400" />}
+                      {(user as any).is_primary && <Star className="size-4 shrink-0 fill-amber-400 text-amber-400" />}
                       {user.name || user.username}
                     </h3>
                     <span className={cn(

@@ -134,16 +134,21 @@ export async function createRecord(input: unknown, storeId: string | null): Prom
     throw new Error("Acesso negado: colaborador pertence a outra unidade.");
   }
 
+  const insertPayload: any = {
+    collaborator_id: collab.id,
+    store_id: storeId ?? collab.store_id,
+    operator_name: collab.name,
+    client_name: clientName,
+    amount_in_cents: payload.amountInCents,
+    activated: payload.activated,
+  };
+  if (payload.dateKey) {
+    insertPayload.created_at = `${payload.dateKey}T12:00:00Z`;
+  }
+
   const { data, error } = await supabaseAdmin
     .from("records")
-    .insert({
-      collaborator_id: collab.id,
-      store_id: storeId ?? collab.store_id,
-      operator_name: collab.name,
-      client_name: clientName,
-      amount_in_cents: payload.amountInCents,
-      activated: payload.activated,
-    })
+    .insert(insertPayload)
     .select("*")
     .single();
 

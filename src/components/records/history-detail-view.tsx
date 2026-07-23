@@ -1,22 +1,31 @@
 "use client";
 
-import { useMemo } from "react";
+
 import Link from "next/link";
-import { ArrowLeft, CreditCard, ListChecks, Users } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, CreditCard, ListChecks, Users } from "lucide-react";
 import { OperatorPieChart } from "@/components/charts/operator-pie-chart";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { useRecords } from "@/components/providers/records-provider";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
 import { MetricCard } from "@/components/ui/metric-card";
 import { getDateGroup } from "@/lib/records/domain";
-import { formatCurrency, formatInteger } from "@/lib/utils/format";
+import { getOperatorColor } from "@/lib/records/colors";
+import { formatCurrency, formatInteger, toDateKey } from "@/lib/utils/format";
 import { RecordCard } from "./record-card";
 import { useAuth } from "@/components/providers/auth-provider";
 import { DailyCustomersModal } from "./daily-customers-modal";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DailyMetricsModal } from "./daily-metrics-modal";
 import { DigitacoesListModal } from "./digitacoes-list-modal";
+import { TrocasListModal } from "./trocas-list-modal";
 import { Activity, Keyboard } from "lucide-react";
+import { sumDigitacoes, getDigitacaoQuantity } from "@/lib/records/digitacoes-utils";
+import { FloatingActionButton } from "@/components/ui/floating-action-button";
+import { ActionSelectionSheet } from "./action-selection-sheet";
+import { AddRecordModal } from "./add-record-modal";
+import { AddDigitacaoModal } from "./add-digitacao-modal";
+import { AddCaixaDigitacaoModal } from "./add-caixa-digitacao-modal";
+import { AddTrocaModal } from "./add-troca-modal";
 
 export function HistoryDetailView({ dateKey }: { dateKey: string }) {
   const { user } = useAuth();
@@ -24,10 +33,56 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [metricsModalOpen, setMetricsModalOpen] = useState(false);
   const [digitacoesModalOpen, setDigitacoesModalOpen] = useState(false);
+  const [trocasModalOpen, setTrocasModalOpen] = useState(false);
+  
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [cardModalOpen, setCardModalOpen] = useState(false);
+  const [digitacaoModalOpen, setDigitacaoModalOpenAction] = useState(false);
+  const [caixaModalOpen, setCaixaModalOpen] = useState(false);
+  const [trocaModalOpen, setTrocaModalOpenAction] = useState(false);
+  const { createRecord, isCreating } = useRecords();
+
+  const isGlobalOrRegional = user?.role === "GLOBAL_ADMIN" || user?.role === "TI_ADMIN" || user?.role === "REGIONAL_MANAGER";
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (isGlobalOrRegional) {
+      fetch("/api/stores")
+        .then((res) => res.json())
+        .then((data) => setStores(data.stores ?? []))
+        .catch(() => {});
+    }
+  }, [isGlobalOrRegional]);
+
   const group = useMemo(
-    () => getDateGroup(records, dateKey),
-    [dateKey, records],
+    () => getDateGroup(records, dateKey, digitacoes, dailyMetrics),
+    [dateKey, records, digitacoes, dailyMetrics],
   );
+
+  const dayDigitacoes = useMemo(() => {
+    return digitacoes.filter((d) => toDateKey(d.createdAt) === dateKey);
+  }, [digitacoes, dateKey]);
+
+  const dayDigitacaoOperators = useMemo(() => {
+    const map = new Map<string, { count: number; collaboratorId: string; subRole?: string }>();
+    dayDigitacoes.forEach((d) => {
+      const cur = map.get(d.operatorName) ?? { count: 0, collaboratorId: d.collaboratorId, subRole: d.subRole };
+      map.set(d.operatorName, { count: cur.count + getDigitacaoQuantity(d), collaboratorId: d.collaboratorId, subRole: cur.subRole ?? d.subRole });
+    });
+    
+    const total = sumDigitacoes(dayDigitacoes);
+    return Array.from(map.entries())
+      .map(([name, data], idx) => ({
+        operatorName: name,
+        collaboratorId: data.collaboratorId,
+        subRole: data.subRole,
+        count: data.count,
+        totalInCents: 0,
+        averageInCents: 0,
+        percentage: total ? (data.count / total) * 100 : 0,
+        color: getOperatorColor(name, idx),
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [dayDigitacoes]);
 
   if (isLoading) {
     return (
@@ -72,21 +127,21 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
       <PageHeader
         eyebrow={group.relativeLabel}
         title={group.label}
-        description="Participacao percentual, volume e valor por operador no dia selecionado."
+        description="Participação percentual, volume e valor por operador no dia selecionado."
       >
         <div className="flex flex-col gap-2 w-full sm:w-auto mt-4 sm:mt-0">
-          {(user?.role === "MANAGER" || user?.role === "GLOBAL_ADMIN") && (
+          {user?.role && ["MANAGER", "GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(user.role) && (
             <button
               onClick={() => setIsModalOpen(true)}
-              className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/20"
+              className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl bg-black px-5 text-sm font-semibold text-[#ffffff] shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/20"
             >
               <Users className="size-4" />
-              Total de Clientes
+              Registrar Caixa
             </button>
           )}
           <button
             onClick={() => setMetricsModalOpen(true)}
-            className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10"
+            className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 :bg-zinc-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10 :ring-zinc-50/10"
           >
             <Activity className="size-4 text-emerald-500" />
             Ver métricas
@@ -96,7 +151,14 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
             className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10"
           >
             <Keyboard className="size-4 text-purple-500" />
-            Digitações
+            {sumDigitacoes(dayDigitacoes)} Digitações
+          </button>
+          <button
+            onClick={() => setTrocasModalOpen(true)}
+            className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10"
+          >
+            <ArrowRightLeft className="size-4 text-orange-500" />
+            Ver Trocas
           </button>
         </div>
       </PageHeader>
@@ -107,13 +169,29 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
         dateKey={dateKey}
       />
 
+      <TrocasListModal
+        open={trocasModalOpen}
+        onClose={() => setTrocasModalOpen(false)}
+        dateKey={dateKey}
+      />
+
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <OperatorPieChart
-          operators={group.operators}
-          centerLabel="Cartoes"
-          centerValue={formatInteger(group.count)}
-          className="min-h-[420px]"
-        />
+        <div className="overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-6">
+          <OperatorPieChart
+            operators={group.operators}
+            centerLabel="Cartões"
+            centerValue={formatInteger(group.count)}
+            bare
+          />
+          <div className="my-4 border-t border-dashed border-zinc-200" />
+          <OperatorPieChart
+            operators={dayDigitacaoOperators}
+            centerLabel="DIGITAÇÕES"
+            centerValue={formatInteger(sumDigitacoes(dayDigitacoes))}
+            tooltipLabel="digitações"
+            bare
+          />
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
           <MetricCard
@@ -187,7 +265,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
                       </h3>
                     </div>
                     <p className="mt-2 text-sm text-zinc-500">
-                      {formatInteger(operator.count)} cartoes registrados
+                      {formatInteger(operator.count)} cartões registrados
                     </p>
                   </div>
 
@@ -211,7 +289,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
                   />
                 </div>
                 <p className="mt-3 text-xs font-medium text-zinc-500">
-                  Media por cartao: {formatCurrency(operator.averageInCents)}
+                  Media por cartão: {formatCurrency(operator.averageInCents)}
                 </p>
               </article>
             ))}
@@ -224,7 +302,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
         const dailyTotalClientes = dailyMetrics.find(m => m.dateKey === dateKey)?.totalCustomers || 0;
         
         const totalCartoes = group.count;
-        const totalDigitacoes = dailyDigs.length;
+        const totalDigitacoes = sumDigitacoes(dailyDigs);
         
         const taxaAproveitamento = dailyTotalClientes > 0 ? ((totalCartoes + totalDigitacoes) / dailyTotalClientes) * 100 : 0;
         const taxaAprovacao = (totalCartoes + totalDigitacoes) > 0 ? (totalCartoes / (totalCartoes + totalDigitacoes)) * 100 : 0;
@@ -248,7 +326,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
               cartoesAtivosPerc={cartoesAtivosPerc}
               ativosNoCaixaPerc={ativosNoCaixaPerc}
               ticketMedio={ticketMedio}
-              crescimentoCartoes={0} // Sem cálculo dia a dia por enquanto
+              crescimentoCartoes={0}
               crescimentoValor={0}
             />
             <DigitacoesListModal
@@ -261,6 +339,42 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
           </>
         );
       })()}
-    </PageContainer>
-  );
-}
+
+        <FloatingActionButton onClick={() => setSheetOpen(true)} />
+        <ActionSelectionSheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          onSelectCard={() => setCardModalOpen(true)}
+          onSelectDigitacao={() => setDigitacaoModalOpenAction(true)}
+          onSelectDigitacaoCaixa={() => setCaixaModalOpen(true)}
+          onSelectTroca={() => setTrocaModalOpenAction(true)}
+        />
+        <AddRecordModal
+          open={cardModalOpen}
+          isSubmitting={isCreating}
+          onClose={() => setCardModalOpen(false)}
+          onCreate={createRecord}
+          dateKey={dateKey}
+        />
+        <AddDigitacaoModal
+          open={digitacaoModalOpen}
+          onClose={() => setDigitacaoModalOpenAction(false)}
+          dateKey={dateKey}
+          stores={stores}
+        />
+        <AddCaixaDigitacaoModal
+          open={caixaModalOpen}
+          onClose={() => setCaixaModalOpen(false)}
+          dateKey={dateKey}
+          stores={stores}
+        />
+        <AddTrocaModal
+          open={trocaModalOpen}
+          onClose={() => setTrocaModalOpenAction(false)}
+          dateKey={dateKey}
+          stores={stores}
+        />
+      </PageContainer>
+    );
+  }
+

@@ -15,6 +15,8 @@ import { AddRecordModal } from "./add-record-modal";
 import { RecordCard } from "./record-card";
 import { ActionSelectionSheet } from "./action-selection-sheet";
 import { AddDigitacaoModal } from "./add-digitacao-modal";
+import { AddCaixaDigitacaoModal } from "./add-caixa-digitacao-modal";
+import { AddTrocaModal } from "./add-troca-modal";
 import { StoreSelector } from "./store-selector";
 import {
   aggregateByOperator,
@@ -56,6 +58,8 @@ export function HomeView() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [cardModalOpen, setCardModalOpen] = useState(false);
   const [digitacaoModalOpen, setDigitacaoModalOpen] = useState(false);
+  const [caixaModalOpen, setCaixaModalOpen] = useState(false);
+  const [trocaModalOpen, setTrocaModalOpen] = useState(false);
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [manualGoal, setManualGoal] = useState<number | null>(null);
@@ -121,15 +125,7 @@ export function HomeView() {
 
   return (
     <PageContainer>
-      {isGlobalOrRegional && (
-        <div className="mb-6">
-          <StoreSelector 
-            stores={stores} 
-            selectedStoreId={selectedStoreId} 
-            onChange={setSelectedStoreId} 
-          />
-        </div>
-      )}
+
       
       <PageHeader
         eyebrow={isViewingGlobal ? "Visão Consolidada da Rede" : (selectedStoreId ? "Visão da Unidade" : "Painel operacional")}
@@ -270,6 +266,8 @@ export function HomeView() {
             onClose={() => setSheetOpen(false)}
             onSelectCard={() => setCardModalOpen(true)}
             onSelectDigitacao={() => setDigitacaoModalOpen(true)}
+            onSelectDigitacaoCaixa={() => setCaixaModalOpen(true)}
+            onSelectTroca={() => setTrocaModalOpen(true)}
           />
 
           {/* Modal Registrar Cartão */}
@@ -278,7 +276,7 @@ export function HomeView() {
             isSubmitting={isCreating}
             onClose={() => setCardModalOpen(false)}
             onCreate={createRecord}
-            onCreated={(record) => showSuccess(record.operatorName)} stores={stores}
+            onCreated={(record) => showSuccess(record.operatorName)}
             stores={stores}
           />
 
@@ -286,6 +284,18 @@ export function HomeView() {
           <AddDigitacaoModal
             open={digitacaoModalOpen}
             onClose={() => setDigitacaoModalOpen(false)}
+            stores={stores}
+          />
+
+          <AddCaixaDigitacaoModal
+            open={caixaModalOpen}
+            onClose={() => setCaixaModalOpen(false)}
+            stores={stores}
+          />
+
+          <AddTrocaModal
+            open={trocaModalOpen}
+            onClose={() => setTrocaModalOpen(false)}
             stores={stores}
           />
         </>

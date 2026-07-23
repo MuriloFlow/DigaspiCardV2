@@ -49,6 +49,7 @@ export type DailyMetric = {
   storeId: string;
   dateKey: string;
   totalCustomers: number;
+  totalTrocas?: number;
   createdAt: string;
 };
 
