@@ -53,7 +53,7 @@ export function DailyMetricsModal({
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: "100%", opacity: 0, scale: 0.95 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="flex w-full max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-2xl sm:max-h-[85vh] sm:rounded-[2.5rem]"
+              className="flex w-full max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-2xl max-h-[85vh] sm:max-h-[85vh] sm:rounded-[2.5rem]"
               role="dialog"
               aria-modal="true"
             >

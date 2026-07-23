@@ -133,9 +133,9 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
           {user?.role && ["MANAGER", "GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(user.role) && (
             <button
               onClick={() => setIsModalOpen(true)}
-              className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl bg-black px-5 text-sm font-semibold text-[#ffffff] shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/20"
+              className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10"
             >
-              <Users className="size-4" />
+              <Users className="size-4 text-blue-500" />
               Registrar Caixa
             </button>
           )}
