@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { CreditCard, Keyboard, X, Store, ArrowRightLeft } from "lucide-react";
+import { CreditCard, Keyboard, X, Store, ArrowRightLeft, TrendingUp } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
 
 type ActionSelectionSheetProps = {
@@ -11,6 +11,7 @@ type ActionSelectionSheetProps = {
   onSelectDigitacao: () => void;
   onSelectDigitacaoCaixa: () => void;
   onSelectTroca: () => void;
+  onSelectViradaPu: () => void;
 };
 
 export function ActionSelectionSheet({
@@ -20,6 +21,7 @@ export function ActionSelectionSheet({
   onSelectDigitacao,
   onSelectDigitacaoCaixa,
   onSelectTroca,
+  onSelectViradaPu,
 }: ActionSelectionSheetProps) {
   const { user } = useAuth();
   const isManagerOrAbove = user && ["MANAGER", "REGIONAL_MANAGER", "TI_ADMIN", "GLOBAL_ADMIN"].includes(user.role);
@@ -150,6 +152,26 @@ export function ActionSelectionSheet({
                   </div>
                 </motion.button>
               )}
+
+              {/* Virada de PU */}
+              <motion.button
+                type="button"
+                onClick={() => { onClose(); setTimeout(onSelectViradaPu, 80); }}
+                whileTap={{ scale: 0.97 }}
+                className="group flex items-center gap-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-left transition hover:border-zinc-300 hover:bg-zinc-100"
+              >
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white transition group-hover:scale-105">
+                  <TrendingUp className="size-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-bold text-zinc-950">
+                    Virada de PU
+                  </p>
+                  <p className="mt-0.5 text-sm text-zinc-500">
+                    Registrar conversão de produto único (Caixas)
+                  </p>
+                </div>
+              </motion.button>
             </div>
           </motion.div>
         </>
@@ -157,3 +179,4 @@ export function ActionSelectionSheet({
     </AnimatePresence>
   );
 }
+

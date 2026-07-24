@@ -255,7 +255,8 @@ export function buildRecordsPayload(
   records: OperatorRecord[],
   digitacoes: import("./digitacoes-repository").Digitacao[] = [],
   dailyMetrics: import("./types").DailyMetric[] = [],
-  trocas: import("./trocas-repository").Troca[] = []
+  trocas: import("./trocas-repository").Troca[] = [],
+  viradasPu: import("./viradas-pu-repository").ViradaPu[] = []
 ): RecordsPayload {
   const sortedRecords = sortRecordsByNewest(records);
 
@@ -264,6 +265,7 @@ export function buildRecordsPayload(
     digitacoes,
     dailyMetrics,
     trocas,
+    viradasPu,
     summary: buildDashboardSummary(sortedRecords),
   };
 }

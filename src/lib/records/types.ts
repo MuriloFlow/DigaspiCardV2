@@ -83,6 +83,7 @@ export type RecordsPayload = {
   digitacoes: import("./digitacoes-repository").Digitacao[];
   dailyMetrics: import("./types").DailyMetric[];
   trocas: import("./trocas-repository").Troca[];
+  viradasPu: import("./viradas-pu-repository").ViradaPu[];
   summary: DashboardSummary;
 };
 

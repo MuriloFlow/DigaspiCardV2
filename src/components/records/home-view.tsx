@@ -17,6 +17,7 @@ import { ActionSelectionSheet } from "./action-selection-sheet";
 import { AddDigitacaoModal } from "./add-digitacao-modal";
 import { AddCaixaDigitacaoModal } from "./add-caixa-digitacao-modal";
 import { AddTrocaModal } from "./add-troca-modal";
+import { ViradaPuModal } from "./virada-pu-modal";
 import { StoreSelector } from "./store-selector";
 import {
   aggregateByOperator,
@@ -60,6 +61,7 @@ export function HomeView() {
   const [digitacaoModalOpen, setDigitacaoModalOpen] = useState(false);
   const [caixaModalOpen, setCaixaModalOpen] = useState(false);
   const [trocaModalOpen, setTrocaModalOpen] = useState(false);
+  const [viradaPuModalOpen, setViradaPuModalOpen] = useState(false);
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [manualGoal, setManualGoal] = useState<number | null>(null);
@@ -119,7 +121,13 @@ export function HomeView() {
     return (
       <PageContainer>
         <DashboardSkeleton />
-      </PageContainer>
+        <ViradaPuModal
+            open={viradaPuModalOpen}
+            onClose={() => setViradaPuModalOpen(false)}
+            stores={stores}
+          />
+
+        </PageContainer>
     );
   }
 
@@ -268,6 +276,7 @@ export function HomeView() {
             onSelectDigitacao={() => setDigitacaoModalOpen(true)}
             onSelectDigitacaoCaixa={() => setCaixaModalOpen(true)}
             onSelectTroca={() => setTrocaModalOpen(true)}
+            onSelectViradaPu={() => setViradaPuModalOpen(true)}
           />
 
           {/* Modal Registrar Cartão */}
@@ -300,6 +309,13 @@ export function HomeView() {
           />
         </>
       )}
-    </PageContainer>
+      <ViradaPuModal
+            open={viradaPuModalOpen}
+            onClose={() => setViradaPuModalOpen(false)}
+            stores={stores}
+          />
+
+        </PageContainer>
   );
 }
+

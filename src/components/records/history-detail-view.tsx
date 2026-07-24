@@ -18,6 +18,8 @@ import { useState, useEffect, useMemo } from "react";
 import { DailyMetricsModal } from "./daily-metrics-modal";
 import { DigitacoesListModal } from "./digitacoes-list-modal";
 import { TrocasListModal } from "./trocas-list-modal";
+import { ViradaPuListModal } from "./virada-pu-list-modal";
+import { TrendingUp } from "lucide-react";
 import { Activity, Keyboard } from "lucide-react";
 import { sumDigitacoes, getDigitacaoQuantity } from "@/lib/records/digitacoes-utils";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
@@ -34,6 +36,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
   const [metricsModalOpen, setMetricsModalOpen] = useState(false);
   const [digitacoesModalOpen, setDigitacoesModalOpen] = useState(false);
   const [trocasModalOpen, setTrocasModalOpen] = useState(false);
+  const [viradasPuModalOpen, setViradasPuModalOpen] = useState(false);
   
   const [sheetOpen, setSheetOpen] = useState(false);
   const [cardModalOpen, setCardModalOpen] = useState(false);
@@ -173,6 +176,11 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
       <TrocasListModal
         open={trocasModalOpen}
         onClose={() => setTrocasModalOpen(false)}
+        dateKey={dateKey}
+      />
+      <ViradaPuListModal
+        open={viradasPuModalOpen}
+        onClose={() => setViradasPuModalOpen(false)}
         dateKey={dateKey}
       />
 
@@ -380,6 +388,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
       </PageContainer>
     );
   }
+
 
 
 

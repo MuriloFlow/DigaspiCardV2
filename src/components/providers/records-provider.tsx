@@ -22,6 +22,7 @@ type RecordsContextValue = RecordsPayload & {
   digitacoes: import("@/lib/records/digitacoes-repository").Digitacao[];
   dailyMetrics: import("@/lib/records/types").DailyMetric[];
   trocas: import("@/lib/records/trocas-repository").Troca[];
+  viradasPu: import("@/lib/records/viradas-pu-repository").ViradaPu[];
   isCreating: boolean;
   isLoading: boolean;
   isDeleting: string | null;
@@ -63,6 +64,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
   const [digitacoes, setDigitacoes] = useState<import("@/lib/records/digitacoes-repository").Digitacao[]>([]);
   const [dailyMetrics, setDailyMetrics] = useState<import("@/lib/records/types").DailyMetric[]>([]);
   const [trocas, setTrocas] = useState<import("@/lib/records/trocas-repository").Troca[]>([]);
+    const [viradasPu, setViradasPu] = useState<import("@/lib/records/viradas-pu-repository").ViradaPu[]>([]);
   const [summary, setSummary] = useState<DashboardSummary>(emptySummary);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -90,6 +92,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       setDigitacoes(data.digitacoes ?? []);
       setDailyMetrics(data.dailyMetrics ?? []);
       setTrocas(data.trocas ?? []);
+        setViradasPu(data.viradasPu ?? []);
       setSummary(data.summary);
     } catch (loadError) {
       let errorMessage = "Não foi possível carregar os registros.";
@@ -154,6 +157,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       setDigitacoes(data.digitacoes ?? []);
       setDailyMetrics(data.dailyMetrics ?? []);
       setTrocas(data.trocas ?? []);
+        setViradasPu(data.viradasPu ?? []);
       setSummary(data.summary);
 
       return data.record;
@@ -184,6 +188,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       setDigitacoes(data.digitacoes ?? []);
       setDailyMetrics(data.dailyMetrics ?? []);
       setTrocas(data.trocas ?? []);
+        setViradasPu(data.viradasPu ?? []);
       setSummary(data.summary);
     } catch (deleteError) {
       setError(
@@ -203,6 +208,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       digitacoes,
       dailyMetrics,
       trocas,
+      viradasPu,
       summary,
       isCreating,
       isLoading,
@@ -212,7 +218,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       deleteRecord,
       refresh: loadRecords,
     }),
-    [createRecord, deleteRecord, error, isCreating, isDeleting, isLoading, loadRecords, records, digitacoes, dailyMetrics, trocas, summary],
+    [createRecord, deleteRecord, error, isCreating, isDeleting, isLoading, loadRecords, records, digitacoes, dailyMetrics, trocas, viradasPu, summary],
   );
 
   return (
@@ -229,4 +235,5 @@ export function useRecords() {
 
   return context;
 }
+
 

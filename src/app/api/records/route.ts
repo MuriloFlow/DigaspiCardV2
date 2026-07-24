@@ -5,6 +5,7 @@ import { createRecord, listRecords, deleteRecord, updateRecord } from "@/lib/rec
 import { listDigitacoes } from "@/lib/records/digitacoes-repository";
 import { listDailyMetrics } from "@/lib/records/daily-metrics-repository";
 import { listTrocas } from "@/lib/records/trocas-repository";
+import { listViradasPu } from "@/lib/records/viradas-pu-repository";
 import { getSession } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
@@ -28,13 +29,14 @@ export async function GET(request: Request) {
     if ((["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) && queryStoreId) {
       storeId = queryStoreId;
     }
-    const [records, digitacoes, dailyMetrics, trocas] = await Promise.all([
+    const [records, digitacoes, dailyMetrics, trocas, viradasPu] = await Promise.all([
       listRecords(storeId),
       listDigitacoes(storeId),
       listDailyMetrics(storeId),
-      listTrocas(storeId)
+      listTrocas(storeId),
+      listViradasPu(storeId)
     ]);
-    return NextResponse.json(buildRecordsPayload(records, digitacoes, dailyMetrics, trocas), { headers: noStore });
+    return NextResponse.json(buildRecordsPayload(records, digitacoes, dailyMetrics, trocas, viradasPu), { headers: noStore });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "Erro ao carregar registros." },
@@ -67,14 +69,15 @@ export async function POST(request: Request) {
 
     const record = await createRecord(body, storeId);
     
-    const [records, digitacoes, dailyMetrics, trocas] = await Promise.all([
+    const [records, digitacoes, dailyMetrics, trocas, viradasPu] = await Promise.all([
       listRecords(storeId),
       listDigitacoes(storeId),
       listDailyMetrics(storeId),
-      listTrocas(storeId)
+      listTrocas(storeId),
+      listViradasPu(storeId)
     ]);
 
-    return NextResponse.json({ record, ...buildRecordsPayload(records, digitacoes, dailyMetrics, trocas) }, { status: 201, headers: noStore });
+    return NextResponse.json({ record, ...buildRecordsPayload(records, digitacoes, dailyMetrics, trocas, viradasPu) }, { status: 201, headers: noStore });
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
@@ -109,11 +112,12 @@ export async function PATCH(request: Request) {
       const parsedBody = body as { storeId?: string };
       if (parsedBody.storeId) storeId = parsedBody.storeId;
     }
-    const [records, digitacoes, dailyMetrics, trocas] = await Promise.all([
+    const [records, digitacoes, dailyMetrics, trocas, viradasPu] = await Promise.all([
       listRecords(storeId),
       listDigitacoes(storeId),
       listDailyMetrics(storeId),
-      listTrocas(storeId)
+      listTrocas(storeId),
+      listViradasPu(storeId)
     ]);
     return NextResponse.json({ records, success: true }, { headers: noStore });
   } catch (error) {
@@ -145,13 +149,14 @@ export async function DELETE(request: Request) {
     }
     await deleteRecord(id, storeId);
     
-    const [records, digitacoes, dailyMetrics, trocas] = await Promise.all([
+    const [records, digitacoes, dailyMetrics, trocas, viradasPu] = await Promise.all([
       listRecords(storeId),
       listDigitacoes(storeId),
       listDailyMetrics(storeId),
-      listTrocas(storeId)
+      listTrocas(storeId),
+      listViradasPu(storeId)
     ]);
-    return NextResponse.json(buildRecordsPayload(records, digitacoes, dailyMetrics, trocas), { headers: noStore });
+    return NextResponse.json(buildRecordsPayload(records, digitacoes, dailyMetrics, trocas, viradasPu), { headers: noStore });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "Erro ao deletar." },
@@ -159,3 +164,4 @@ export async function DELETE(request: Request) {
     );
   }
 }
+
