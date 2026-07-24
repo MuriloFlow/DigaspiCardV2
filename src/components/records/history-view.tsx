@@ -13,12 +13,15 @@ import { DashboardSkeleton } from "@/components/ui/skeleton";
 import { groupRecordsByMonth } from "@/lib/records/domain";
 import { formatCurrency, formatInteger } from "@/lib/utils/format";
 import { MonthAnalytics } from "./month-analytics";
+import { ViradaPuListModal } from "./virada-pu-list-modal";
+import { TrendingUp } from "lucide-react";
 
 export function HistoryView() {
   const { user, selectedStoreId } = useAuth();
   const { records, digitacoes, dailyMetrics, trocas, isLoading, error, refresh } = useRecords();
   const [search, setSearch] = useState("");
   const [digitacoesModalOpen, setDigitacoesModalOpen] = useState(false);
+  const [viradasPuModalOpen, setViradasPuModalOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   
   // Controls which month is currently opened (drill-down state)
@@ -144,13 +147,20 @@ export function HistoryView() {
           title={`Mês de ${activeMonth.label}`}
           description={`Total de ${activeMonth.count} cartões registrados neste mês.`}
         >
-          <div className="flex flex-col gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-4 sm:mt-0">
             <button
               onClick={() => setDigitacoesModalOpen(true)}
               className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10"
             >
               <Keyboard className="size-4 text-purple-500" />
               Ver digitações
+            </button>
+            <button
+              onClick={() => setViradasPuModalOpen(true)}
+              className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10"
+            >
+              <TrendingUp className="size-4 text-emerald-500" />
+              Virada de PU
             </button>
           </div>
         </PageHeader>
@@ -270,6 +280,11 @@ export function HistoryView() {
           title="Digitações do Mês"
           subtitle={activeMonth.label}
           digitacoes={activeMonth.digitacoes}
+        />
+        <ViradaPuListModal
+          open={viradasPuModalOpen}
+          onClose={() => setViradasPuModalOpen(false)}
+          monthKey={activeMonth.monthKey}
         />
       </PageContainer>
     );

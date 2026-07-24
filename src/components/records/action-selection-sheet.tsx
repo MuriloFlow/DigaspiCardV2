@@ -107,7 +107,7 @@ export function ActionSelectionSheet({
                     Digitação
                   </p>
                   <p className="mt-0.5 text-sm text-zinc-500">
-                    Tentativa não aprovada — registrar em lote
+                    Tentativa não aprovada - registrar em lote
                   </p>
                 </div>
               </motion.button>
@@ -168,7 +168,7 @@ export function ActionSelectionSheet({
                     Virada de PU
                   </p>
                   <p className="mt-0.5 text-sm text-zinc-500">
-                    Registrar convers�o de produto �nico (Caixas)
+                    Registrar conversão de produto único (Caixas)
                   </p>
                 </div>
               </motion.button>
@@ -179,4 +179,3 @@ export function ActionSelectionSheet({
     </AnimatePresence>
   );
 }
-

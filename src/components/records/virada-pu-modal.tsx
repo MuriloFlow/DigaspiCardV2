@@ -140,6 +140,8 @@ export function ViradaPuModal({
         collaboratorName: selectedCaixa.name
       };
       
+      if (dateKey) bodyData.dateKey = dateKey;
+
       const res = await fetch("/api/viradas-pu", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

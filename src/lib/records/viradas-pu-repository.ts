@@ -69,3 +69,8 @@ export async function listViradasPu(storeId?: string | null, dateKey?: string | 
     createdAt: d.created_at,
   }));
 }
+
+export async function deleteViradaPu(id: string): Promise<void> {
+  const { error } = await supabaseAdmin.from("viradas_pu").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}

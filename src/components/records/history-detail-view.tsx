@@ -19,6 +19,7 @@ import { DailyMetricsModal } from "./daily-metrics-modal";
 import { DigitacoesListModal } from "./digitacoes-list-modal";
 import { TrocasListModal } from "./trocas-list-modal";
 import { ViradaPuListModal } from "./virada-pu-list-modal";
+import { ViradaPuModal } from "./virada-pu-modal";
 import { TrendingUp } from "lucide-react";
 import { Activity, Keyboard } from "lucide-react";
 import { sumDigitacoes, getDigitacaoQuantity } from "@/lib/records/digitacoes-utils";
@@ -43,6 +44,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
   const [digitacaoModalOpen, setDigitacaoModalOpenAction] = useState(false);
   const [caixaModalOpen, setCaixaModalOpen] = useState(false);
   const [trocaModalOpen, setTrocaModalOpenAction] = useState(false);
+  const [viradaPuModalOpen, setViradaPuModalOpen] = useState(false);
   const { createRecord, isCreating } = useRecords();
 
   const isGlobalOrRegional = user?.role === "GLOBAL_ADMIN" || user?.role === "TI_ADMIN" || user?.role === "REGIONAL_MANAGER";
@@ -162,6 +164,13 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
           >
             <ArrowRightLeft className="size-4 text-orange-500" />
             Ver Trocas
+          </button>
+          <button
+            onClick={() => setViradasPuModalOpen(true)}
+            className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10"
+          >
+            <TrendingUp className="size-4 text-emerald-500" />
+            Pontuação PU
           </button>
         </div>
       </PageHeader>
@@ -359,6 +368,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
           onSelectDigitacao={() => setDigitacaoModalOpenAction(true)}
           onSelectDigitacaoCaixa={() => setCaixaModalOpen(true)}
           onSelectTroca={() => setTrocaModalOpenAction(true)}
+          onSelectViradaPu={() => setViradaPuModalOpen(true)}
         />
         <AddRecordModal
           open={cardModalOpen}
@@ -385,10 +395,13 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
           dateKey={dateKey}
           stores={stores}
         />
+        <ViradaPuModal
+          open={viradaPuModalOpen}
+          onClose={() => setViradaPuModalOpen(false)}
+          dateKey={dateKey}
+          stores={stores}
+        />
       </PageContainer>
     );
-  }
 
-
-
-
+}
