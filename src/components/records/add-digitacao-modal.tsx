@@ -155,6 +155,7 @@ export function AddDigitacaoModal({
   }
 
   async function handleAddClient() {
+    if (isCreating) return;
     const name = clientName.trim();
     if (!name) return;
     setErrorMsg(null);

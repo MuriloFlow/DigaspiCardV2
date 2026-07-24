@@ -115,11 +115,13 @@ export function buildDashboardSummary(
   };
 }
 
+
 export function groupRecordsByDate(
   records: OperatorRecord[],
   digitacoes: import("./digitacoes-repository").Digitacao[] = [],
   dailyMetrics: import("./types").DailyMetric[] = [],
-  trocas: import("./trocas-repository").Troca[] = []
+  trocas: import("./trocas-repository").Troca[] = [],
+  viradasPu: import("./viradas-pu-repository").ViradaPu[] = []
 ) {
   const groups = new Map<string, OperatorRecord[]>();
   const allDateKeys = new Set<string>();
@@ -135,11 +137,17 @@ export function groupRecordsByDate(
     allDateKeys.add(toDateKey(dig.createdAt));
   });
 
-  // Não incluímos dailyMetrics.forEach(...) aqui, 
-  // senão dias sem cartões/digitações mas com métricas vão aparecer sozinhos no histórico.
-  // dailyMetrics.forEach((metric) => {
-  //   allDateKeys.add(metric.dateKey);
-  // });
+  dailyMetrics.forEach((metric) => {
+    allDateKeys.add(metric.dateKey);
+  });
+
+  trocas.forEach((troca) => {
+    allDateKeys.add(troca.dateKey);
+  });
+
+  viradasPu.forEach((v) => {
+    allDateKeys.add(v.dateKey);
+  });
 
   return Array.from(allDateKeys)
     .sort((a, b) => b.localeCompare(a))
@@ -165,51 +173,56 @@ export function groupRecordsByDate(
     });
 }
 
+
 export function groupRecordsByMonth(
   records: OperatorRecord[],
   digitacoes: import("./digitacoes-repository").Digitacao[] = [],
   dailyMetrics: import("./types").DailyMetric[] = [],
-  trocas: import("./trocas-repository").Troca[] = []
+  trocas: import("./trocas-repository").Troca[] = [],
+  viradasPu: import("./viradas-pu-repository").ViradaPu[] = []
 ): MonthGroup[] {
   const months = new Map<string, OperatorRecord[]>();
   const digitacoesByMonth = new Map<string, import("./digitacoes-repository").Digitacao[]>();
   const customersByMonth = new Map<string, number>();
   const trocasByMonth = new Map<string, import("./trocas-repository").Troca[]>();
+  const viradasPuByMonth = new Map<string, import("./viradas-pu-repository").ViradaPu[]>();
 
-  // Group records by month
   sortRecordsByNewest(records).forEach((record) => {
     const monthKey = toMonthKey(record.createdAt);
     const current = months.get(monthKey) ?? [];
     months.set(monthKey, [...current, record]);
   });
 
-  // Group digitacoes by month
   digitacoes.forEach((dig) => {
     const monthKey = toMonthKey(dig.createdAt);
     const current = digitacoesByMonth.get(monthKey) ?? [];
     digitacoesByMonth.set(monthKey, [...current, dig]);
   });
 
-  // Group dailyMetrics by month
   dailyMetrics.forEach((metric) => {
     const monthKey = toMonthKey(metric.dateKey);
     const current = customersByMonth.get(monthKey) ?? 0;
     customersByMonth.set(monthKey, current + metric.totalCustomers);
   });
 
-  // Group trocas by month
   trocas.forEach((troca) => {
     const monthKey = troca.dateKey.substring(0, 7);
     const current = trocasByMonth.get(monthKey) ?? [];
     trocasByMonth.set(monthKey, [...current, troca]);
   });
 
-  // Create a combined list of all monthKeys
+  viradasPu.forEach((v) => {
+    const monthKey = v.dateKey.substring(0, 7);
+    const current = viradasPuByMonth.get(monthKey) ?? [];
+    viradasPuByMonth.set(monthKey, [...current, v]);
+  });
+
   const allMonthKeys = new Set([
     ...months.keys(),
     ...digitacoesByMonth.keys(),
     ...trocasByMonth.keys(),
-    // Não incluímos customersByMonth.keys() para meses sem dados reais desaparecerem
+    ...viradasPuByMonth.keys(),
+    ...customersByMonth.keys()
   ]);
 
   return Array.from(allMonthKeys).map<MonthGroup>((monthKey) => {
@@ -217,6 +230,7 @@ export function groupRecordsByMonth(
     const items = months.get(monthKey) ?? [];
     const digs = digitacoesByMonth.get(monthKey) ?? [];
     const monthTrocas = trocasByMonth.get(monthKey) ?? [];
+    const monthViradasPu = viradasPuByMonth.get(monthKey) ?? [];
     const totalCustomers = customersByMonth.get(monthKey) ?? 0;
 
     const monthMetrics = dailyMetrics.filter(m => m.dateKey.startsWith(monthKey));
@@ -234,19 +248,21 @@ export function groupRecordsByMonth(
       totalUsedInCents: items.reduce((total, r) => (r.activated || r.activatedLater) && typeof r.amountUsedInCents === 'number' ? total + r.amountUsedInCents : total, 0),
       trocasCount: monthTrocas.length,
       totalCustomers,
-      dateGroups: groupRecordsByDate(items, digs, monthMetrics, monthTrocas),
+      dateGroups: groupRecordsByDate(items, digs, monthMetrics, monthTrocas, monthViradasPu),
     };
   }).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
 }
+
 
 export function getDateGroup(
   records: OperatorRecord[],
   dateKey: string,
   digitacoes: import("./digitacoes-repository").Digitacao[] = [],
   dailyMetrics: import("./types").DailyMetric[] = [],
-  trocas: import("./trocas-repository").Troca[] = []
+  trocas: import("./trocas-repository").Troca[] = [],
+  viradasPu: import("./viradas-pu-repository").ViradaPu[] = []
 ) {
-  return groupRecordsByDate(records, digitacoes, dailyMetrics, trocas).find(
+  return groupRecordsByDate(records, digitacoes, dailyMetrics, trocas, viradasPu).find(
     (group) => group.dateKey === dateKey
   );
 }

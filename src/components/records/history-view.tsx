@@ -18,7 +18,7 @@ import { TrendingUp } from "lucide-react";
 
 export function HistoryView() {
   const { user, selectedStoreId } = useAuth();
-  const { records, digitacoes, dailyMetrics, trocas, isLoading, error, refresh } = useRecords();
+  const { records, digitacoes, dailyMetrics, trocas, viradasPu, isLoading, error, refresh } = useRecords();
   const [search, setSearch] = useState("");
   const [digitacoesModalOpen, setDigitacoesModalOpen] = useState(false);
   const [viradasPuModalOpen, setViradasPuModalOpen] = useState(false);
@@ -28,8 +28,8 @@ export function HistoryView() {
   const [activeMonthKey, setActiveMonthKey] = useState<string | null>(null);
 
   const monthGroups = useMemo(() => {
-    return groupRecordsByMonth(records, digitacoes, dailyMetrics, trocas);
-  }, [records, digitacoes, dailyMetrics, trocas]);
+    return groupRecordsByMonth(records, digitacoes, dailyMetrics, trocas, viradasPu);
+  }, [records, digitacoes, dailyMetrics, trocas, viradasPu]);
 
   const availableYears = useMemo(() => {
     const years = new Set(monthGroups.map((g) => g.year));

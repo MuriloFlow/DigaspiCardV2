@@ -180,6 +180,7 @@ export function AddRecordModal({
   }
 
   async function handleSubmit() {
+    if (isSubmitting) return;
     setApiError(null);
     const validation = createRecordSchema.safeParse({
       collaboratorId: selectedCollabId,

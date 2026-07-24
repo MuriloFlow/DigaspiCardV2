@@ -62,6 +62,7 @@ export function AddCaixaDigitacaoModal({
   };
 
   const handleSave = async () => {
+    if (loading) return;
     if (!finalStoreId) {
       setError("Selecione a unidade antes de continuar.");
       return;

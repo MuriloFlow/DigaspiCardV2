@@ -118,6 +118,7 @@ export function ViradaPuModal({
   };
 
   const handleSave = async () => {
+    if (loading) return;
     if (!finalStoreId) {
       setError("Selecione a unidade.");
       return;

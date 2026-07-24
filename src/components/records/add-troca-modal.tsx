@@ -112,6 +112,7 @@ export function AddTrocaModal({
   };
 
   const handleSave = async () => {
+    if (loading) return;
     if (!finalStoreId) {
       setError("Selecione a unidade.");
       return;
