@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const session = await getSession();
-    if (!session || (session.role !== "MANAGER" && session.role !== "GLOBAL_ADMIN" && session.role !== "REGIONAL_MANAGER")) {
+    if (!session || !["MANAGER", "GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) {
       return NextResponse.json({ message: "Acesso negado." }, { status: 403 });
     }
 
