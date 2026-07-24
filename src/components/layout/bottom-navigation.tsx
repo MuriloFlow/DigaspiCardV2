@@ -38,11 +38,11 @@ const items: NavItem[] = [
     roles: ["GLOBAL_ADMIN", "MANAGER", "REGIONAL_MANAGER", "TI_ADMIN"],
   },
   {
-    label: "Lojas",
+    label: "Rede",
     href: "/admin",
     icon: Building,
     match: (path: string) => path.startsWith("/admin"),
-    roles: ["GLOBAL_ADMIN", "TI_ADMIN"],
+    roles: ["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"],
   },
   {
     label: "Ranking",

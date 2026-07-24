@@ -118,7 +118,8 @@ export function buildDashboardSummary(
 export function groupRecordsByDate(
   records: OperatorRecord[],
   digitacoes: import("./digitacoes-repository").Digitacao[] = [],
-  dailyMetrics: import("./types").DailyMetric[] = []
+  dailyMetrics: import("./types").DailyMetric[] = [],
+  trocas: import("./trocas-repository").Troca[] = []
 ) {
   const groups = new Map<string, OperatorRecord[]>();
   const allDateKeys = new Set<string>();
@@ -154,6 +155,11 @@ export function groupRecordsByDate(
           (total, record) => total + record.amountInCents,
           0,
         ),
+        totalUsedInCents: items.reduce(
+          (total, record) => (record.activated || record.activatedLater) && typeof record.amountUsedInCents === 'number' ? total + record.amountUsedInCents : total,
+          0,
+        ),
+        trocasCount: trocas.filter(t => t.dateKey === dateKey).length,
         operators: aggregateByOperator(items),
       };
     });
@@ -162,11 +168,13 @@ export function groupRecordsByDate(
 export function groupRecordsByMonth(
   records: OperatorRecord[],
   digitacoes: import("./digitacoes-repository").Digitacao[] = [],
-  dailyMetrics: import("./types").DailyMetric[] = []
+  dailyMetrics: import("./types").DailyMetric[] = [],
+  trocas: import("./trocas-repository").Troca[] = []
 ): MonthGroup[] {
   const months = new Map<string, OperatorRecord[]>();
   const digitacoesByMonth = new Map<string, import("./digitacoes-repository").Digitacao[]>();
   const customersByMonth = new Map<string, number>();
+  const trocasByMonth = new Map<string, import("./trocas-repository").Troca[]>();
 
   // Group records by month
   sortRecordsByNewest(records).forEach((record) => {
@@ -189,10 +197,18 @@ export function groupRecordsByMonth(
     customersByMonth.set(monthKey, current + metric.totalCustomers);
   });
 
+  // Group trocas by month
+  trocas.forEach((troca) => {
+    const monthKey = troca.dateKey.substring(0, 7);
+    const current = trocasByMonth.get(monthKey) ?? [];
+    trocasByMonth.set(monthKey, [...current, troca]);
+  });
+
   // Create a combined list of all monthKeys
   const allMonthKeys = new Set([
     ...months.keys(),
     ...digitacoesByMonth.keys(),
+    ...trocasByMonth.keys(),
     // Não incluímos customersByMonth.keys() para meses sem dados reais desaparecerem
   ]);
 
@@ -200,6 +216,7 @@ export function groupRecordsByMonth(
     const [yearStr] = monthKey.split("-");
     const items = months.get(monthKey) ?? [];
     const digs = digitacoesByMonth.get(monthKey) ?? [];
+    const monthTrocas = trocasByMonth.get(monthKey) ?? [];
     const totalCustomers = customersByMonth.get(monthKey) ?? 0;
 
     const monthMetrics = dailyMetrics.filter(m => m.dateKey.startsWith(monthKey));
@@ -214,8 +231,10 @@ export function groupRecordsByMonth(
       activeCount: items.filter((r) => r.activated && !r.activatedLater).length,
       activeLaterCount: items.filter((r) => r.activatedLater).length,
       totalInCents: items.reduce((total, r) => total + r.amountInCents, 0),
+      totalUsedInCents: items.reduce((total, r) => (r.activated || r.activatedLater) && typeof r.amountUsedInCents === 'number' ? total + r.amountUsedInCents : total, 0),
+      trocasCount: monthTrocas.length,
       totalCustomers,
-      dateGroups: groupRecordsByDate(items, digs, monthMetrics),
+      dateGroups: groupRecordsByDate(items, digs, monthMetrics, monthTrocas),
     };
   }).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
 }
@@ -224,9 +243,10 @@ export function getDateGroup(
   records: OperatorRecord[],
   dateKey: string,
   digitacoes: import("./digitacoes-repository").Digitacao[] = [],
-  dailyMetrics: import("./types").DailyMetric[] = []
+  dailyMetrics: import("./types").DailyMetric[] = [],
+  trocas: import("./trocas-repository").Troca[] = []
 ) {
-  return groupRecordsByDate(records, digitacoes, dailyMetrics).find(
+  return groupRecordsByDate(records, digitacoes, dailyMetrics, trocas).find(
     (group) => group.dateKey === dateKey
   );
 }
@@ -234,7 +254,8 @@ export function getDateGroup(
 export function buildRecordsPayload(
   records: OperatorRecord[],
   digitacoes: import("./digitacoes-repository").Digitacao[] = [],
-  dailyMetrics: import("./types").DailyMetric[] = []
+  dailyMetrics: import("./types").DailyMetric[] = [],
+  trocas: import("./trocas-repository").Troca[] = []
 ): RecordsPayload {
   const sortedRecords = sortRecordsByNewest(records);
 
@@ -242,6 +263,7 @@ export function buildRecordsPayload(
     records: sortedRecords,
     digitacoes,
     dailyMetrics,
+    trocas,
     summary: buildDashboardSummary(sortedRecords),
   };
 }

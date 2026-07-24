@@ -18,6 +18,8 @@ type DailyMetricsModalProps = {
   ticketMedio: number;
   crescimentoCartoes: number;
   crescimentoValor: number;
+  trocasCount: number;
+  totalUsedInCents: number;
 };
 
 export function DailyMetricsModal({
@@ -34,6 +36,8 @@ export function DailyMetricsModal({
   ticketMedio,
   crescimentoCartoes,
   crescimentoValor,
+  trocasCount,
+  totalUsedInCents,
 }: DailyMetricsModalProps) {
   return (
     <AnimatePresence>
@@ -83,6 +87,8 @@ export function DailyMetricsModal({
                   ticketMedio={ticketMedio}
                   crescimentoCartoes={crescimentoCartoes}
                   crescimentoValor={crescimentoValor}
+                  trocasCount={trocasCount}
+                  totalUsedInCents={totalUsedInCents}
                 />
               </div>
             </motion.div>

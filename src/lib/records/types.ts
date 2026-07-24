@@ -41,6 +41,8 @@ export type DateGroup = {
   records: OperatorRecord[];
   count: number;
   totalInCents: number;
+  totalUsedInCents: number;
+  trocasCount: number;
   operators: OperatorSummary[];
 };
 
@@ -63,6 +65,8 @@ export type MonthGroup = {
   activeCount: number;
   activeLaterCount: number;
   totalInCents: number;
+  totalUsedInCents: number;
+  trocasCount: number;
   totalCustomers: number;
   dateGroups: DateGroup[];
 };
@@ -78,6 +82,7 @@ export type RecordsPayload = {
   records: OperatorRecord[];
   digitacoes: import("./digitacoes-repository").Digitacao[];
   dailyMetrics: import("./types").DailyMetric[];
+  trocas: import("./trocas-repository").Troca[];
   summary: DashboardSummary;
 };
 

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowRightLeft, Check, Loader2, Store, X } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useDigitacoes } from "@/components/providers/digitacoes-provider";
+import { useRecords } from "@/components/providers/records-provider";
 import { cn } from "@/lib/utils/cn";
 import { CustomSelect } from "@/components/ui/custom-select";
 
@@ -20,7 +21,8 @@ export function AddTrocaModal({
   dateKey?: string;
 }) {
   const { user, selectedStoreId } = useAuth();
-  const { refresh } = useDigitacoes();
+  const { refresh: refreshDigitacoes } = useDigitacoes();
+  const { refresh: refreshRecords } = useRecords();
 
   const isGlobalOrRegional =
     user?.role === "GLOBAL_ADMIN" ||
@@ -142,7 +144,10 @@ export function AddTrocaModal({
 
       if (!res.ok) throw new Error(data.message || "Erro ao registrar troca.");
 
-      await refresh();
+      await Promise.all([
+        refreshDigitacoes(),
+        refreshRecords()
+      ]);
       setSuccessFlash(true);
       setTimeout(() => {
         onClose();

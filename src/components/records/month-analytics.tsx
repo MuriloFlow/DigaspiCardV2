@@ -10,7 +10,8 @@ import {
   Activity,
   TrendingUp,
   DollarSign,
-  PieChart
+  PieChart,
+  ArrowRightLeft
 } from "lucide-react";
 import { formatCurrency, formatInteger } from "@/lib/utils/format";
 
@@ -25,6 +26,8 @@ type MonthAnalyticsProps = {
   ticketMedio: number;
   crescimentoCartoes: number; // % month over month
   crescimentoValor: number; // % month over month
+  trocasCount: number;
+  totalUsedInCents: number;
 };
 
 export function MonthAnalytics({
@@ -38,6 +41,8 @@ export function MonthAnalytics({
   ticketMedio,
   crescimentoCartoes,
   crescimentoValor,
+  trocasCount,
+  totalUsedInCents,
 }: MonthAnalyticsProps) {
   const cards = [
     {
@@ -102,6 +107,20 @@ export function MonthAnalytics({
       icon: PieChart,
       color: crescimentoValor >= 0 ? "bg-emerald-500" : "bg-red-500",
       description: "Vs. mês anterior",
+    },
+    {
+      title: "Qnt. de Trocas",
+      value: formatInteger(trocasCount),
+      icon: ArrowRightLeft,
+      color: "bg-amber-500",
+      description: "Trocas de gerentes",
+    },
+    {
+      title: "Valor Utilizado",
+      value: formatCurrency(totalUsedInCents),
+      icon: DollarSign,
+      color: "bg-teal-500",
+      description: "Cartões ativados",
     },
     {
       title: "Ticket Médio",

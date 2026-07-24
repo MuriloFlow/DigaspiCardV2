@@ -29,7 +29,7 @@ import { AddTrocaModal } from "./add-troca-modal";
 
 export function HistoryDetailView({ dateKey }: { dateKey: string }) {
   const { user, selectedStoreId } = useAuth();
-  const { records, digitacoes, dailyMetrics, isLoading } = useRecords();
+  const { records, digitacoes, dailyMetrics, trocas, isLoading } = useRecords();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [metricsModalOpen, setMetricsModalOpen] = useState(false);
   const [digitacoesModalOpen, setDigitacoesModalOpen] = useState(false);
@@ -54,8 +54,8 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
   }, [isGlobalOrRegional]);
 
   const group = useMemo(
-    () => getDateGroup(records, dateKey, digitacoes, dailyMetrics),
-    [dateKey, records, digitacoes, dailyMetrics],
+    () => getDateGroup(records, dateKey, digitacoes, dailyMetrics, trocas),
+    [dateKey, records, digitacoes, dailyMetrics, trocas],
   );
 
   const dayDigitacoes = useMemo(() => {
@@ -329,6 +329,8 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
               ticketMedio={ticketMedio}
               crescimentoCartoes={0}
               crescimentoValor={0}
+              trocasCount={group.trocasCount ?? 0}
+              totalUsedInCents={group.totalUsedInCents ?? 0}
             />
             <DigitacoesListModal
               open={digitacoesModalOpen}
@@ -378,4 +380,6 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
       </PageContainer>
     );
   }
+
+
 

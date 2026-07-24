@@ -16,7 +16,7 @@ import { MonthAnalytics } from "./month-analytics";
 
 export function HistoryView() {
   const { user, selectedStoreId } = useAuth();
-  const { records, digitacoes, dailyMetrics, isLoading, error, refresh } = useRecords();
+  const { records, digitacoes, dailyMetrics, trocas, isLoading, error, refresh } = useRecords();
   const [search, setSearch] = useState("");
   const [digitacoesModalOpen, setDigitacoesModalOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -25,8 +25,8 @@ export function HistoryView() {
   const [activeMonthKey, setActiveMonthKey] = useState<string | null>(null);
 
   const monthGroups = useMemo(() => {
-    return groupRecordsByMonth(records, digitacoes, dailyMetrics);
-  }, [records, digitacoes, dailyMetrics]);
+    return groupRecordsByMonth(records, digitacoes, dailyMetrics, trocas);
+  }, [records, digitacoes, dailyMetrics, trocas]);
 
   const availableYears = useMemo(() => {
     const years = new Set(monthGroups.map((g) => g.year));
@@ -59,6 +59,8 @@ export function HistoryView() {
     let activeCount = 0;
     let activeLaterCount = 0;
     let totalInCents = 0;
+    let trocasCount = 0;
+    let totalUsedInCents = 0;
 
     for (const month of filteredMonths) {
       totalCartoes += month.count;
@@ -67,6 +69,8 @@ export function HistoryView() {
       activeCount += month.activeCount;
       activeLaterCount += month.activeLaterCount;
       totalInCents += month.totalInCents;
+      trocasCount += month.trocasCount ?? 0;
+      totalUsedInCents += month.totalUsedInCents ?? 0;
     }
 
     const taxaAproveitamento = totalClientes > 0 ? ((totalCartoes + totalDigitacoes) / totalClientes) * 100 : 0;
@@ -86,6 +90,8 @@ export function HistoryView() {
       ticketMedio,
       crescimentoCartoes: 0,
       crescimentoValor: 0,
+      trocasCount,
+      totalUsedInCents,
     };
   }, [filteredMonths, selectedYear]);
 
@@ -182,6 +188,8 @@ export function HistoryView() {
               ticketMedio={ticketMedio}
               crescimentoCartoes={crescimentoCartoes}
               crescimentoValor={crescimentoValor}
+              trocasCount={activeMonth.trocasCount ?? 0}
+              totalUsedInCents={activeMonth.totalUsedInCents ?? 0}
             />
           );
         })()}
@@ -395,3 +403,5 @@ export function HistoryView() {
     </PageContainer>
   );
 }
+
+

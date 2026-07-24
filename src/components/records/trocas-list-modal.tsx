@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRightLeft, Loader2, Trash2, User, X, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useRecords } from "@/components/providers/records-provider";
+import { useDigitacoes } from "@/components/providers/digitacoes-provider";
 import { cn } from "@/lib/utils/cn";
 
 type Troca = {
@@ -34,6 +36,8 @@ export function TrocasListModal({
   dateKey?: string | null;
 }) {
   const { user } = useAuth();
+  const { refresh: refreshRecords } = useRecords();
+  const { refresh: refreshDigitacoes } = useDigitacoes();
   const [trocas, setTrocas] = useState<Troca[]>([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -102,6 +106,7 @@ export function TrocasListModal({
       }
       setTrocas((prev) => prev.filter((t) => t.id !== id));
       setConfirmDeleteId(null);
+      void Promise.all([refreshRecords(), refreshDigitacoes()]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao deletar.");
     } finally {
