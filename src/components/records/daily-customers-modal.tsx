@@ -11,12 +11,14 @@ type DailyCustomersModalProps = {
   open: boolean;
   dateKey: string;
   onClose: () => void;
+  storeId?: string;
 };
 
 export function DailyCustomersModal({
   open,
   dateKey,
   onClose,
+  storeId,
 }: DailyCustomersModalProps) {
   const { records, dailyMetrics, refresh } = useRecords();
   const [customersCount, setCustomersCount] = useState("");
@@ -59,10 +61,13 @@ export function DailyCustomersModal({
     setErrorMsg(null);
 
     try {
+      const body: Record<string, unknown> = { dateKey, totalCustomers: count };
+      if (storeId) body.storeId = storeId;
+
       const response = await fetch("/api/daily-metrics", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dateKey, totalCustomers: count }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {

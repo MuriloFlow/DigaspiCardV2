@@ -28,7 +28,7 @@ import { AddCaixaDigitacaoModal } from "./add-caixa-digitacao-modal";
 import { AddTrocaModal } from "./add-troca-modal";
 
 export function HistoryDetailView({ dateKey }: { dateKey: string }) {
-  const { user } = useAuth();
+  const { user, selectedStoreId } = useAuth();
   const { records, digitacoes, dailyMetrics, isLoading } = useRecords();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [metricsModalOpen, setMetricsModalOpen] = useState(false);
@@ -164,10 +164,11 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
       </PageHeader>
 
       <DailyCustomersModal 
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        dateKey={dateKey}
-      />
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          dateKey={dateKey}
+          storeId={isGlobalOrRegional ? (selectedStoreId ?? undefined) : (user?.storeId ?? undefined)}
+        />
 
       <TrocasListModal
         open={trocasModalOpen}
