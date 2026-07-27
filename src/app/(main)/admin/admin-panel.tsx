@@ -771,7 +771,7 @@ export function AdminPanel({
               <div className="divide-y divide-zinc-100">
                 {initialData.stores.map((store) => {
                   const storeUsers = users.filter(u => u.store_id === store.id);
-                  const manager = storeUsers.find(u => u.role === "MANAGER" && u.is_primary);
+                  const manager = storeUsers.find(u => (u.role === "MANAGER" || u.role === "REGIONAL_MANAGER") && u.is_primary);
                   return (
                     <button
                       key={store.id}
