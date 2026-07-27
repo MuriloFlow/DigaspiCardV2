@@ -771,9 +771,7 @@ export function AdminPanel({
               <div className="divide-y divide-zinc-100">
                 {initialData.stores.map((store) => {
                   const storeUsers = users.filter(u => u.store_id === store.id);
-                  const primaryManager = storeUsers.find(u => u.role === "MANAGER" && u.is_primary);
-                  const anyManager = storeUsers.find(u => u.role === "MANAGER");
-                  const manager = primaryManager || anyManager;
+                  const manager = storeUsers.find(u => u.role === "MANAGER" && u.is_primary);
                   return (
                     <button
                       key={store.id}
@@ -787,7 +785,7 @@ export function AdminPanel({
                         <div>
                           <p className="text-sm font-semibold text-zinc-950">{store.name}</p>
                           <p className="text-xs text-zinc-500">
-                            {manager ? `${primaryManager ? "★ " : ""}${manager.name || manager.username}` : "Sem gerente"}
+                            {manager ? `${manager.name || manager.username}` : "Sem gerente"}
                             {" · "}{storeUsers.length} usuário(s)
                           </p>
                         </div>
