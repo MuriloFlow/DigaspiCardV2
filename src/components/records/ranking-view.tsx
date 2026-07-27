@@ -159,11 +159,15 @@ function RankList({ title, subtitle, ranking, itemName }: { title: string; subti
 
 export function RankingView() {
   const { records, isLoading, error, refresh } = useRecords();
-  const { user } = useAuth();
-  const isGlobalAdmin = user?.role === "GLOBAL_ADMIN";
+  const { user, selectedStoreId } = useAuth();
   
-  const operatorRanking = useMemo(() => aggregateByOperator(records), [records]);
-  const storeRanking = useMemo(() => aggregateByStore(records), [records]);
+  const currentMonthRecords = useMemo(() => {
+    const currentMonthPrefix = new Date().toISOString().substring(0, 7);
+    return records.filter(r => r.createdAt.startsWith(currentMonthPrefix));
+  }, [records]);
+
+  const operatorRanking = useMemo(() => aggregateByOperator(currentMonthRecords), [currentMonthRecords]);
+  const storeRanking = useMemo(() => aggregateByStore(currentMonthRecords), [currentMonthRecords]);
 
   if (isLoading) {
     return (
@@ -195,25 +199,17 @@ export function RankingView() {
         </div>
       ) : null}
 
-      {isGlobalAdmin ? (
-        <>
-          <RankList 
-            title="Rank de Lojas" 
-            subtitle="As unidades com melhor desempenho na rede." 
-            ranking={storeRanking} 
-            itemName="loja" 
-          />
-          <RankList 
-            title="Rank de Operadores" 
-            subtitle="Os funcionários com mais registros consolidados." 
-            ranking={operatorRanking} 
-            itemName="operador" 
-          />
-        </>
+      {!selectedStoreId ? (
+        <RankList 
+          title="Rank de Lojas" 
+          subtitle="As unidades com melhor desempenho na rede neste mês." 
+          ranking={storeRanking} 
+          itemName="loja" 
+        />
       ) : (
         <RankList 
           title="Melhores Operadores" 
-          subtitle="Os funcionários com mais registros nesta unidade." 
+          subtitle="Os funcionários com mais registros nesta unidade neste mês." 
           ranking={operatorRanking} 
           itemName="operador" 
         />

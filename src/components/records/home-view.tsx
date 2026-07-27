@@ -1,7 +1,7 @@
 "use client";
-
 import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import Link from "next/link";
 import { CreditCard, RefreshCw, TrendingUp, Users, Building, Target, Bug } from "lucide-react";
 import { OperatorPieChart } from "@/components/charts/operator-pie-chart";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
@@ -255,6 +255,12 @@ export function HomeView() {
             {recentRecords.map((record, index) => (
               <RecordCard key={record.id} record={record} index={index} />
             ))}
+            <Link 
+              href={`/historico/${toDateKey(new Date().toISOString())}`}
+              className="mt-2 flex w-full h-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10"
+            >
+              Ver cartões do dia
+            </Link>
           </div>
         ) : (
           <div className="rounded-[1.5rem] border border-dashed border-zinc-300 bg-white px-5 py-10 text-center text-sm font-medium text-zinc-500">

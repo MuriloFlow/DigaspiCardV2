@@ -20,6 +20,7 @@ import { DigitacoesListModal } from "./digitacoes-list-modal";
 import { TrocasListModal } from "./trocas-list-modal";
 import { ViradaPuListModal } from "./virada-pu-list-modal";
 import { ViradaPuModal } from "./virada-pu-modal";
+import { ConfirmActionSheet } from "./confirm-action-sheet";
 import { TrendingUp } from "lucide-react";
 import { Activity, Keyboard } from "lucide-react";
 import { sumDigitacoes, getDigitacaoQuantity } from "@/lib/records/digitacoes-utils";
@@ -45,6 +46,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
   const [caixaModalOpen, setCaixaModalOpen] = useState(false);
   const [trocaModalOpen, setTrocaModalOpenAction] = useState(false);
   const [viradaPuModalOpen, setViradaPuModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"card" | "caixa" | "troca" | "viradaPu" | null>(null);
   const { createRecord, isCreating } = useRecords();
 
   const isGlobalOrRegional = user?.role === "GLOBAL_ADMIN" || user?.role === "TI_ADMIN" || user?.role === "REGIONAL_MANAGER";
@@ -364,11 +366,22 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
         <ActionSelectionSheet
           open={sheetOpen}
           onClose={() => setSheetOpen(false)}
-          onSelectCard={() => setCardModalOpen(true)}
-          onSelectDigitacao={() => setDigitacaoModalOpenAction(true)}
-          onSelectDigitacaoCaixa={() => setCaixaModalOpen(true)}
-          onSelectTroca={() => setTrocaModalOpenAction(true)}
-          onSelectViradaPu={() => setViradaPuModalOpen(true)}
+          onSelectCard={() => { setSheetOpen(false); setPendingAction("card"); }}
+          onSelectDigitacao={() => { setSheetOpen(false); setDigitacaoModalOpenAction(true); }}
+          onSelectDigitacaoCaixa={() => { setSheetOpen(false); setPendingAction("caixa"); }}
+          onSelectTroca={() => { setSheetOpen(false); setPendingAction("troca"); }}
+          onSelectViradaPu={() => { setSheetOpen(false); setPendingAction("viradaPu"); }}
+        />
+        <ConfirmActionSheet
+          open={!!pendingAction}
+          onClose={() => setPendingAction(null)}
+          onConfirm={() => {
+            if (pendingAction === "card") setCardModalOpen(true);
+            else if (pendingAction === "caixa") setCaixaModalOpen(true);
+            else if (pendingAction === "troca") setTrocaModalOpenAction(true);
+            else if (pendingAction === "viradaPu") setViradaPuModalOpen(true);
+            setPendingAction(null);
+          }}
         />
         <AddRecordModal
           open={cardModalOpen}
