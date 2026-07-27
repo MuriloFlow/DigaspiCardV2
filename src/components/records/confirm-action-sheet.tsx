@@ -81,7 +81,7 @@ export function ConfirmActionSheet({
                   onClose();
                   onConfirm();
                 }}
-                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-black font-semibold text-white transition hover:bg-zinc-800"
+                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-white border border-zinc-200 font-bold text-zinc-950 transition hover:bg-zinc-50 shadow-sm"
               >
                 <Check className="size-4" />
                 Sim, continuar

@@ -375,6 +375,10 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
         <ConfirmActionSheet
           open={!!pendingAction}
           onClose={() => setPendingAction(null)}
+          title={`Confirmar ação ${(() => {
+            const [y, m, d] = dateKey.split('-');
+            return `${d}/${m}/${y?.slice(-2) ?? '26'}`;
+          })()}`}
           onConfirm={() => {
             if (pendingAction === "card") setCardModalOpen(true);
             else if (pendingAction === "caixa") setCaixaModalOpen(true);
