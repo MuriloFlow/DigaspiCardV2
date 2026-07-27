@@ -46,7 +46,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
   const [caixaModalOpen, setCaixaModalOpen] = useState(false);
   const [trocaModalOpen, setTrocaModalOpenAction] = useState(false);
   const [viradaPuModalOpen, setViradaPuModalOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"card" | "caixa" | "troca" | "viradaPu" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"card" | "digitacao" | "caixa" | "troca" | "viradaPu" | null>(null);
   const { createRecord, isCreating } = useRecords();
 
   const isGlobalOrRegional = user?.role === "GLOBAL_ADMIN" || user?.role === "TI_ADMIN" || user?.role === "REGIONAL_MANAGER";
@@ -367,7 +367,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
           open={sheetOpen}
           onClose={() => setSheetOpen(false)}
           onSelectCard={() => { setSheetOpen(false); setPendingAction("card"); }}
-          onSelectDigitacao={() => { setSheetOpen(false); setDigitacaoModalOpenAction(true); }}
+          onSelectDigitacao={() => { setSheetOpen(false); setPendingAction("digitacao"); }}
           onSelectDigitacaoCaixa={() => { setSheetOpen(false); setPendingAction("caixa"); }}
           onSelectTroca={() => { setSheetOpen(false); setPendingAction("troca"); }}
           onSelectViradaPu={() => { setSheetOpen(false); setPendingAction("viradaPu"); }}
@@ -381,6 +381,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
           })()}`}
           onConfirm={() => {
             if (pendingAction === "card") setCardModalOpen(true);
+            else if (pendingAction === "digitacao") setDigitacaoModalOpenAction(true);
             else if (pendingAction === "caixa") setCaixaModalOpen(true);
             else if (pendingAction === "troca") setTrocaModalOpenAction(true);
             else if (pendingAction === "viradaPu") setViradaPuModalOpen(true);
