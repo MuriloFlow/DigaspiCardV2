@@ -235,7 +235,7 @@ export function NewRemarcacaoFlow({
     // o bloqueio (isSubmitting) já acontece dentro do próprio RemarcacaoValuesModal.
     try {
       if (replaceItemId) {
-        await removeItem(replaceItemId);
+        await removeItem(currentRemarcacaoId, replaceItemId);
         setReplaceItemId(null);
       }
 
@@ -359,12 +359,7 @@ export function NewRemarcacaoFlow({
               
               <button
                 type="button"
-                onClick={async () => {
-                  if (currentRemarcacaoId) {
-                    await updateRemarcacaoStatus(currentRemarcacaoId, "pending_approval");
-                  }
-                  setStep("signature");
-                }}
+                onClick={() => setStep("signature")}
                 className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 font-bold text-white shadow-md transition hover:bg-zinc-800 active:scale-[0.98]"
               >
                 <Edit3 className="size-5" /> Finalizar Lote e Assinar

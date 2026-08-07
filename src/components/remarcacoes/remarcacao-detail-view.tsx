@@ -16,7 +16,6 @@ import {
   Plus,
   Trash2,
   Unlock,
-  Unlock,
   Package,
   Edit3,
 } from "lucide-react";
@@ -122,10 +121,7 @@ export function RemarcacaoDetailView({ remarcacao: initialRemarcacao, historico 
 
           {canEdit && (
             <button
-              onClick={async () => {
-                if (remarcacao.status === "draft") {
-                  await updateRemarcacaoStatus(remarcacao.id, "pending_approval");
-                }
+              onClick={() => {
                 setInitialStep("signature");
                 setIsFlowOpen(true);
               }}
@@ -248,10 +244,7 @@ export function RemarcacaoDetailView({ remarcacao: initialRemarcacao, historico 
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              onClick={async () => {
-                if (remarcacao.status === "draft") {
-                  await updateRemarcacaoStatus(remarcacao.id, "pending_approval");
-                }
+              onClick={() => {
                 setInitialStep("signature");
                 setIsFlowOpen(true);
               }}
@@ -434,11 +427,8 @@ export function RemarcacaoDetailView({ remarcacao: initialRemarcacao, historico 
             >
               {canEdit && (
                 <button
-                  onClick={async () => {
+                  onClick={() => {
                     setIsMenuFabOpen(false);
-                    if (remarcacao.status === "draft") {
-                      await updateRemarcacaoStatus(remarcacao.id, "pending_approval");
-                    }
                     setInitialStep("signature");
                     setIsFlowOpen(true);
                   }}
