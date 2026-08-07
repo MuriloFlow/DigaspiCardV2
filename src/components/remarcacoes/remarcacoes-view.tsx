@@ -13,6 +13,7 @@ import { NewRemarcacaoFlow } from "./new-remarcacao-flow";
 import { BarcodeScanner } from "./barcode-scanner";
 import { BarcodeHistoryModal } from "./barcode-history-modal";
 import type { Remarcacao } from "@/lib/remarcacoes/types";
+import { useRouter } from "next/navigation";
 
 export function RemarcacoesView() {
   const router = useRouter();
