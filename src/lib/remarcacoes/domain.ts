@@ -40,16 +40,21 @@ export function buildRemarcacaoSummary(
   const completed = active.filter((r) => r.status === "completed");
 
   const totalSavings = completed.reduce((acc, r) => {
-    const orig = r.originalValueCents ?? 0;
-    const rem = r.remarkedValueCents ?? 0;
-    return acc + Math.max(0, orig - rem);
+    const batchSavings = (r.itens || []).reduce((batchAcc, item) => {
+      const orig = item.originalValueCents ?? 0;
+      const rem = item.remarkedValueCents ?? 0;
+      return batchAcc + Math.max(0, orig - rem);
+    }, 0);
+    return acc + batchSavings;
   }, 0);
 
+  const totalItems = active.reduce((acc, r) => acc + (r.itens?.length || 0), 0);
+
   return {
-    total: active.length,
-    completed: completed.length,
-    draft: active.filter((r) => r.status === "draft").length,
-    pendingApproval: active.filter((r) => r.status === "pending_approval").length,
+    totalBatches: active.length,
+    completedBatches: completed.length,
+    draftBatches: active.filter((r) => r.status === "draft").length,
+    totalItems,
     totalSavings,
   };
 }
