@@ -27,6 +27,8 @@ type NewRemarcacaoFlowProps = {
   onCreated: (remarcacao: Remarcacao) => void;
   stores?: { id: string; name: string }[];
   initialBatchId?: string; // Se já tiver um lote aberto, passa o ID aqui
+  initialStep?: Step;
+  onBatchCreated?: (remarcacao: Remarcacao) => void;
 };
 
 export function NewRemarcacaoFlow({
@@ -35,9 +37,11 @@ export function NewRemarcacaoFlow({
   onCreated,
   stores = [],
   initialBatchId,
+  initialStep,
+  onBatchCreated,
 }: NewRemarcacaoFlowProps) {
   const { user, selectedStoreId } = useAuth();
-  const { createRemarcacao, addItem, finalizeRemarcacao, updateRemarcacaoStatus } = useRemarcacoes();
+  const { createRemarcacao, addItem, removeItem, finalizeRemarcacao, updateRemarcacaoStatus, remarcacoes } = useRemarcacoes();
 
   const isGlobalOrRegional = user?.role === "GLOBAL_ADMIN" || user?.role === "TI_ADMIN" || user?.role === "REGIONAL_MANAGER";
   const userStoreId = (user as any)?.storeId ?? null;
@@ -58,6 +62,7 @@ export function NewRemarcacaoFlow({
   // Dados do item atual sendo lido
   const [detectedBarcode, setDetectedBarcode] = useState<string | null>(null);
   const [capturedPhotoUrl, setCapturedPhotoUrl] = useState<string | null>(null);
+  const [replaceItemId, setReplaceItemId] = useState<string | null>(null);
 
   // Gerente para assinatura
   const [managers, setManagers] = useState<{ id: string; name: string }[]>([]);
@@ -73,7 +78,10 @@ export function NewRemarcacaoFlow({
   useEffect(() => {
     if (!open) return;
 
-    if (initialBatchId) {
+    if (initialStep === "signature" && initialBatchId) {
+      setCurrentRemarcacaoId(initialBatchId);
+      setStep("signature");
+    } else if (initialBatchId) {
       setCurrentRemarcacaoId(initialBatchId);
       setStep("scanning"); // Já tem lote, vai direto ler item
     } else {
@@ -174,8 +182,13 @@ export function NewRemarcacaoFlow({
         operatorName: collab?.label ?? "",
         storeId: resolvedStoreId,
       });
-      setCurrentRemarcacaoId(remarcacao.id);
-      setStep("scanning");
+      if (onBatchCreated) {
+        onBatchCreated(remarcacao);
+        onClose();
+      } else {
+        setCurrentRemarcacaoId(remarcacao.id);
+        setStep("scanning");
+      }
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Erro ao criar lote de remarcação.");
     }
@@ -183,6 +196,24 @@ export function NewRemarcacaoFlow({
 
   // ── Step 2: Código detectado ──────────────────
   function handleBarcodeDetected(barcode: string) {
+    if (currentRemarcacaoId) {
+      const batch = remarcacoes.find(r => r.id === currentRemarcacaoId);
+      const existing = batch?.itens?.find(i => i.barcode === barcode);
+      if (existing) {
+        if (!confirm(`O código ${barcode} já foi remarcado neste lote. Deseja substituir a antiga etiqueta por este novo registro?`)) {
+          // Cancela e volta para scan normal sem capturar foto
+          setDetectedBarcode(null);
+          // O scanner interno também precisa reiniciar, mas como mudamos state ele pode tentar de novo ou precisamos dar um trigger.
+          // Fechar e reabrir rapidamente a tela do scanner dá o efeito desejado:
+          setStep("select-collab"); 
+          setTimeout(() => setStep("scanning"), 10);
+          return;
+        }
+        setReplaceItemId(existing.id);
+      } else {
+        setReplaceItemId(null);
+      }
+    }
     setDetectedBarcode(barcode);
   }
 
@@ -203,6 +234,11 @@ export function NewRemarcacaoFlow({
     // O salvamento é rápido o suficiente, não precisamos mais de isSavingPhoto pra bloquear a tela anterior,
     // o bloqueio (isSubmitting) já acontece dentro do próprio RemarcacaoValuesModal.
     try {
+      if (replaceItemId) {
+        await removeItem(replaceItemId);
+        setReplaceItemId(null);
+      }
+
       await addItem({
         remarcacaoId: currentRemarcacaoId,
         barcode: detectedBarcode,

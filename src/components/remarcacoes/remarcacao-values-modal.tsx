@@ -14,7 +14,7 @@ type RemarcacaoValuesModalProps = {
     originalValueCents: number;
     remarkedValueCents: number;
     notes: string;
-  }) => void;
+  }) => Promise<void> | void;
   onRetakePhoto?: () => void;
 };
 
@@ -38,7 +38,7 @@ export function RemarcacaoValuesModal({
   const difference = originalCents - remarkedCents;
   const pct = originalCents > 0 ? ((difference / originalCents) * 100).toFixed(0) : null;
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (!originalCents || originalCents <= 0) {
       setError("Informe o valor original da peça.");
       return;
@@ -50,13 +50,14 @@ export function RemarcacaoValuesModal({
     setError(null);
     setIsSubmitting(true);
     try {
-      onConfirm({
+      await onConfirm({
         originalValueCents: originalCents,
         remarkedValueCents: remarkedCents,
         notes,
       });
-    } finally {
-      setIsSubmitting(false);
+    } catch (err: any) {
+      setError(err.message || "Erro ao salvar.");
+      setIsSubmitting(false); // Only stop loading if there is an error, otherwise parent unmounts us
     }
   }
 

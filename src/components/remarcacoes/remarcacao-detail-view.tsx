@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft,
@@ -16,10 +16,12 @@ import {
   Plus,
   Trash2,
   Unlock,
+  Unlock,
   Package,
+  Edit3,
 } from "lucide-react";
 import Link from "next/link";
-import type { Remarcacao, RemarcacaoHistorico } from "@/lib/remarcacoes/types";
+import type { Remarcacao, RemarcacaoHistorico, RemarcacaoItem } from "@/lib/remarcacoes/types";
 import {
   REMARCACAO_STATUS_COLOR,
   REMARCACAO_STATUS_LABEL,
@@ -47,11 +49,23 @@ export function RemarcacaoDetailView({ remarcacao: initialRemarcacao, historico 
   const remarcacao = remarcacoes.find((r) => r.id === initialRemarcacao.id) ?? initialRemarcacao;
 
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
-  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
+  const [selectedItemDetail, setSelectedItemDetail] = useState<RemarcacaoItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isReopening, setIsReopening] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isFlowOpen, setIsFlowOpen] = useState(false);
+  const [initialStep, setInitialStep] = useState<"scanning" | "signature">("scanning");
+  const [isMenuFabOpen, setIsMenuFabOpen] = useState(false);
+  
+  const hasAutoOpened = useRef(false);
+
+  useEffect(() => {
+    if (!hasAutoOpened.current && remarcacao.status === "draft" && (!remarcacao.itens || remarcacao.itens.length === 0)) {
+      setInitialStep("scanning");
+      setIsFlowOpen(true);
+      hasAutoOpened.current = true;
+    }
+  }, [remarcacao.status, remarcacao.itens?.length]);
 
   const isAdminOrManager = ["MANAGER", "REGIONAL_MANAGER", "TI_ADMIN", "GLOBAL_ADMIN"].includes(user?.role ?? "");
   const canReopen = isAdminOrManager && (remarcacao.status === "completed" || remarcacao.status === "pending_approval");
@@ -82,7 +96,7 @@ export function RemarcacaoDetailView({ remarcacao: initialRemarcacao, historico 
           Voltar para Lotes
         </Link>
 
-        {/* Ações de Admin/Manager */}
+        {/* Ações de Admin/Manager / Top Header */}
         <div className="flex items-center gap-3">
           {canReopen && (
             <button
@@ -106,24 +120,19 @@ export function RemarcacaoDetailView({ remarcacao: initialRemarcacao, historico 
             </button>
           )}
 
-          {canDelete && (
+          {canEdit && (
             <button
               onClick={async () => {
-                if (!confirm("Tem certeza que deseja EXCLUIR PERMANENTEMENTE este lote inteiro?")) return;
-                setIsDeleting(true);
-                try {
-                  await deleteRemarcacao(remarcacao.id);
-                  router.push("/remarcacao");
-                } catch (err: any) {
-                  alert(err.message);
-                  setIsDeleting(false);
+                if (remarcacao.status === "draft") {
+                  await updateRemarcacaoStatus(remarcacao.id, "pending_approval");
                 }
+                setInitialStep("signature");
+                setIsFlowOpen(true);
               }}
-              disabled={isDeleting}
-              className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-950 bg-zinc-950 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-zinc-800"
             >
-              <Trash2 className="size-3.5" />
-              {isDeleting ? "Excluindo..." : "Excluir Lote"}
+              <Edit3 className="size-3.5" />
+              Finalizar Lote
             </button>
           )}
         </div>
@@ -188,7 +197,11 @@ export function RemarcacaoDetailView({ remarcacao: initialRemarcacao, historico 
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {filteredItens.map((item) => (
-                <div key={item.id} className="group relative flex overflow-hidden rounded-2xl border border-zinc-200 bg-white transition hover:border-zinc-300 hover:shadow-sm">
+                <button
+                  key={item.id}
+                  onClick={() => setSelectedItemDetail(item)}
+                  className="group relative flex overflow-hidden rounded-2xl border border-zinc-200 bg-white text-left transition hover:border-zinc-300 hover:shadow-sm"
+                >
                   {/* Info Esquerda */}
                   <div className="flex flex-1 flex-col justify-between p-4">
                     <div>
@@ -213,25 +226,41 @@ export function RemarcacaoDetailView({ remarcacao: initialRemarcacao, historico 
 
                   {/* Foto Direita */}
                   {item.labelPhotoB64 && (
-                    <button 
-                      onClick={() => setSelectedPhotoUrl(item.labelPhotoB64)}
-                      className="relative w-24 shrink-0 overflow-hidden bg-zinc-100"
-                    >
+                    <div className="relative w-24 shrink-0 overflow-hidden bg-zinc-100">
                       <img
                         src={item.labelPhotoB64}
                         alt={`Foto etiqueta ${item.barcode}`}
                         className="h-full w-full object-cover opacity-90 transition group-hover:opacity-100 group-hover:scale-105"
                       />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/20">
-                        <Maximize2 className="size-5 text-white opacity-0 transition group-hover:opacity-100" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/10">
+                        <ZoomIn className="size-5 text-white opacity-0 transition group-hover:opacity-100" />
                       </div>
-                    </button>
+                    </div>
                   )}
-                </div>
+                </button>
               ))}
             </div>
           )}
         </motion.div>
+
+          {canEdit && (
+            <motion.button
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              onClick={async () => {
+                if (remarcacao.status === "draft") {
+                  await updateRemarcacaoStatus(remarcacao.id, "pending_approval");
+                }
+                setInitialStep("signature");
+                setIsFlowOpen(true);
+              }}
+              className="mt-2 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-6 font-bold text-white shadow-lg transition hover:bg-zinc-800 active:scale-[0.98]"
+            >
+              <Edit3 className="size-5" />
+              Finalizar Lote e Assinar
+            </motion.button>
+          )}
 
         {/* Responsáveis */}
         <motion.div
@@ -392,57 +421,176 @@ export function RemarcacaoDetailView({ remarcacao: initialRemarcacao, historico 
         )}
       </div>
 
-      {/* FAB para Adicionar mais itens ao Lote */}
-      <AnimatePresence>
-        {canEdit && !isFlowOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="fixed bottom-24 right-4 z-40 sm:bottom-8 sm:right-8"
-          >
-            <button
-              onClick={() => setIsFlowOpen(true)}
-              className="group flex size-14 items-center justify-center rounded-full bg-amber-400 text-black shadow-xl shadow-amber-400/20 transition hover:bg-amber-500 hover:scale-105 active:scale-95"
+      {/* FAB Area */}
+      <div className="fixed bottom-24 right-4 z-40 sm:bottom-8 sm:right-8 flex flex-col items-end gap-3">
+        {/* Secondary Menu (Lápis) */}
+        <AnimatePresence>
+          {isMenuFabOpen && !isFlowOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.9 }}
+              className="flex flex-col gap-2 mb-2 items-end"
             >
-              <Plus className="size-6 transition group-hover:rotate-90" strokeWidth={2.5} />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {canEdit && (
+                <button
+                  onClick={async () => {
+                    setIsMenuFabOpen(false);
+                    if (remarcacao.status === "draft") {
+                      await updateRemarcacaoStatus(remarcacao.id, "pending_approval");
+                    }
+                    setInitialStep("signature");
+                    setIsFlowOpen(true);
+                  }}
+                  className="flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 shadow-xl border border-zinc-200 hover:bg-zinc-50"
+                >
+                  Finalizar Lote <Edit3 className="size-4" />
+                </button>
+              )}
+              {canReopen && (
+                <button
+                  onClick={async () => {
+                    setIsMenuFabOpen(false);
+                    if (!confirm("Tem certeza que deseja reabrir este lote para edição?")) return;
+                    setIsReopening(true);
+                    try {
+                      await reopenRemarcacao(remarcacao.id);
+                      alert("Lote reaberto.");
+                    } catch (err: any) { alert(err.message); }
+                    finally { setIsReopening(false); }
+                  }}
+                  disabled={isReopening}
+                  className="flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-amber-600 shadow-xl border border-zinc-200 hover:bg-zinc-50"
+                >
+                  Reabrir Lote <Unlock className="size-4" />
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  onClick={async () => {
+                    setIsMenuFabOpen(false);
+                    if (!confirm("Tem certeza que deseja EXCLUIR PERMANENTEMENTE este lote inteiro?")) return;
+                    setIsDeleting(true);
+                    try {
+                      await deleteRemarcacao(remarcacao.id);
+                      router.push("/remarcacao");
+                    } catch (err: any) { alert(err.message); setIsDeleting(false); }
+                  }}
+                  disabled={isDeleting}
+                  className="flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-rose-600 shadow-xl border border-zinc-200 hover:bg-zinc-50"
+                >
+                  Excluir Lote <Trash2 className="size-4" />
+                </button>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {!isFlowOpen && (
+            <div className="flex flex-col items-center gap-3">
+              {/* Secondary FAB: Pencil Menu Trigger */}
+              {(canEdit || canReopen || canDelete) && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  onClick={() => setIsMenuFabOpen((prev) => !prev)}
+                  className="flex size-11 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 shadow-lg border border-zinc-200 transition hover:bg-zinc-200 hover:scale-105 active:scale-95"
+                >
+                  {isMenuFabOpen ? <X className="size-5" /> : <Edit3 className="size-5" />}
+                </motion.button>
+              )}
+
+              {/* Primary FAB: Add More */}
+              {canEdit && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  onClick={() => {
+                    setIsMenuFabOpen(false);
+                    setInitialStep("scanning");
+                    setIsFlowOpen(true);
+                  }}
+                  className="group flex size-14 items-center justify-center rounded-full bg-amber-400 text-black shadow-xl shadow-amber-400/20 transition hover:bg-amber-500 hover:scale-105 active:scale-95"
+                >
+                  <Plus className="size-6 transition group-hover:rotate-90" strokeWidth={2.5} />
+                </motion.button>
+              )}
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
 
       <NewRemarcacaoFlow 
         open={isFlowOpen} 
         onClose={() => setIsFlowOpen(false)} 
         initialBatchId={remarcacao.id} 
+        initialStep={initialStep}
         onCreated={() => setIsFlowOpen(false)}
       />
 
       {/* Modal de foto individual (tela cheia) */}
       <AnimatePresence>
-        {selectedPhotoUrl && (
+        {selectedItemDetail && (
           <motion.div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setSelectedPhotoUrl(null)}
+            onClick={() => setSelectedItemDetail(null)}
           >
-            <button
-              type="button"
-              className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-white/10 text-white"
-              onClick={() => setSelectedPhotoUrl(null)}
+            <motion.div 
+              className="bg-white rounded-3xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <X className="size-5" />
-            </button>
-            <motion.img
-              src={selectedPhotoUrl}
-              alt="Etiqueta Ampliada"
-              className="max-h-[90vh] max-w-[90vw] rounded-2xl object-contain"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-            />
+              <div className="relative bg-zinc-100 flex-shrink-0">
+                <img
+                  src={selectedItemDetail.labelPhotoB64}
+                  alt={`Etiqueta ${selectedItemDetail.barcode}`}
+                  className="w-full max-h-[50vh] object-contain"
+                />
+                <button
+                  type="button"
+                  className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition hover:bg-black/70"
+                  onClick={() => setSelectedItemDetail(null)}
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto">
+                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1">Código de Barras</p>
+                <h3 className="text-xl font-bold font-mono text-zinc-900 mb-4">{selectedItemDetail.barcode}</h3>
+                
+                <div className="flex items-center gap-4 bg-zinc-50 p-4 rounded-2xl border border-zinc-100 mb-4">
+                  <div className="flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Era</p>
+                    <p className="text-lg font-bold text-zinc-400 line-through">{formatCurrency(selectedItemDetail.originalValueCents)}</p>
+                  </div>
+                  <div className="w-px h-8 bg-zinc-200" />
+                  <div className="flex-1 text-right">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Agora</p>
+                    <p className="text-lg font-bold text-emerald-600">{formatCurrency(selectedItemDetail.remarkedValueCents)}</p>
+                  </div>
+                </div>
+
+                {selectedItemDetail.notes && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1">Observações</p>
+                    <p className="text-sm text-zinc-700 bg-zinc-50 p-3 rounded-xl border border-zinc-100">{selectedItemDetail.notes}</p>
+                  </div>
+                )}
+                
+                <p className="mt-4 text-center text-xs font-medium text-zinc-400 flex justify-center items-center gap-1.5">
+                  <Calendar className="size-3.5" />
+                  Remarcado em {formatFullDate(selectedItemDetail.createdAt)}
+                </p>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

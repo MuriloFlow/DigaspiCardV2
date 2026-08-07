@@ -15,6 +15,7 @@ import { BarcodeHistoryModal } from "./barcode-history-modal";
 import type { Remarcacao } from "@/lib/remarcacoes/types";
 
 export function RemarcacoesView() {
+  const router = useRouter();
   const { remarcacoes, isLoading, error, refresh } = useRemarcacoes();
   const { user, selectedStoreId } = useAuth();
 
@@ -230,9 +231,10 @@ export function RemarcacoesView() {
       <NewRemarcacaoFlow
         open={flowOpen}
         onClose={() => setFlowOpen(false)}
-        onCreated={(r) => {
+        onCreated={handleCreated}
+        onBatchCreated={(r) => {
           setFlowOpen(false);
-          handleCreated(r);
+          router.push(`/remarcacao/${r.id}`);
         }}
         stores={stores}
       />
