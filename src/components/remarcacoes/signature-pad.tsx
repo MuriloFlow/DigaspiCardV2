@@ -53,7 +53,7 @@ export function SignaturePad({ open, onClose, onConfirm, managerName }: Signatur
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.scale(dpr, dpr);
-        ctx.strokeStyle = "#ffffff";
+        ctx.strokeStyle = "#000000";
         ctx.lineWidth = 2.5;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";

@@ -417,7 +417,12 @@ export function NewRemarcacaoFlow({
                 />
                 <button
                   type="button"
-                  onClick={() => setIsManagerConfirmed(true)}
+                  onClick={() => {
+                    try {
+                      (screen.orientation as any)?.lock?.("landscape").catch(() => {});
+                    } catch {}
+                    setIsManagerConfirmed(true);
+                  }}
                   disabled={!selectedManagerId}
                   className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 text-sm font-bold text-white disabled:opacity-40"
                 >
