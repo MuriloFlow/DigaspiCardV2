@@ -193,26 +193,29 @@ export const BarcodeScanner = forwardRef<BarcodeScannerHandle, BarcodeScannerPro
       onBarcodeDetected(code);
     }
 
-    // ── Capturar foto ─────────────────────────────────────────
     async function handleCapturePhoto() {
       if (!videoRef.current || !canvasRef.current) return;
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      
+      const MAX_WIDTH = 800;
+      const scale = Math.min(1, MAX_WIDTH / video.videoWidth);
+      canvas.width = video.videoWidth * scale;
+      canvas.height = video.videoHeight * scale;
+      
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
-      ctx.drawImage(video, 0, 0);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      const dataUrl = canvas.toDataURL("image/webp", 0.7);
       canvas.toBlob(
         (blob) => {
           if (blob) {
             onPhotoCaptured(blob, dataUrl);
           }
         },
-        "image/jpeg",
-        0.92,
+        "image/webp",
+        0.7,
       );
     }
 

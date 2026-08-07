@@ -290,7 +290,10 @@ export function NewRemarcacaoFlow({
     }
     if (step === "values") setStep("scanning");
     if (step === "add-more") setStep("scanning"); // Voltar daqui = ler outra
-    if (step === "signature") setStep("add-more");
+    if (step === "signature") {
+      if (initialStep === "signature") onClose();
+      else setStep("add-more");
+    }
   }
 
   if (!open) return null;
@@ -385,7 +388,7 @@ export function NewRemarcacaoFlow({
     return (
       <>
         {/* Seletor de gerente (antes de assinar) */}
-        {managers.length > 1 && (
+        {managers.length >= 1 && (
           <AnimatePresence>
             <motion.div
               className="fixed inset-0 z-[88] flex items-end justify-center bg-black/80 backdrop-blur-md"
@@ -424,7 +427,7 @@ export function NewRemarcacaoFlow({
         )}
 
         <SignaturePad
-          open={managers.length <= 1 || !!selectedManagerId}
+          open={!!selectedManagerId}
           onClose={goBack}
           onConfirm={handleSignatureConfirm}
           managerName={manager?.name}

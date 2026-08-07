@@ -53,7 +53,7 @@ export function SignaturePad({ open, onClose, onConfirm, managerName }: Signatur
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.scale(dpr, dpr);
-        ctx.strokeStyle = "#09090b";
+        ctx.strokeStyle = "#ffffff";
         ctx.lineWidth = 2.5;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
@@ -160,10 +160,10 @@ export function SignaturePad({ open, onClose, onConfirm, managerName }: Signatur
             </div>
 
             {/* Área de assinatura */}
-            <div className="relative mx-6 flex-1 overflow-hidden rounded-[1.5rem] bg-zinc-50 border-2 border-dashed border-zinc-300">
+            <div className="relative mx-6 flex-1 overflow-hidden rounded-[1.5rem] bg-zinc-950 border-2 border-dashed border-zinc-700">
               <canvas
                 ref={canvasRef}
-                className="touch-none"
+                className="touch-none bg-zinc-950"
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
@@ -173,10 +173,10 @@ export function SignaturePad({ open, onClose, onConfirm, managerName }: Signatur
               {/* Placeholder quando vazio */}
               {!hasSignature && (
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2">
-                  <p className="text-sm font-medium text-zinc-400">
+                  <p className="text-sm font-medium text-zinc-500">
                     Assine aqui com o dedo
                   </p>
-                  <div className="h-px w-48 bg-zinc-200" />
+                  <div className="h-px w-48 bg-zinc-800" />
                 </div>
               )}
             </div>
