@@ -90,7 +90,7 @@ export async function listRemarcacoes(storeId?: string | null): Promise<Remarcac
       id, store_id, collaborator_id, operator_name, manager_id, manager_name, status,
       created_at, updated_at, completed_at, deleted_at,
       stores(name),
-      remarcacao_itens(id, remarcacao_id, barcode, original_value_cents, remarked_value_cents, created_at, deleted_at)
+      remarcacao_itens(id, remarcacao_id, barcode, label_photo_b64, original_value_cents, remarked_value_cents, created_at, deleted_at)
     `)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -382,7 +382,7 @@ export async function getRemarcacoesByBarcode(barcode: string, storeId?: string 
       id, store_id, collaborator_id, operator_name, manager_id, manager_name, status,
       created_at, updated_at, completed_at, deleted_at,
       stores(name),
-      remarcacao_itens(id, remarcacao_id, barcode, original_value_cents, remarked_value_cents, created_at, deleted_at)
+      remarcacao_itens(id, remarcacao_id, barcode, label_photo_b64, original_value_cents, remarked_value_cents, created_at, deleted_at)
     `)
     .in("id", batchIds)
     .is("deleted_at", null)
