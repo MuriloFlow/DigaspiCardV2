@@ -11,6 +11,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { RemarcacaoCard } from "./remarcacao-card";
 import { NewRemarcacaoFlow } from "./new-remarcacao-flow";
 import { BarcodeScanner } from "./barcode-scanner";
+import { BarcodeHistoryModal } from "./barcode-history-modal";
 import type { Remarcacao } from "@/lib/remarcacoes/types";
 
 export function RemarcacoesView() {
@@ -20,6 +21,7 @@ export function RemarcacoesView() {
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const [flowOpen, setFlowOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [historyModalBarcode, setHistoryModalBarcode] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -47,9 +49,8 @@ export function RemarcacoesView() {
     return remarcacoes.filter(
       (r) =>
         r.operatorName.toLowerCase().includes(q) ||
-        r.barcode?.toLowerCase().includes(q) ||
-        r.internalCode?.toLowerCase().includes(q) ||
-        r.managerName?.toLowerCase().includes(q),
+        r.managerName?.toLowerCase().includes(q) ||
+        (r.itens && r.itens.some(i => i.barcode.toLowerCase().includes(q) || (i.internalCode && i.internalCode.toLowerCase().includes(q))))
     );
   }, [remarcacoes, searchQuery]);
 
@@ -62,10 +63,10 @@ export function RemarcacoesView() {
     showSuccess(`Remarcação de ${remarcacao.operatorName} registrada com sucesso.`);
   }
 
-  // Ao escanear na tela principal, busca por código
+  // Ao escanear na tela principal, busca por código e mostra o modal de histórico
   async function handleSearchBarcode(barcode: string) {
     setScannerOpen(false);
-    setSearchQuery(barcode);
+    setHistoryModalBarcode(barcode); // Em vez de preencher o search text, abre o histórico focado
   }
 
   if (isLoading) {
@@ -216,6 +217,13 @@ export function RemarcacoesView() {
         onClose={() => setScannerOpen(false)}
         onBarcodeDetected={handleSearchBarcode}
         onPhotoCaptured={() => setScannerOpen(false)}
+      />
+
+      {/* Modal de Histórico de Código de Barras (pesquisa avançada) */}
+      <BarcodeHistoryModal
+        barcode={historyModalBarcode}
+        remarcacoes={remarcacoes}
+        onClose={() => setHistoryModalBarcode(null)}
       />
 
       {/* Fluxo de nova remarcação */}

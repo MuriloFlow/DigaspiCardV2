@@ -1,14 +1,13 @@
 "use client";
 
 import { motion } from "motion/react";
-import { Tag, Timer, ChevronRight, User } from "lucide-react";
+import { Tag, Timer, ChevronRight, User, Package } from "lucide-react";
 import type { Remarcacao } from "@/lib/remarcacoes/types";
 import {
   REMARCACAO_STATUS_COLOR,
   REMARCACAO_STATUS_LABEL,
-  formatSavingPercent,
 } from "@/lib/remarcacoes/domain";
-import { formatCurrency, formatTime } from "@/lib/utils/format";
+import { formatTime } from "@/lib/utils/format";
 import { getOperatorColor } from "@/lib/records/colors";
 import Link from "next/link";
 
@@ -22,11 +21,8 @@ export function RemarcacaoCard({
   const color = getOperatorColor(remarcacao.operatorName, index);
   const statusColor = REMARCACAO_STATUS_COLOR[remarcacao.status];
   const statusLabel = REMARCACAO_STATUS_LABEL[remarcacao.status];
-
-  const savingPct = formatSavingPercent(
-    remarcacao.originalValueCents,
-    remarcacao.remarkedValueCents,
-  );
+  
+  const numItems = remarcacao.itens?.length || 0;
 
   return (
     <motion.div
@@ -55,31 +51,17 @@ export function RemarcacaoCard({
                 <User className="size-3.5 shrink-0 text-zinc-400" />
                 {remarcacao.operatorName}
               </h3>
-              {remarcacao.barcode && (
-                <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-zinc-500">
-                  <Tag className="size-3 shrink-0" />
-                  {remarcacao.barcode}
-                </p>
-              )}
+              <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-mono font-bold text-zinc-500">
+                #{remarcacao.id.split("-")[0].toUpperCase()}
+              </p>
             </div>
 
-            {/* Valores */}
-            <div className="flex shrink-0 flex-col items-end gap-0.5">
-              {remarcacao.remarkedValueCents != null && (
-                <p className="text-sm font-bold text-zinc-950">
-                  {formatCurrency(remarcacao.remarkedValueCents)}
-                </p>
-              )}
-              {remarcacao.originalValueCents != null && (
-                <p className="text-xs text-zinc-400 line-through">
-                  {formatCurrency(remarcacao.originalValueCents)}
-                </p>
-              )}
-              {savingPct && (
-                <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
-                  {savingPct}
-                </span>
-              )}
+            {/* Número de itens */}
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <div className="flex items-center gap-1 text-zinc-900 bg-zinc-100 px-2 py-1 rounded-lg">
+                <Package className="size-3.5" />
+                <span className="text-xs font-bold">{numItems} {numItems === 1 ? "item" : "itens"}</span>
+              </div>
             </div>
           </div>
 

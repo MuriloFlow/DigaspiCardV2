@@ -1,22 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft,
   Calendar,
   Camera,
   CheckCircle2,
-  Clock,
   History,
   Maximize2,
-  Tag,
+  Search,
   User,
   X,
   ZoomIn,
+  Plus,
+  Trash2,
+  Unlock,
+  Package,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import type { Remarcacao, RemarcacaoHistorico } from "@/lib/remarcacoes/types";
 import {
   REMARCACAO_STATUS_COLOR,
@@ -27,38 +29,105 @@ import {
 import { formatCurrency, formatTime } from "@/lib/utils/format";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRemarcacoes } from "@/components/providers/remarcacoes-provider";
+import { useRouter } from "next/navigation";
+import { NewRemarcacaoFlow } from "./new-remarcacao-flow";
 
 type RemarcacaoDetailViewProps = {
   remarcacao: Remarcacao;
   historico: RemarcacaoHistorico[];
 };
 
-export function RemarcacaoDetailView({ remarcacao, historico }: RemarcacaoDetailViewProps) {
+export function RemarcacaoDetailView({ remarcacao: initialRemarcacao, historico }: RemarcacaoDetailViewProps) {
+  const { user } = useAuth();
+  const { deleteRemarcacao, reopenRemarcacao, remarcacoes } = useRemarcacoes();
+  const router = useRouter();
+
+  const remarcacao = remarcacoes.find((r) => r.id === initialRemarcacao.id) ?? initialRemarcacao;
+
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
-  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isReopening, setIsReopening] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isFlowOpen, setIsFlowOpen] = useState(false);
+
+  const isAdminOrManager = ["MANAGER", "REGIONAL_MANAGER", "TI_ADMIN", "GLOBAL_ADMIN"].includes(user?.role ?? "");
+  const canReopen = isAdminOrManager && (remarcacao.status === "completed" || remarcacao.status === "pending_approval");
+  const canDelete = ["REGIONAL_MANAGER", "TI_ADMIN", "GLOBAL_ADMIN"].includes(user?.role ?? "");
+  const canEdit = remarcacao.status === "draft" || remarcacao.status === "pending_approval";
 
   const statusColor = REMARCACAO_STATUS_COLOR[remarcacao.status];
   const statusLabel = REMARCACAO_STATUS_LABEL[remarcacao.status];
-  const savingPct = formatSavingPercent(
-    remarcacao.originalValueCents,
-    remarcacao.remarkedValueCents,
-  );
-
-  // A foto e assinatura ficam como base64 (data:image/...) — exibidas direto no <img>
 
   const formatFullDate = (iso: string) =>
     format(parseISO(iso), "d 'de' MMMM, yyyy 'às' HH:mm", { locale: ptBR });
 
+  const filteredItens = useMemo(() => {
+    if (!remarcacao.itens) return [];
+    if (!searchQuery) return remarcacao.itens;
+    const q = searchQuery.toLowerCase();
+    return remarcacao.itens.filter(i => i.barcode.toLowerCase().includes(q) || (i.internalCode && i.internalCode.toLowerCase().includes(q)));
+  }, [remarcacao.itens, searchQuery]);
+
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-32 pt-6 sm:px-6 sm:pt-8">
-      {/* Back */}
-      <Link
-        href="/remarcacao"
-        className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-zinc-500 transition hover:text-zinc-900"
-      >
-        <ArrowLeft className="size-4" />
-        Voltar para Remarcações
-      </Link>
+      <div className="mb-6 flex items-center justify-between">
+        <Link
+          href="/remarcacao"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-500 transition hover:text-zinc-900"
+        >
+          <ArrowLeft className="size-4" />
+          Voltar para Lotes
+        </Link>
+
+        {/* Ações de Admin/Manager */}
+        <div className="flex items-center gap-3">
+          {canReopen && (
+            <button
+              onClick={async () => {
+                if (!confirm("Tem certeza que deseja reabrir este lote para edição? A assinatura atual será removida e o operador poderá adicionar mais itens.")) return;
+                setIsReopening(true);
+                try {
+                  await reopenRemarcacao(remarcacao.id);
+                  alert("Lote reaberto. Você ou o operador já podem editá-lo.");
+                } catch (err: any) {
+                  alert(err.message);
+                } finally {
+                  setIsReopening(false);
+                }
+              }}
+              disabled={isReopening}
+              className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+            >
+              <Unlock className="size-3.5" />
+              {isReopening ? "Reabrindo..." : "Reabrir Lote"}
+            </button>
+          )}
+
+          {canDelete && (
+            <button
+              onClick={async () => {
+                if (!confirm("Tem certeza que deseja EXCLUIR PERMANENTEMENTE este lote inteiro?")) return;
+                setIsDeleting(true);
+                try {
+                  await deleteRemarcacao(remarcacao.id);
+                  router.push("/remarcacao");
+                } catch (err: any) {
+                  alert(err.message);
+                  setIsDeleting(false);
+                }
+              }}
+              disabled={isDeleting}
+              className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+            >
+              <Trash2 className="size-3.5" />
+              {isDeleting ? "Excluindo..." : "Excluir Lote"}
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Header */}
       <motion.div
@@ -70,11 +139,14 @@ export function RemarcacaoDetailView({ remarcacao, historico }: RemarcacaoDetail
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Remarcação
+              Lote de Remarcação
             </p>
             <h1 className="text-3xl font-bold text-zinc-950">
-              {remarcacao.barcode ?? "Sem código"}
+              #{remarcacao.id.split("-")[0].toUpperCase()}
             </h1>
+            <p className="mt-1 text-sm font-medium text-zinc-500">
+              {remarcacao.itens?.length || 0} {(remarcacao.itens?.length === 1) ? "item remarcado" : "itens remarcados"}
+            </p>
           </div>
           <span
             className={`mt-2 rounded-full px-3 py-1.5 text-xs font-bold ${statusColor.bg} ${statusColor.text}`}
@@ -85,75 +157,80 @@ export function RemarcacaoDetailView({ remarcacao, historico }: RemarcacaoDetail
       </motion.div>
 
       <div className="grid gap-4">
-        {/* Foto da etiqueta */}
-        {remarcacao.labelPhotoB64 && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-zinc-50"
-          >
-            <div className="relative">
-              <img
-                src={remarcacao.labelPhotoB64}
-                alt="Foto da etiqueta"
-                className="h-48 w-full object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => setPhotoModalOpen(true)}
-                className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
-              >
-                <Maximize2 className="size-4" />
-              </button>
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-4 py-3">
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-white">
-                  <Camera className="size-3.5" />
-                  Foto da Etiqueta
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Informações principais */}
+        {/* Pesquisa e Lista de Itens */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="overflow-hidden rounded-[1.5rem] border border-zinc-200/80 bg-white shadow-[0_14px_42px_rgba(15,23,42,0.05)]"
+          transition={{ delay: 0.05 }}
+          className="flex flex-col gap-4"
         >
-          <div className="p-5">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Valores
-            </p>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-zinc-500">Valor Original</p>
-                <p className="mt-1 text-xl font-bold text-zinc-400 line-through">
-                  {remarcacao.originalValueCents != null
-                    ? formatCurrency(remarcacao.originalValueCents)
-                    : "—"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-zinc-500">Valor Remarcado</p>
-                <p className="mt-1 text-xl font-bold text-zinc-950">
-                  {remarcacao.remarkedValueCents != null
-                    ? formatCurrency(remarcacao.remarkedValueCents)
-                    : "—"}
-                </p>
-              </div>
-            </div>
-            {savingPct && (
-              <div className="mt-3 flex items-center gap-2">
-                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-sm font-bold text-emerald-700">
-                  {savingPct}
-                </span>
-                <span className="text-sm text-zinc-500">de diferença</span>
-              </div>
+          <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm focus-within:border-zinc-400">
+            <Search className="size-5 shrink-0 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Pesquisar por código de barras no lote..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="min-w-0 flex-1 bg-transparent text-sm text-zinc-900 outline-none placeholder:text-zinc-400"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="text-zinc-400 hover:text-zinc-600">
+                <X className="size-4" />
+              </button>
             )}
           </div>
+
+          {filteredItens.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-zinc-200 bg-zinc-50 py-12 text-center">
+              <Package className="mb-3 size-10 text-zinc-300" />
+              <p className="text-sm font-medium text-zinc-600">Nenhum item encontrado.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {filteredItens.map((item) => (
+                <div key={item.id} className="group relative flex overflow-hidden rounded-2xl border border-zinc-200 bg-white transition hover:border-zinc-300 hover:shadow-sm">
+                  {/* Info Esquerda */}
+                  <div className="flex flex-1 flex-col justify-between p-4">
+                    <div>
+                      <p className="font-mono text-xs font-bold text-zinc-900 tracking-wider">
+                        {item.barcode}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <p className="text-xs font-semibold text-zinc-400 line-through">
+                          {formatCurrency(item.originalValueCents)}
+                        </p>
+                        <p className="text-sm font-bold text-emerald-600">
+                          {formatCurrency(item.remarkedValueCents)}
+                        </p>
+                      </div>
+                    </div>
+                    {item.notes && (
+                      <p className="mt-2 text-[10px] leading-tight text-zinc-500 line-clamp-2">
+                        {item.notes}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Foto Direita */}
+                  {item.labelPhotoB64 && (
+                    <button 
+                      onClick={() => setSelectedPhotoUrl(item.labelPhotoB64)}
+                      className="relative w-24 shrink-0 overflow-hidden bg-zinc-100"
+                    >
+                      <img
+                        src={item.labelPhotoB64}
+                        alt={`Foto etiqueta ${item.barcode}`}
+                        className="h-full w-full object-cover opacity-90 transition group-hover:opacity-100 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/20">
+                        <Maximize2 className="size-5 text-white opacity-0 transition group-hover:opacity-100" />
+                      </div>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
 
         {/* Responsáveis */}
@@ -161,7 +238,7 @@ export function RemarcacaoDetailView({ remarcacao, historico }: RemarcacaoDetail
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="overflow-hidden rounded-[1.5rem] border border-zinc-200/80 bg-white shadow-[0_14px_42px_rgba(15,23,42,0.05)]"
+          className="overflow-hidden rounded-[1.5rem] border border-zinc-200/80 bg-white shadow-[0_14px_42px_rgba(15,23,42,0.05)] mt-4"
         >
           <div className="divide-y divide-zinc-100 p-5">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
@@ -228,21 +305,6 @@ export function RemarcacaoDetailView({ remarcacao, historico }: RemarcacaoDetail
           </div>
         </motion.div>
 
-        {/* Observações */}
-        {remarcacao.notes && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.22 }}
-            className="overflow-hidden rounded-[1.5rem] border border-zinc-200/80 bg-white p-5 shadow-[0_14px_42px_rgba(15,23,42,0.05)]"
-          >
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Observações
-            </p>
-            <p className="text-sm text-zinc-700 leading-relaxed">{remarcacao.notes}</p>
-          </motion.div>
-        )}
-
         {/* Assinatura do gerente */}
         {remarcacao.managerSignatureB64 && (
           <motion.div
@@ -269,7 +331,7 @@ export function RemarcacaoDetailView({ remarcacao, historico }: RemarcacaoDetail
                 <img
                   src={remarcacao.managerSignatureB64}
                   alt={`Assinatura de ${remarcacao.managerName}`}
-                  className="h-28 w-full object-contain"
+                  className="h-28 w-full object-contain mix-blend-multiply"
                 />
               </div>
               {remarcacao.managerName && (
@@ -296,7 +358,7 @@ export function RemarcacaoDetailView({ remarcacao, historico }: RemarcacaoDetail
                   Histórico de Alterações
                 </p>
               </div>
-              <div className="relative">
+              <div className="relative mt-4">
                 {/* Linha vertical */}
                 <div className="absolute left-3.5 top-0 bottom-0 w-px bg-zinc-100" />
                 <div className="space-y-4">
@@ -317,6 +379,9 @@ export function RemarcacaoDetailView({ remarcacao, historico }: RemarcacaoDetail
                         <p className="mt-0.5 text-xs text-zinc-500">
                           {entry.changedByName} · {formatTime(entry.createdAt)}
                         </p>
+                        {entry.newValue && entry.action === "added_item" && (
+                          <p className="mt-1 text-xs font-mono bg-zinc-100 inline-block px-2 py-0.5 rounded text-zinc-600">{entry.newValue}</p>
+                        )}
                       </div>
                     </motion.div>
                   ))}
@@ -327,26 +392,52 @@ export function RemarcacaoDetailView({ remarcacao, historico }: RemarcacaoDetail
         )}
       </div>
 
-      {/* Modal de foto (tela cheia) */}
+      {/* FAB para Adicionar mais itens ao Lote */}
       <AnimatePresence>
-        {photoModalOpen && remarcacao.labelPhotoB64 && (
+        {canEdit && !isFlowOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed bottom-24 right-4 z-40 sm:bottom-8 sm:right-8"
+          >
+            <button
+              onClick={() => setIsFlowOpen(true)}
+              className="group flex size-14 items-center justify-center rounded-full bg-amber-400 text-black shadow-xl shadow-amber-400/20 transition hover:bg-amber-500 hover:scale-105 active:scale-95"
+            >
+              <Plus className="size-6 transition group-hover:rotate-90" strokeWidth={2.5} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <NewRemarcacaoFlow 
+        open={isFlowOpen} 
+        onClose={() => setIsFlowOpen(false)} 
+        initialBatchId={remarcacao.id} 
+        onCreated={() => setIsFlowOpen(false)}
+      />
+
+      {/* Modal de foto individual (tela cheia) */}
+      <AnimatePresence>
+        {selectedPhotoUrl && (
           <motion.div
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setPhotoModalOpen(false)}
+            onClick={() => setSelectedPhotoUrl(null)}
           >
             <button
               type="button"
               className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-white/10 text-white"
-              onClick={() => setPhotoModalOpen(false)}
+              onClick={() => setSelectedPhotoUrl(null)}
             >
               <X className="size-5" />
             </button>
             <motion.img
-              src={remarcacao.labelPhotoB64}
-              alt="Etiqueta"
+              src={selectedPhotoUrl}
+              alt="Etiqueta Ampliada"
               className="max-h-[90vh] max-w-[90vw] rounded-2xl object-contain"
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
@@ -360,7 +451,7 @@ export function RemarcacaoDetailView({ remarcacao, historico }: RemarcacaoDetail
       <AnimatePresence>
         {signatureModalOpen && remarcacao.managerSignatureB64 && (
           <motion.div
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95"
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/95 backdrop-blur-md"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -368,7 +459,7 @@ export function RemarcacaoDetailView({ remarcacao, historico }: RemarcacaoDetail
           >
             <button
               type="button"
-              className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-white/10 text-white"
+              className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-900"
               onClick={() => setSignatureModalOpen(false)}
             >
               <X className="size-5" />
@@ -380,15 +471,15 @@ export function RemarcacaoDetailView({ remarcacao, historico }: RemarcacaoDetail
               exit={{ scale: 0.9 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="overflow-hidden rounded-3xl bg-white p-6 shadow-2xl">
+              <div className="overflow-hidden rounded-3xl bg-white p-6 shadow-2xl border border-zinc-200">
                 <img
                   src={remarcacao.managerSignatureB64}
                   alt="Assinatura"
-                  className="max-h-64 max-w-[80vw] object-contain"
+                  className="max-h-64 max-w-[80vw] object-contain mix-blend-multiply"
                 />
               </div>
               {remarcacao.managerName && (
-                <p className="text-sm font-semibold text-white/70">
+                <p className="text-sm font-semibold text-zinc-600">
                   Assinado por {remarcacao.managerName}
                   {remarcacao.completedAt && ` · ${formatFullDate(remarcacao.completedAt)}`}
                 </p>

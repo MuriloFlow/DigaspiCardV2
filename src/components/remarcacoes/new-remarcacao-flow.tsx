@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ChevronLeft, Loader2, Tag, X } from "lucide-react";
+import { Check, ChevronLeft, Loader2, Tag, X, Plus, Edit3 } from "lucide-react";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { StoreSelector } from "@/components/records/store-selector";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -16,7 +16,8 @@ type Step =
   | "select-collab"   // 1. Seleção de funcionário
   | "scanning"        // 2. Scanner (câmera/barcode)
   | "values"          // 3. Modal de valores
-  | "signature";      // 4. Assinatura do gerente
+  | "add-more"        // 4. Pergunta se quer adicionar mais itens ao lote
+  | "signature";      // 5. Assinatura do gerente
 
 type Collaborator = { value: string; label: string; icon?: React.ReactNode };
 
@@ -25,6 +26,7 @@ type NewRemarcacaoFlowProps = {
   onClose: () => void;
   onCreated: (remarcacao: Remarcacao) => void;
   stores?: { id: string; name: string }[];
+  initialBatchId?: string; // Se já tiver um lote aberto, passa o ID aqui
 };
 
 export function NewRemarcacaoFlow({
@@ -32,15 +34,14 @@ export function NewRemarcacaoFlow({
   onClose,
   onCreated,
   stores = [],
+  initialBatchId,
 }: NewRemarcacaoFlowProps) {
   const { user, selectedStoreId } = useAuth();
-  const { createRemarcacao, updateRemarcacao, finalizeRemarcacao } = useRemarcacoes();
+  const { createRemarcacao, addItem, finalizeRemarcacao, updateRemarcacaoStatus } = useRemarcacoes();
 
   const isGlobalOrRegional = user?.role === "GLOBAL_ADMIN" || user?.role === "TI_ADMIN" || user?.role === "REGIONAL_MANAGER";
   const userStoreId = (user as any)?.storeId ?? null;
-  const effectiveStoreId = isGlobalOrRegional
-    ? selectedStoreId
-    : userStoreId;
+  const effectiveStoreId = isGlobalOrRegional ? selectedStoreId : userStoreId;
 
   const [step, setStep] = useState<Step>("select-collab");
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -53,10 +54,10 @@ export function NewRemarcacaoFlow({
 
   // Dados da remarcação em progresso
   const [currentRemarcacaoId, setCurrentRemarcacaoId] = useState<string | null>(null);
+  
+  // Dados do item atual sendo lido
   const [detectedBarcode, setDetectedBarcode] = useState<string | null>(null);
   const [capturedPhotoUrl, setCapturedPhotoUrl] = useState<string | null>(null);
-  const [capturedPhotoBlob, setCapturedPhotoBlob] = useState<Blob | null>(null);
-  const [isSavingPhoto, setIsSavingPhoto] = useState(false);
 
   // Gerente para assinatura
   const [managers, setManagers] = useState<{ id: string; name: string }[]>([]);
@@ -68,57 +69,30 @@ export function NewRemarcacaoFlow({
 
   const resolvedStoreId = effectiveStoreId || localStoreId;
 
-  // ── Reset ao abrir/fechar ─────────────────────────────────
-  useEffect(() => {
-    if (!open) {
-      setStep("select-collab");
-      setSelectedCollabId("");
-      setSelectedCollabName("");
-      setErrorMsg(null);
-      setCurrentRemarcacaoId(null);
-      setDetectedBarcode(null);
-      setCapturedPhotoUrl(null);
-      setCapturedPhotoBlob(null);
-      setLocalStoreId(null);
-      setManagers([]);
-      setSelectedManagerId("");
-    }
-  }, [open]);
-
-  // ── Restaurar rascunho do localStorage ───────────────────
+  // ── Inicialização do Lote ───────────────────────────
   useEffect(() => {
     if (!open) return;
-    try {
-      const draft = localStorage.getItem("remarcacao_draft");
-      if (draft) {
-        const parsed = JSON.parse(draft);
-        if (parsed.id && parsed.storeId === resolvedStoreId) {
-          setCurrentRemarcacaoId(parsed.id);
-          if (parsed.barcode) setDetectedBarcode(parsed.barcode);
-          if (parsed.labelPhotoB64) setCapturedPhotoUrl("[draft]"); // foto foi salva mas não restauramos base64 grande
-        }
-      }
-    } catch {}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
 
-  // ── Salvar rascunho no localStorage ──────────────────────
-  function saveDraft(id: string, extra: Record<string, string | null> = {}) {
-    try {
-      localStorage.setItem(
-        "remarcacao_draft",
-        JSON.stringify({ id, storeId: resolvedStoreId, ...extra }),
-      );
-    } catch {}
-  }
-
-  function clearDraft() {
-    try { localStorage.removeItem("remarcacao_draft"); } catch {}
-  }
+    if (initialBatchId) {
+      setCurrentRemarcacaoId(initialBatchId);
+      setStep("scanning"); // Já tem lote, vai direto ler item
+    } else {
+      setStep("select-collab");
+      setCurrentRemarcacaoId(null);
+    }
+    
+    // Limpa item atual
+    setDetectedBarcode(null);
+    setCapturedPhotoUrl(null);
+    setManagers([]);
+    setSelectedManagerId("");
+    setErrorMsg(null);
+    setIsFinalizing(false);
+  }, [open, initialBatchId]);
 
   // ── Carregar colaboradores ────────────────────────────────
   useEffect(() => {
-    if (!open || !resolvedStoreId) return;
+    if (!open || !resolvedStoreId || initialBatchId) return; // se tiver initialBatchId, já pulamos essa etapa
     setIsLoadingCollabs(true);
     Promise.all([
       fetch(`/api/collaborators?storeId=${resolvedStoreId}`).then((r) => r.json()),
@@ -161,7 +135,7 @@ export function NewRemarcacaoFlow({
         setCollaborators(result);
       })
       .finally(() => setIsLoadingCollabs(false));
-  }, [open, resolvedStoreId]);
+  }, [open, resolvedStoreId, initialBatchId]);
 
   // ── Carregar gerentes para assinatura ─────────────────────
   useEffect(() => {
@@ -185,7 +159,7 @@ export function NewRemarcacaoFlow({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  // ── Step 1: Confirmar funcionário → criar rascunho ────────
+  // ── Step 1: Confirmar funcionário → criar rascunho de Lote ────────
   async function handleStep1() {
     if (!selectedCollabId) { setErrorMsg("Selecione um funcionário."); return; }
     if (!resolvedStoreId) { setErrorMsg("Selecione uma unidade primeiro."); return; }
@@ -201,63 +175,50 @@ export function NewRemarcacaoFlow({
         storeId: resolvedStoreId,
       });
       setCurrentRemarcacaoId(remarcacao.id);
-      saveDraft(remarcacao.id);
       setStep("scanning");
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Erro ao criar remarcação.");
+      setErrorMsg(err instanceof Error ? err.message : "Erro ao criar lote de remarcação.");
     }
   }
 
-  // ── Step 2: Código detectado → auto-save ──────────────────
-  async function handleBarcodeDetected(barcode: string) {
+  // ── Step 2: Código detectado ──────────────────
+  function handleBarcodeDetected(barcode: string) {
     setDetectedBarcode(barcode);
-    if (currentRemarcacaoId) {
-      try {
-        await updateRemarcacao(currentRemarcacaoId, { barcode });
-        saveDraft(currentRemarcacaoId, { barcode });
-      } catch {}
-    }
   }
 
-  // ── Step 2b: Foto capturada → salva base64 diretamente ────
-  async function handlePhotoCaptured(blob: Blob, dataUrl: string) {
-    setCapturedPhotoUrl(dataUrl); // preview imediato (data URL local)
-    setCapturedPhotoBlob(blob);
-
-    if (currentRemarcacaoId) {
-      setIsSavingPhoto(true);
-      try {
-        // Salva o dataUrl base64 direto na coluna label_photo_b64
-        await updateRemarcacao(currentRemarcacaoId, { labelPhotoB64: dataUrl });
-        saveDraft(currentRemarcacaoId, {
-          barcode: detectedBarcode,
-          labelPhotoB64: "[saved]",
-        });
-      } catch {
-        // foto local ainda disponível como preview
-      } finally {
-        setIsSavingPhoto(false);
-      }
-    }
-
+  // ── Step 2b: Foto capturada ────────────────────
+  function handlePhotoCaptured(blob: Blob, dataUrl: string) {
+    setCapturedPhotoUrl(dataUrl); 
     setStep("values");
   }
 
-  // ── Step 3: Valores confirmados → auto-save → assinatura ──
+  // ── Step 3: Valores confirmados → Adiciona Item ao Lote ──
   async function handleValuesConfirm(values: {
     originalValueCents: number;
     remarkedValueCents: number;
     notes: string;
   }) {
-    if (currentRemarcacaoId) {
-      try {
-        await updateRemarcacao(currentRemarcacaoId, {
-          ...values,
-          status: "pending_approval",
-        });
-      } catch {}
+    if (!currentRemarcacaoId || !detectedBarcode || !capturedPhotoUrl) return;
+    
+    // O salvamento é rápido o suficiente, não precisamos mais de isSavingPhoto pra bloquear a tela anterior,
+    // o bloqueio (isSubmitting) já acontece dentro do próprio RemarcacaoValuesModal.
+    try {
+      await addItem({
+        remarcacaoId: currentRemarcacaoId,
+        barcode: detectedBarcode,
+        labelPhotoB64: capturedPhotoUrl,
+        ...values,
+      });
+      // Sucesso! Vai para tela de Adicionar Mais
+      setStep("add-more");
+      
+      // Limpa para a próxima leitura
+      setDetectedBarcode(null);
+      setCapturedPhotoUrl(null);
+    } catch (err) {
+      alert("Erro ao salvar etiqueta. Tente novamente.");
+      throw err;
     }
-    setStep("signature");
   }
 
   // ── Step 4: Assinatura do gerente → finalizar ─────────────
@@ -268,14 +229,12 @@ export function NewRemarcacaoFlow({
 
     setIsFinalizing(true);
     try {
-      // Assinatura salva como base64 direto no Supabase
       const finalized = await finalizeRemarcacao(currentRemarcacaoId, {
         managerId: manager.id,
         managerName: manager.name,
         managerSignatureB64: signatureB64,
       });
 
-      clearDraft();
       onCreated(finalized);
       onClose();
 
@@ -289,9 +248,13 @@ export function NewRemarcacaoFlow({
 
   function goBack() {
     setErrorMsg(null);
-    if (step === "scanning") setStep("select-collab");
+    if (step === "scanning") {
+      if (initialBatchId) onClose(); // Se entrou direto num lote e volta do scan, ele fecha
+      else setStep("select-collab");
+    }
     if (step === "values") setStep("scanning");
-    if (step === "signature") setStep("values");
+    if (step === "add-more") setStep("scanning"); // Voltar daqui = ler outra
+    if (step === "signature") setStep("add-more");
   }
 
   if (!open) return null;
@@ -299,23 +262,13 @@ export function NewRemarcacaoFlow({
   // ── Scanner (tela cheia) ──────────────────────────────────
   if (step === "scanning") {
     return (
-      <>
-        <BarcodeScanner
-          ref={scannerRef}
-          open={true}
-          onClose={goBack}
-          onBarcodeDetected={handleBarcodeDetected}
-          onPhotoCaptured={handlePhotoCaptured}
-        />
-        {isSavingPhoto && (
-          <div className="fixed bottom-24 left-0 right-0 z-[90] flex justify-center">
-            <div className="flex items-center gap-2 rounded-full bg-zinc-950/90 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm">
-              <Loader2 className="size-4 animate-spin" />
-              Salvando foto...
-            </div>
-          </div>
-        )}
-      </>
+      <BarcodeScanner
+        ref={scannerRef}
+        open={true}
+        onClose={goBack}
+        onBarcodeDetected={handleBarcodeDetected}
+        onPhotoCaptured={handlePhotoCaptured}
+      />
     );
   }
 
@@ -328,7 +281,70 @@ export function NewRemarcacaoFlow({
         labelPhotoDataUrl={capturedPhotoUrl}
         onClose={goBack}
         onConfirm={handleValuesConfirm}
+        onRetakePhoto={() => {
+          setCapturedPhotoUrl(null);
+          setStep("scanning");
+        }}
       />
+    );
+  }
+
+  // ── Opção Adicionar Mais ou Finalizar Lote ────────────────
+  if (step === "add-more") {
+    return (
+      <AnimatePresence>
+        <motion.div
+          key="add-backdrop"
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="w-full max-w-sm rounded-[2rem] bg-white p-6 shadow-2xl text-center"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          >
+            <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <Check className="size-8" />
+            </div>
+            <h3 className="mb-2 text-xl font-bold text-zinc-900">Etiqueta Salva!</h3>
+            <p className="mb-8 text-sm text-zinc-500">
+              O que você deseja fazer agora? Pode escanear mais etiquetas para adicionar a este lote ou finalizá-lo para solicitar assinatura.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => setStep("scanning")}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 font-bold text-black shadow-md transition hover:bg-amber-500 active:scale-[0.98]"
+              >
+                <Plus className="size-5" /> Escanear mais Etiquetas
+              </button>
+              
+              <button
+                type="button"
+                onClick={async () => {
+                  if (currentRemarcacaoId) {
+                    await updateRemarcacaoStatus(currentRemarcacaoId, "pending_approval");
+                  }
+                  setStep("signature");
+                }}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 font-bold text-white shadow-md transition hover:bg-zinc-800 active:scale-[0.98]"
+              >
+                <Edit3 className="size-5" /> Finalizar Lote e Assinar
+              </button>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="mt-2 text-sm font-semibold text-zinc-400 hover:text-zinc-700"
+              >
+                Fechar e continuar depois
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      </AnimatePresence>
     );
   }
 
@@ -418,17 +434,16 @@ export function NewRemarcacaoFlow({
           >
             <div className="mx-auto mt-4 h-1 w-12 rounded-full bg-zinc-200" />
 
-            {/* Header */}
             <div className="flex items-center gap-3 border-b border-zinc-100 px-5 py-4">
               <div className="flex size-9 items-center justify-center rounded-xl bg-amber-400 text-black shrink-0">
                 <Tag className="size-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                  Passo 1 de 4
+                  Passo 1 de 2
                 </p>
                 <h3 className="text-base font-bold text-zinc-950 truncate">
-                  Quem está remarcando?
+                  Iniciar novo lote de remarcação
                 </h3>
               </div>
               <button
@@ -440,7 +455,6 @@ export function NewRemarcacaoFlow({
               </button>
             </div>
 
-            {/* Body */}
             <div className="px-5 py-5 pb-10">
               <motion.div
                 initial={{ opacity: 0, x: -24 }}
@@ -448,7 +462,6 @@ export function NewRemarcacaoFlow({
                 transition={{ duration: 0.2 }}
                 className="grid gap-4"
               >
-                {/* Seletor de loja (apenas para global/regional sem loja selecionada) */}
                 {isGlobalOrRegional && !selectedStoreId && stores.length > 0 && (
                   <StoreSelector
                     stores={stores}
@@ -482,7 +495,7 @@ export function NewRemarcacaoFlow({
                   disabled={!selectedCollabId || !resolvedStoreId}
                   className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-bold text-white shadow-md transition hover:bg-zinc-800 disabled:opacity-50 active:scale-[0.98]"
                 >
-                  Continuar — Escanear Produto →
+                  Criar Lote e Escanear →
                 </button>
               </motion.div>
             </div>

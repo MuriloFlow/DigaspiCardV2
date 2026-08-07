@@ -15,6 +15,7 @@ type RemarcacaoValuesModalProps = {
     remarkedValueCents: number;
     notes: string;
   }) => void;
+  onRetakePhoto?: () => void;
 };
 
 export function RemarcacaoValuesModal({
@@ -23,6 +24,7 @@ export function RemarcacaoValuesModal({
   labelPhotoDataUrl,
   onClose,
   onConfirm,
+  onRetakePhoto,
 }: RemarcacaoValuesModalProps) {
   const [originalAmount, setOriginalAmount] = useState("");
   const [remarkedAmount, setRemarkedAmount] = useState("");
@@ -126,11 +128,23 @@ export function RemarcacaoValuesModal({
                 {(labelPhotoDataUrl || detectedBarcode) && (
                   <div className="flex items-center gap-3 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
                     {labelPhotoDataUrl && (
-                      <img
-                        src={labelPhotoDataUrl}
-                        alt="Etiqueta"
-                        className="h-14 w-14 shrink-0 rounded-xl object-cover"
-                      />
+                      <div className="relative group">
+                        <img
+                          src={labelPhotoDataUrl}
+                          alt="Etiqueta"
+                          className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                        />
+                        {onRetakePhoto && (
+                          <button
+                            type="button"
+                            onClick={onRetakePhoto}
+                            className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full bg-zinc-900 text-white shadow-sm transition hover:bg-zinc-800"
+                            title="Tirar foto novamente"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                          </button>
+                        )}
+                      </div>
                     )}
                     {detectedBarcode && (
                       <div>
@@ -243,7 +257,7 @@ export function RemarcacaoValuesModal({
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
                     <>
-                      Finalizar Remarcação
+                      Salvar Etiqueta
                       <span className="text-zinc-400">→</span>
                     </>
                   )}

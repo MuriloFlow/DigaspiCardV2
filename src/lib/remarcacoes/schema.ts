@@ -1,38 +1,37 @@
 import { z } from "zod";
 
-// ── Criar remarcação (rascunho inicial) ─────────────────────
+// ── Criar remarcação (lote inicial) ─────────────────────
 export const createRemarcacaoSchema = z.object({
   storeId: z.string().uuid("storeId deve ser um UUID válido."),
   collaboratorId: z.string().uuid("collaboratorId deve ser um UUID válido."),
   operatorName: z.string().min(1, "Nome do operador é obrigatório.").max(200),
 });
 
-// ── Atualização incremental (auto-save) ──────────────────────
-export const updateRemarcacaoSchema = z.object({
-  barcode: z.string().max(100).optional(),
+// ── Adicionar Item ao Lote ──────────────────────────────────
+export const addItemSchema = z.object({
+  remarcacaoId: z.string().uuid("remarcacaoId deve ser um UUID válido."),
+  barcode: z.string().min(1).max(100),
   internalCode: z.string().max(100).optional(),
-  // Base64 da foto da etiqueta
   labelPhotoB64: z
     .string()
     .refine(
       (v) => v.startsWith("data:image/"),
       "labelPhotoB64 deve ser uma imagem em base64 (data:image/...).",
-    )
-    .optional(),
+    ),
   originalValueCents: z
     .number()
     .int("Valor deve ser inteiro (centavos).")
-    .min(0, "Valor deve ser positivo.")
-    .optional(),
+    .min(0, "Valor deve ser positivo."),
   remarkedValueCents: z
     .number()
     .int("Valor deve ser inteiro (centavos).")
-    .min(0, "Valor deve ser positivo.")
-    .optional(),
+    .min(0, "Valor deve ser positivo."),
   notes: z.string().max(1000).optional(),
-  status: z
-    .enum(["draft", "pending_approval", "completed", "cancelled"])
-    .optional(),
+});
+
+// ── Atualizar status do Lote ──────────────────────────────────
+export const updateRemarcacaoStatusSchema = z.object({
+  status: z.enum(["draft", "pending_approval", "completed", "cancelled"]),
 });
 
 // ── Finalização com assinatura do gerente ────────────────────
@@ -54,5 +53,6 @@ export const searchByBarcodeSchema = z.object({
 });
 
 export type CreateRemarcacaoInput = z.infer<typeof createRemarcacaoSchema>;
-export type UpdateRemarcacaoInput = z.infer<typeof updateRemarcacaoSchema>;
+export type AddItemInput = z.infer<typeof addItemSchema>;
+export type UpdateRemarcacaoStatusInput = z.infer<typeof updateRemarcacaoStatusSchema>;
 export type FinalizeRemarcacaoInput = z.infer<typeof finalizeRemarcacaoSchema>;

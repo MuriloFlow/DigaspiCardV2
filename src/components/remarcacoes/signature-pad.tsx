@@ -132,7 +132,7 @@ export function SignaturePad({ open, onClose, onConfirm, managerName }: Signatur
       {open && (
         <motion.div
           key="signature-pad"
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-zinc-950"
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-white"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -146,21 +146,21 @@ export function SignaturePad({ open, onClose, onConfirm, managerName }: Signatur
                 <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   Assinatura do Gerente
                 </p>
-                <h2 className="text-xl font-bold text-white">
+                <h2 className="text-xl font-bold text-zinc-950">
                   {managerName ? `Assinar como ${managerName}` : "Assine abaixo"}
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="flex size-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 transition hover:bg-zinc-700 hover:text-white"
+                className="flex size-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-900"
               >
                 <X className="size-5" />
               </button>
             </div>
 
             {/* Área de assinatura */}
-            <div className="relative mx-6 flex-1 overflow-hidden rounded-[1.5rem] border-2 border-dashed border-zinc-700 bg-white">
+            <div className="relative mx-6 flex-1 overflow-hidden rounded-[1.5rem] bg-zinc-50 border-2 border-dashed border-zinc-300">
               <canvas
                 ref={canvasRef}
                 className="touch-none"
@@ -188,7 +188,7 @@ export function SignaturePad({ open, onClose, onConfirm, managerName }: Signatur
                 type="button"
                 onClick={handleClear}
                 disabled={!hasSignature}
-                className="flex h-12 items-center gap-2 rounded-2xl border border-zinc-700 px-5 text-sm font-semibold text-zinc-400 transition hover:border-zinc-500 hover:text-white disabled:opacity-30"
+                className="flex h-12 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-500 shadow-sm transition hover:border-zinc-300 hover:text-zinc-900 disabled:opacity-30"
               >
                 <RotateCcw className="size-4" />
                 Limpar

@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { useAuth } from "./auth-provider";
-import type { Remarcacao } from "@/lib/remarcacoes/types";
+import type { Remarcacao, RemarcacaoItem } from "@/lib/remarcacoes/types";
 
 type RemarcacoesContextValue = {
   remarcacoes: Remarcacao[];
@@ -22,26 +22,30 @@ type RemarcacoesContextValue = {
     operatorName: string;
     storeId?: string;
   }) => Promise<Remarcacao>;
-  updateRemarcacao: (
+  addItem: (params: {
+    remarcacaoId: string;
+    barcode: string;
+    internalCode?: string;
+    labelPhotoB64: string;
+    originalValueCents: number;
+    remarkedValueCents: number;
+    notes?: string;
+  }) => Promise<RemarcacaoItem>;
+  removeItem: (remarcacaoId: string, itemId: string) => Promise<void>;
+
+  updateRemarcacaoStatus: (
     id: string,
-    fields: Partial<{
-      barcode: string;
-      internalCode: string;
-      labelPhotoB64: string;        // base64 da foto da etiqueta
-      originalValueCents: number;
-      remarkedValueCents: number;
-      notes: string;
-      status: Remarcacao["status"];
-    }>,
+    status: "draft" | "pending_approval" | "completed" | "cancelled",
   ) => Promise<Remarcacao>;
   finalizeRemarcacao: (
     id: string,
     params: {
       managerId: string;
       managerName: string;
-      managerSignatureB64: string;  // base64 da assinatura
+      managerSignatureB64: string;
     },
   ) => Promise<Remarcacao>;
+  reopenRemarcacao: (id: string) => Promise<Remarcacao>;
   deleteRemarcacao: (id: string) => Promise<void>;
 };
 
@@ -52,6 +56,8 @@ export function useRemarcacoes() {
   if (!ctx) throw new Error("useRemarcacoes must be used inside RemarcacoesProvider");
   return ctx;
 }
+
+import { supabase } from "@/lib/supabase/client";
 
 export function RemarcacoesProvider({ children }: { children: React.ReactNode }) {
   const { user, selectedStoreId } = useAuth();
@@ -87,10 +93,34 @@ export function RemarcacoesProvider({ children }: { children: React.ReactNode })
     }
   }, [storeQuery]);
 
+  // ── Listener Realtime Supabase ───────────────────────────
   useEffect(() => {
     if (!user) return;
     refresh();
-    return () => abortRef.current?.abort();
+
+    // Assina atualizações em tempo real (header e itens)
+    const channel = supabase
+      .channel("remarcacoes_updates")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "remarcacoes" },
+        (_payload: any) => {
+          refresh();
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "remarcacao_itens" },
+        (_payload: any) => {
+          refresh();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      abortRef.current?.abort();
+      supabase.removeChannel(channel);
+    };
   }, [user, refresh]);
 
   // ── Criar remarcação ─────────────────────────────────────
@@ -140,6 +170,86 @@ export function RemarcacoesProvider({ children }: { children: React.ReactNode })
     [],
   );
 
+  // ── Adicionar Item ao Lote ────────────────────────────────
+  const addItem = useCallback(
+    async (params: {
+      remarcacaoId: string;
+      barcode: string;
+      internalCode?: string;
+      labelPhotoB64: string;
+      originalValueCents: number;
+      remarkedValueCents: number;
+      notes?: string;
+    }) => {
+      const res = await fetch(`/api/remarcacoes/${params.remarcacaoId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? "Erro ao adicionar item.");
+
+      const item: RemarcacaoItem = data.item;
+      // Atualizamos a lista local adicionando o item à remarcação correspondente
+      setRemarcacoes((prev) =>
+        prev.map((r) => {
+          if (r.id === params.remarcacaoId) {
+            const itens = r.itens ? [...r.itens, item] : [item];
+            return { ...r, itens };
+          }
+          return r;
+        }),
+      );
+      return item;
+    },
+    [],
+  );
+
+  // ── Remover Item do Lote ──────────────────────────────────
+  const removeItem = useCallback(
+    async (remarcacaoId: string, itemId: string) => {
+      const res = await fetch(`/api/remarcacoes/${remarcacaoId}/items/${itemId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? "Erro ao remover item.");
+
+      setRemarcacoes((prev) =>
+        prev.map((r) => {
+          if (r.id === remarcacaoId && r.itens) {
+            return { ...r, itens: r.itens.filter((i) => i.id !== itemId) };
+          }
+          return r;
+        }),
+      );
+    },
+    [],
+  );
+
+  // ── Atualizar status do Lote ──────────────────────────────
+  const updateRemarcacaoStatus = useCallback(
+    async (id: string, status: "draft" | "pending_approval" | "completed" | "cancelled") => {
+      const res = await fetch(`/api/remarcacoes/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? "Erro ao atualizar status.");
+
+      const updated: Remarcacao = data.remarcacao;
+      setRemarcacoes((prev) =>
+        prev.map((r) => {
+          // Preserva os itens locais pois o retorno do PATCH não os traz
+          if (r.id === id) return { ...updated, itens: r.itens };
+          return r;
+        }),
+      );
+      return updated;
+    },
+    [],
+  );
+
   // ── Finalizar com assinatura base64 ──────────────────────
   const finalizeRemarcacao = useCallback(
     async (
@@ -161,6 +271,19 @@ export function RemarcacoesProvider({ children }: { children: React.ReactNode })
     [],
   );
 
+  // ── Reabrir remarcação finalizada ─────────────────────────
+  const reopenRemarcacao = useCallback(async (id: string) => {
+    const res = await fetch(`/api/remarcacoes/${id}/reopen`, {
+      method: "POST",
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message ?? "Erro ao reabrir remarcação.");
+
+    const reopened: Remarcacao = data.remarcacao;
+    setRemarcacoes((prev) => prev.map((r) => (r.id === id ? reopened : r)));
+    return reopened;
+  }, []);
+
   // ── Soft delete ───────────────────────────────────────────
   const deleteRemarcacao = useCallback(async (id: string) => {
     const res = await fetch(`/api/remarcacoes/${id}`, { method: "DELETE" });
@@ -180,8 +303,11 @@ export function RemarcacoesProvider({ children }: { children: React.ReactNode })
         error,
         refresh,
         createRemarcacao,
-        updateRemarcacao,
+        addItem,
+        removeItem,
+        updateRemarcacaoStatus,
         finalizeRemarcacao,
+        reopenRemarcacao,
         deleteRemarcacao,
       }}
     >

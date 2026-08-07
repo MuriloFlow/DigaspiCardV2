@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { getRemarcacaoById } from "@/lib/remarcacoes/repository";
 import { listHistorico } from "@/lib/remarcacoes/repository";
 import { RemarcacaoDetailView } from "@/components/remarcacoes/remarcacao-detail-view";
+import { RemarcacoesProvider } from "@/components/providers/remarcacoes-provider";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -29,5 +30,9 @@ export default async function RemarcacaoDetailPage({ params }: PageProps) {
 
   if (!remarcacao) notFound();
 
-  return <RemarcacaoDetailView remarcacao={remarcacao} historico={historico} />;
+  return (
+    <RemarcacoesProvider>
+      <RemarcacaoDetailView remarcacao={remarcacao} historico={historico} />
+    </RemarcacoesProvider>
+  );
 }

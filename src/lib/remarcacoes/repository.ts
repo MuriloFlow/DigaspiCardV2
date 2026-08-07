@@ -3,29 +3,24 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import {
   createRemarcacaoSchema,
-  updateRemarcacaoSchema,
+  addItemSchema,
+  updateRemarcacaoStatusSchema,
   finalizeRemarcacaoSchema,
 } from "./schema";
 import type {
   Remarcacao,
+  RemarcacaoItem,
   RemarcacaoHistorico,
   RemarcacaoHistoricoAction,
 } from "./types";
 
-// ── Mapeador DB → Domain ─────────────────────────────────────
-// Sem Storage: label_photo_b64 e manager_signature_b64 são base64 direto
+// ── Mapeadores DB → Domain ─────────────────────────────────────
 
 type DbRemarcacao = {
   id: string;
   store_id: string;
   collaborator_id: string | null;
   operator_name: string;
-  barcode: string | null;
-  internal_code: string | null;
-  label_photo_b64: string | null;
-  original_value_cents: number | null;
-  remarked_value_cents: number | null;
-  notes: string | null;
   manager_id: string | null;
   manager_name: string | null;
   manager_signature_b64: string | null;
@@ -35,7 +30,36 @@ type DbRemarcacao = {
   completed_at: string | null;
   deleted_at: string | null;
   stores?: { name: string } | null;
+  remarcacao_itens?: DbRemarcacaoItem[];
 };
+
+type DbRemarcacaoItem = {
+  id: string;
+  remarcacao_id: string;
+  barcode: string;
+  internal_code: string | null;
+  label_photo_b64: string | null; // null on lists to save bandwidth
+  original_value_cents: number;
+  remarked_value_cents: number;
+  notes: string | null;
+  created_at: string;
+  deleted_at: string | null;
+};
+
+function toRemarcacaoItem(row: DbRemarcacaoItem): RemarcacaoItem {
+  return {
+    id: row.id,
+    remarcacaoId: row.remarcacao_id,
+    barcode: row.barcode,
+    internalCode: row.internal_code,
+    labelPhotoB64: row.label_photo_b64 || "",
+    originalValueCents: row.original_value_cents,
+    remarkedValueCents: row.remarked_value_cents,
+    notes: row.notes,
+    createdAt: row.created_at,
+    deletedAt: row.deleted_at,
+  };
+}
 
 function toRemarcacao(row: DbRemarcacao): Remarcacao {
   return {
@@ -43,12 +67,6 @@ function toRemarcacao(row: DbRemarcacao): Remarcacao {
     storeId: row.store_id,
     collaboratorId: row.collaborator_id,
     operatorName: row.operator_name,
-    barcode: row.barcode,
-    internalCode: row.internal_code,
-    labelPhotoB64: row.label_photo_b64,
-    originalValueCents: row.original_value_cents,
-    remarkedValueCents: row.remarked_value_cents,
-    notes: row.notes,
     managerId: row.manager_id,
     managerName: row.manager_name,
     managerSignatureB64: row.manager_signature_b64,
@@ -58,34 +76,22 @@ function toRemarcacao(row: DbRemarcacao): Remarcacao {
     completedAt: row.completed_at,
     deletedAt: row.deleted_at,
     storeName: row.stores?.name,
+    itens: row.remarcacao_itens ? row.remarcacao_itens.map(toRemarcacaoItem) : undefined,
   };
 }
 
-// ── CRUD PRINCIPAL ────────────────────────────────────────────
+// ── CRUD LOTES ────────────────────────────────────────────
 
-/**
- * Lista remarcações não deletadas de uma loja.
- * GLOBAL_ADMIN / TI_ADMIN passa storeId=null para ver todas.
- * 
- * NOTA: campos base64 de foto/assinatura NÃO são retornados na listagem
- * para evitar payloads gigantes. Somente carregados no detalhe (getById).
- */
-export async function listRemarcacoes(
-  storeId?: string | null,
-): Promise<Remarcacao[]> {
-  // Seleciona tudo EXCETO os base64 pesados (foto + assinatura) para a lista
-  const cols = [
-    "id", "store_id", "collaborator_id", "operator_name",
-    "barcode", "internal_code",
-    "original_value_cents", "remarked_value_cents",
-    "notes", "manager_id", "manager_name",
-    "status", "created_at", "updated_at", "completed_at", "deleted_at",
-    "stores(name)",
-  ].join(", ");
-
+export async function listRemarcacoes(storeId?: string | null): Promise<Remarcacao[]> {
+  // Para lista, carregamos o cabeçalho e os itens (mas sem a foto em b64 para não travar)
   let query = supabaseAdmin
     .from("remarcacoes")
-    .select(cols)
+    .select(`
+      id, store_id, collaborator_id, operator_name, manager_id, manager_name, status,
+      created_at, updated_at, completed_at, deleted_at,
+      stores(name),
+      remarcacao_itens(id, remarcacao_id, barcode, original_value_cents, remarked_value_cents, created_at, deleted_at)
+    `)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
@@ -93,75 +99,45 @@ export async function listRemarcacoes(
 
   const { data, error } = await query;
   if (error) {
-    if (error.code === "42P01") return []; // tabela não existe ainda
+    if (error.code === "42P01") return [];
     throw new Error(`Erro ao carregar remarcações: ${error.message}`);
   }
 
-  return (data as unknown as DbRemarcacao[]).map((row) => ({
-    ...toRemarcacao(row),
-    labelPhotoB64: null, // não carregado na lista — só no detalhe
-    managerSignatureB64: null,
-  }));
+  return (data as unknown as DbRemarcacao[]).map((row) => {
+    // Filtra itens deletados logicamente
+    if (row.remarcacao_itens) {
+      row.remarcacao_itens = row.remarcacao_itens.filter(i => !i.deleted_at);
+    }
+    return toRemarcacao(row);
+  });
 }
 
-/**
- * Busca uma remarcação pelo ID — carrega TUDO incluindo base64.
- */
-export async function getRemarcacaoById(
-  id: string,
-  storeId?: string | null,
-): Promise<Remarcacao | null> {
+export async function getRemarcacaoById(id: string, storeId?: string | null): Promise<Remarcacao | null> {
+  // Carrega TUDO incluindo base64 para detalhe
   let query = supabaseAdmin
     .from("remarcacoes")
-    .select("*, stores(name)")
+    .select(`
+      *,
+      stores(name),
+      remarcacao_itens(*)
+    `)
     .eq("id", id)
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .order("created_at", { referencedTable: "remarcacao_itens", ascending: true });
 
   if (storeId) query = query.eq("store_id", storeId);
 
   const { data, error } = await (query as any).maybeSingle();
   if (error) throw new Error(`Erro ao buscar remarcação: ${error.message}`);
   if (!data) return null;
-  return toRemarcacao(data as DbRemarcacao);
+
+  const dbRem = data as DbRemarcacao;
+  if (dbRem.remarcacao_itens) {
+    dbRem.remarcacao_itens = dbRem.remarcacao_itens.filter(i => !i.deleted_at);
+  }
+  return toRemarcacao(dbRem);
 }
 
-/**
- * Busca remarcações por código de barras.
- */
-export async function getRemarcacoesByBarcode(
-  barcode: string,
-  storeId?: string | null,
-): Promise<Remarcacao[]> {
-  const cols = [
-    "id", "store_id", "collaborator_id", "operator_name",
-    "barcode", "internal_code",
-    "original_value_cents", "remarked_value_cents",
-    "notes", "manager_id", "manager_name",
-    "status", "created_at", "updated_at", "completed_at", "deleted_at",
-    "stores(name)",
-  ].join(", ");
-
-  let query = supabaseAdmin
-    .from("remarcacoes")
-    .select(cols)
-    .eq("barcode", barcode)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
-
-  if (storeId) query = query.eq("store_id", storeId);
-
-  const { data, error } = await query;
-  if (error) throw new Error(`Erro ao buscar por barcode: ${error.message}`);
-  return (data as unknown as DbRemarcacao[]).map((row) => ({
-    ...toRemarcacao(row),
-    labelPhotoB64: null,
-    managerSignatureB64: null,
-  }));
-}
-
-/**
- * Cria uma nova remarcação (rascunho inicial — auto-save).
- */
 export async function createRemarcacao(
   input: unknown,
   actorId: string,
@@ -169,7 +145,6 @@ export async function createRemarcacao(
 ): Promise<Remarcacao> {
   const payload = createRemarcacaoSchema.parse(input);
 
-  // Valida colaborador
   const { data: collab, error: collabError } = await supabaseAdmin
     .from("collaborators")
     .select("id, name, is_active, store_id")
@@ -193,80 +168,96 @@ export async function createRemarcacao(
     .select("*, stores(name)")
     .single();
 
-  if (error) throw new Error(`Erro ao criar remarcação: ${error.message}`);
+  if (error) throw new Error(`Erro ao criar lote de remarcação: ${error.message}`);
 
   const remarcacao = toRemarcacao(data as DbRemarcacao);
 
-  await appendHistorico(remarcacao.id, {
+  await appendHistorico(remarcacao.id, null, {
     changedById: actorId,
     changedByName: actorName,
     action: "created",
-    snapshot: remarcacao,
   });
 
   return remarcacao;
 }
 
-/**
- * Atualiza incrementalmente uma remarcação (auto-save).
- * Salva base64 de foto/assinatura diretamente nas colunas.
- */
-export async function updateRemarcacao(
-  id: string,
+// ── CRUD ITENS ────────────────────────────────────────────
+
+export async function addRemarcacaoItem(
   input: unknown,
-  storeId: string | null,
   actorId: string,
   actorName: string,
-): Promise<Remarcacao> {
-  const payload = updateRemarcacaoSchema.parse(input);
-  if (Object.keys(payload).length === 0) throw new Error("Nenhum campo para atualizar.");
+): Promise<RemarcacaoItem> {
+  const payload = addItemSchema.parse(input);
 
-  const existing = await getRemarcacaoById(id, storeId);
-  if (!existing) throw new Error("Remarcação não encontrada.");
-  if (existing.status === "completed" || existing.status === "cancelled") {
-    throw new Error("Não é possível alterar uma remarcação finalizada ou cancelada.");
+  const existing = await getRemarcacaoById(payload.remarcacaoId);
+  if (!existing) throw new Error("Lote de Remarcação não encontrado.");
+  if (existing.status !== "draft" && existing.status !== "pending_approval") {
+    throw new Error("Não é possível adicionar itens a um lote finalizado.");
   }
 
-  const updatePayload: Record<string, unknown> = {};
-  if (payload.barcode !== undefined)            updatePayload.barcode = payload.barcode;
-  if (payload.internalCode !== undefined)       updatePayload.internal_code = payload.internalCode;
-  if (payload.labelPhotoB64 !== undefined)      updatePayload.label_photo_b64 = payload.labelPhotoB64;
-  if (payload.originalValueCents !== undefined) updatePayload.original_value_cents = payload.originalValueCents;
-  if (payload.remarkedValueCents !== undefined) updatePayload.remarked_value_cents = payload.remarkedValueCents;
-  if (payload.notes !== undefined)              updatePayload.notes = payload.notes;
-  if (payload.status !== undefined)             updatePayload.status = payload.status;
-
   const { data, error } = await supabaseAdmin
-    .from("remarcacoes")
-    .update(updatePayload)
-    .eq("id", id)
-    .select("*, stores(name)")
+    .from("remarcacao_itens")
+    .insert({
+      remarcacao_id: payload.remarcacaoId,
+      barcode: payload.barcode,
+      internal_code: payload.internalCode || null,
+      label_photo_b64: payload.labelPhotoB64,
+      original_value_cents: payload.originalValueCents,
+      remarked_value_cents: payload.remarkedValueCents,
+      notes: payload.notes || null,
+    })
+    .select()
     .single();
 
-  if (error) throw new Error(`Erro ao atualizar remarcação: ${error.message}`);
+  if (error) throw new Error(`Erro ao adicionar item: ${error.message}`);
 
-  const updated = toRemarcacao(data as DbRemarcacao);
+  const item = toRemarcacaoItem(data as DbRemarcacaoItem);
 
-  let action: RemarcacaoHistoricoAction = "updated";
-  if (payload.barcode)         action = "barcode_scanned";
-  else if (payload.labelPhotoB64) action = "photo_added";
-  else if (payload.originalValueCents !== undefined || payload.remarkedValueCents !== undefined) {
-    action = "values_set";
-  } else if (payload.status === "cancelled") action = "cancelled";
+  // Atualiza o updatedAt do lote pai
+  await supabaseAdmin.from("remarcacoes").update({ updated_at: new Date().toISOString() }).eq("id", existing.id);
 
-  await appendHistorico(updated.id, {
+  await appendHistorico(existing.id, item.id, {
     changedById: actorId,
     changedByName: actorName,
-    action,
-    snapshot: updated,
+    action: "added_item",
+    newValue: payload.barcode,
   });
 
-  return updated;
+  return item;
 }
 
-/**
- * Finaliza a remarcação salvando a assinatura do gerente como base64.
- */
+export async function removeRemarcacaoItem(
+  itemId: string,
+  remarcacaoId: string,
+  actorId: string,
+  actorName: string,
+): Promise<void> {
+  const existing = await getRemarcacaoById(remarcacaoId);
+  if (!existing) throw new Error("Lote não encontrado.");
+  if (existing.status !== "draft" && existing.status !== "pending_approval") {
+    throw new Error("Não é possível remover itens de um lote finalizado.");
+  }
+
+  const { error } = await supabaseAdmin
+    .from("remarcacao_itens")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", itemId)
+    .eq("remarcacao_id", remarcacaoId);
+
+  if (error) throw new Error(`Erro ao remover item: ${error.message}`);
+
+  await supabaseAdmin.from("remarcacoes").update({ updated_at: new Date().toISOString() }).eq("id", remarcacaoId);
+
+  await appendHistorico(remarcacaoId, itemId, {
+    changedById: actorId,
+    changedByName: actorName,
+    action: "removed_item",
+  });
+}
+
+// ── FINALIZAÇÃO ────────────────────────────────────────────
+
 export async function finalizeRemarcacao(
   id: string,
   input: unknown,
@@ -277,11 +268,12 @@ export async function finalizeRemarcacao(
   const payload = finalizeRemarcacaoSchema.parse(input);
 
   const existing = await getRemarcacaoById(id, storeId);
-  if (!existing) throw new Error("Remarcação não encontrada.");
-  if (existing.status === "completed") throw new Error("Remarcação já finalizada.");
-  if (existing.status === "cancelled") throw new Error("Remarcação cancelada não pode ser finalizada.");
-  if (!existing.barcode && !existing.labelPhotoB64) {
-    throw new Error("Remarcação incompleta: código ou foto da etiqueta são necessários.");
+  if (!existing) throw new Error("Lote não encontrado.");
+  if (existing.status === "completed") throw new Error("Lote já finalizado.");
+  if (existing.status === "cancelled") throw new Error("Lote cancelado.");
+  
+  if (!existing.itens || existing.itens.length === 0) {
+    throw new Error("Não é possível finalizar um lote sem nenhum item.");
   }
 
   const { data, error } = await supabaseAdmin
@@ -292,28 +284,66 @@ export async function finalizeRemarcacao(
       manager_signature_b64: payload.managerSignatureB64,
       status: "completed",
       completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
     .eq("id", id)
     .select("*, stores(name)")
     .single();
 
-  if (error) throw new Error(`Erro ao finalizar remarcação: ${error.message}`);
+  if (error) throw new Error(`Erro ao finalizar lote: ${error.message}`);
 
   const finalized = toRemarcacao(data as DbRemarcacao);
 
-  await appendHistorico(finalized.id, {
+  await appendHistorico(finalized.id, null, {
     changedById: actorId,
     changedByName: actorName,
     action: "completed",
-    snapshot: finalized,
   });
 
   return finalized;
 }
 
-/**
- * Soft delete de uma remarcação.
- */
+export async function reopenRemarcacao(
+  id: string,
+  storeId: string | null,
+  actorId: string,
+  actorName: string,
+): Promise<Remarcacao> {
+  const existing = await getRemarcacaoById(id, storeId);
+  if (!existing) throw new Error("Lote não encontrado.");
+  if (existing.status !== "completed" && existing.status !== "pending_approval") {
+    throw new Error("Apenas lotes concluídos ou pendentes podem ser reabertos.");
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("remarcacoes")
+    .update({
+      status: "draft",
+      manager_id: null,
+      manager_name: null,
+      manager_signature_b64: null,
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select("*, stores(name)")
+    .single();
+
+  if (error) throw new Error(`Erro ao reabrir lote: ${error.message}`);
+
+  const reopened = toRemarcacao(data as DbRemarcacao);
+
+  await appendHistorico(reopened.id, null, {
+    changedById: actorId,
+    changedByName: actorName,
+    action: "reopened",
+    oldValue: existing.status,
+    newValue: "draft",
+  });
+
+  return reopened;
+}
+
 export async function softDeleteRemarcacao(
   id: string,
   storeId: string | null,
@@ -326,7 +356,49 @@ export async function softDeleteRemarcacao(
   if (storeId) query = query.eq("store_id", storeId);
 
   const { error } = await query;
-  if (error) throw new Error(`Erro ao deletar remarcação: ${error.message}`);
+  if (error) throw new Error(`Erro ao deletar lote: ${error.message}`);
+}
+
+// ── BUSCA POR PRODUTO (HISTÓRICO) ──────────────────────────
+
+export async function getRemarcacoesByBarcode(barcode: string, storeId?: string | null): Promise<Remarcacao[]> {
+  // Busca todos os lotes que possuem um item com esse barcode
+  let itemsQuery = supabaseAdmin
+    .from("remarcacao_itens")
+    .select("remarcacao_id")
+    .eq("barcode", barcode)
+    .is("deleted_at", null);
+
+  const { data: itemData, error: itemError } = await itemsQuery;
+  if (itemError) throw new Error(`Erro ao buscar itens: ${itemError.message}`);
+  
+  if (!itemData || itemData.length === 0) return [];
+  
+  const batchIds = [...new Set(itemData.map(i => i.remarcacao_id))];
+
+  let query = supabaseAdmin
+    .from("remarcacoes")
+    .select(`
+      id, store_id, collaborator_id, operator_name, manager_id, manager_name, status,
+      created_at, updated_at, completed_at, deleted_at,
+      stores(name),
+      remarcacao_itens(id, remarcacao_id, barcode, original_value_cents, remarked_value_cents, created_at, deleted_at)
+    `)
+    .in("id", batchIds)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (storeId) query = query.eq("store_id", storeId);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Erro ao buscar lotes do barcode: ${error.message}`);
+
+  return (data as unknown as DbRemarcacao[]).map((row) => {
+    if (row.remarcacao_itens) {
+      row.remarcacao_itens = row.remarcacao_itens.filter(i => !i.deleted_at && i.barcode === barcode);
+    }
+    return toRemarcacao(row);
+  });
 }
 
 // ── HISTÓRICO ─────────────────────────────────────────────────
@@ -338,39 +410,34 @@ type AppendHistoricoParams = {
   fieldChanged?: string;
   oldValue?: string;
   newValue?: string;
-  snapshot?: Omit<Remarcacao, "labelPhotoB64" | "managerSignatureB64">; // sem base64 no snapshot
+  snapshot?: any;
 };
 
 async function appendHistorico(
   remarcacaoId: string,
+  itemId: string | null,
   params: AppendHistoricoParams,
 ): Promise<void> {
   try {
-    // Remove base64 do snapshot para não explodir o JSON
-    const snapshotClean = params.snapshot
-      ? { ...params.snapshot, labelPhotoB64: "[omitted]", managerSignatureB64: "[omitted]" }
-      : null;
-
-    await supabaseAdmin.from("remarcacoes_historico").insert({
+    await supabaseAdmin.from("remarcacao_historico").insert({
       remarcacao_id: remarcacaoId,
+      item_id: itemId,
       changed_by_id: params.changedById,
       changed_by_name: params.changedByName,
       action: params.action,
       field_changed: params.fieldChanged ?? null,
       old_value: params.oldValue ?? null,
       new_value: params.newValue ?? null,
-      snapshot: snapshotClean ? JSON.stringify(snapshotClean) : null,
+      snapshot: params.snapshot ? JSON.stringify(params.snapshot) : null,
     });
-  } catch {
-    console.error("[remarcacoes] Falha ao registrar histórico:", remarcacaoId);
+  } catch (err) {
+    console.error("[remarcacoes] Falha ao registrar histórico:", err);
   }
 }
 
-export async function listHistorico(
-  remarcacaoId: string,
-): Promise<RemarcacaoHistorico[]> {
+export async function listHistorico(remarcacaoId: string): Promise<RemarcacaoHistorico[]> {
   const { data, error } = await supabaseAdmin
-    .from("remarcacoes_historico")
+    .from("remarcacao_historico")
     .select("*")
     .eq("remarcacao_id", remarcacaoId)
     .order("created_at", { ascending: true });
@@ -383,6 +450,7 @@ export async function listHistorico(
   return (data ?? []).map((row) => ({
     id: row.id,
     remarcacaoId: row.remarcacao_id,
+    itemId: row.item_id,
     changedById: row.changed_by_id,
     changedByName: row.changed_by_name,
     action: row.action as RemarcacaoHistoricoAction,

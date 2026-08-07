@@ -1,49 +1,37 @@
 -- ============================================================
--- MÓDULO: Registro de Remarcação
+-- MÓDULO: Registro de Remarcação (Refatorado para Lotes)
 -- Executa este script no Supabase SQL Editor
--- Sem necessidade de Storage — tudo salvo como base64 na tabela
 -- ============================================================
 
--- ── EXTENSÃO UUID (já deve estar ativa, mas garante) ──────────
+-- ── EXTENSÃO UUID ──────────
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================================
--- TABELA PRINCIPAL: remarcacoes
+-- 1. TABELA PRINCIPAL: remarcacoes (Cabeçalho/Lote)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.remarcacoes (
+-- Como a tabela remarcacoes já existe no projeto do usuário, é 
+-- altamente recomendado recriá-la ou usar ALTER TABLE.
+-- Para o ambiente de desenvolvimento, vamos dropar se existir.
+DROP TABLE IF EXISTS public.remarcacao_itens CASCADE;
+DROP TABLE IF EXISTS public.remarcacao_historico CASCADE;
+DROP TABLE IF EXISTS public.remarcacoes CASCADE;
+
+CREATE TABLE public.remarcacoes (
   id                    UUID          PRIMARY KEY DEFAULT uuid_generate_v4(),
   store_id              UUID          NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
   collaborator_id       UUID          REFERENCES public.collaborators(id) ON DELETE SET NULL,
   operator_name         TEXT          NOT NULL,
 
-  -- Produto
-  barcode               TEXT,
-  internal_code         TEXT,
-
-  -- Foto da etiqueta salva como base64 diretamente na tabela
-  -- Formato: "data:image/jpeg;base64,/9j/4AAQ..."
-  label_photo_b64       TEXT,
-
-  -- Valores
-  original_value_cents  INTEGER       CHECK (original_value_cents >= 0),
-  remarked_value_cents  INTEGER       CHECK (remarked_value_cents >= 0),
-
-  -- Complementares
-  notes                 TEXT,
-
-  -- Aprovação
+  -- Aprovação (Somente no final)
   manager_id            UUID          REFERENCES public.app_users(id) ON DELETE SET NULL,
   manager_name          TEXT,
-
-  -- Assinatura do gerente salva como base64 diretamente na tabela
-  -- Formato: "data:image/png;base64,iVBOR..."
   manager_signature_b64 TEXT,
 
   -- Status
-  -- draft            = rascunho (auto-save em progresso)
-  -- pending_approval = aguardando assinatura do gerente
-  -- completed        = finalizada e assinada
-  -- cancelled        = cancelada
+  -- draft            = rascunho (lote aberto, operador inserindo itens)
+  -- pending_approval = lote finalizado pelo operador, aguardando gerente
+  -- completed        = lote finalizado e assinado
+  -- cancelled        = lote cancelado
   status                TEXT          NOT NULL DEFAULT 'draft'
                           CHECK (status IN ('draft', 'pending_approval', 'completed', 'cancelled')),
 
@@ -52,83 +40,71 @@ CREATE TABLE IF NOT EXISTS public.remarcacoes (
   updated_at            TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
   completed_at          TIMESTAMPTZ,
   deleted_at            TIMESTAMPTZ   -- soft delete
-
 );
 
--- Índices para performance
-CREATE INDEX IF NOT EXISTS idx_remarcacoes_store_id        ON public.remarcacoes (store_id);
-CREATE INDEX IF NOT EXISTS idx_remarcacoes_collaborator_id ON public.remarcacoes (collaborator_id);
-CREATE INDEX IF NOT EXISTS idx_remarcacoes_status          ON public.remarcacoes (status);
-CREATE INDEX IF NOT EXISTS idx_remarcacoes_barcode         ON public.remarcacoes (barcode);
-CREATE INDEX IF NOT EXISTS idx_remarcacoes_created_at      ON public.remarcacoes (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_remarcacoes_deleted_at      ON public.remarcacoes (deleted_at) WHERE deleted_at IS NULL;
-
--- Trigger para atualizar updated_at automaticamente
-CREATE OR REPLACE FUNCTION public.set_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trg_remarcacoes_updated_at ON public.remarcacoes;
-CREATE TRIGGER trg_remarcacoes_updated_at
-  BEFORE UPDATE ON public.remarcacoes
-  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE INDEX idx_remarcacoes_store_id ON public.remarcacoes (store_id);
+CREATE INDEX idx_remarcacoes_collaborator_id ON public.remarcacoes (collaborator_id);
 
 -- ============================================================
--- TABELA DE HISTÓRICO: remarcacoes_historico
--- Auditoria completa de todas as alterações
+-- 2. TABELA DE ITENS: remarcacao_itens
 -- ============================================================
-CREATE TABLE IF NOT EXISTS public.remarcacoes_historico (
-  id                UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-  remarcacao_id     UUID        NOT NULL REFERENCES public.remarcacoes(id) ON DELETE CASCADE,
-  changed_by_id     UUID        REFERENCES public.app_users(id) ON DELETE SET NULL,
-  changed_by_name   TEXT        NOT NULL,
-  action            TEXT        NOT NULL, -- 'created' | 'updated' | 'photo_added' | 'barcode_scanned' | 'values_set' | 'completed' | 'cancelled'
-  field_changed     TEXT,                 -- campo alterado
-  old_value         TEXT,                 -- valor anterior
-  new_value         TEXT,                 -- novo valor
-  snapshot          JSONB,               -- snapshot completo no momento da alteração
-  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.remarcacao_itens (
+  id                    UUID          PRIMARY KEY DEFAULT uuid_generate_v4(),
+  remarcacao_id         UUID          NOT NULL REFERENCES public.remarcacoes(id) ON DELETE CASCADE,
+  
+  -- Produto
+  barcode               TEXT          NOT NULL,
+  internal_code         TEXT,
+  
+  -- Foto da etiqueta salva como base64
+  label_photo_b64       TEXT          NOT NULL,
+  
+  -- Valores
+  original_value_cents  INTEGER       NOT NULL CHECK (original_value_cents >= 0),
+  remarked_value_cents  INTEGER       NOT NULL CHECK (remarked_value_cents >= 0),
+  
+  -- Complementares
+  notes                 TEXT,
+  
+  -- Timestamps
+  created_at            TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  deleted_at            TIMESTAMPTZ
 );
 
-CREATE INDEX IF NOT EXISTS idx_remhist_remarcacao_id ON public.remarcacoes_historico (remarcacao_id);
-CREATE INDEX IF NOT EXISTS idx_remhist_created_at    ON public.remarcacoes_historico (created_at DESC);
+CREATE INDEX idx_remarcacao_itens_remarcacao_id ON public.remarcacao_itens (remarcacao_id);
+CREATE INDEX idx_remarcacao_itens_barcode ON public.remarcacao_itens (barcode);
 
 -- ============================================================
--- ROW LEVEL SECURITY (RLS)
+-- 3. TABELA DE HISTÓRICO / AUDITORIA
 -- ============================================================
-ALTER TABLE public.remarcacoes           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.remarcacoes_historico ENABLE ROW LEVEL SECURITY;
+CREATE TABLE public.remarcacao_historico (
+  id                    UUID          PRIMARY KEY DEFAULT uuid_generate_v4(),
+  remarcacao_id         UUID          NOT NULL REFERENCES public.remarcacoes(id) ON DELETE CASCADE,
+  item_id               UUID          REFERENCES public.remarcacao_itens(id) ON DELETE CASCADE,
+  
+  changed_by_id         UUID          NOT NULL,
+  changed_by_name       TEXT          NOT NULL,
+  action                TEXT          NOT NULL, -- "created", "added_item", "updated_status", "deleted", "reopened"
+  field_changed         TEXT,
+  old_value             TEXT,
+  new_value             TEXT,
+  snapshot              JSONB,
+  created_at            TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
 
--- service_role tem acesso total (usado pelo backend com supabaseAdmin)
-CREATE POLICY "service_role_all_remarcacoes"
-  ON public.remarcacoes
-  FOR ALL
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
-
-CREATE POLICY "service_role_all_remarcacoes_historico"
-  ON public.remarcacoes_historico
-  FOR ALL
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
+CREATE INDEX idx_remarcacao_historico_remarcacao_id ON public.remarcacao_historico (remarcacao_id);
+CREATE INDEX idx_remarcacao_historico_item_id ON public.remarcacao_historico (item_id);
 
 -- ============================================================
--- REALTIME — Habilitar publicação de mudanças em tempo real
+-- 4. POLÍTICAS DE RLS E REALTIME
 -- ============================================================
+ALTER TABLE public.remarcacoes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.remarcacao_itens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.remarcacao_historico ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow ALL on remarcacoes" ON public.remarcacoes FOR ALL USING (true);
+CREATE POLICY "Allow ALL on remarcacao_itens" ON public.remarcacao_itens FOR ALL USING (true);
+CREATE POLICY "Allow ALL on remarcacao_historico" ON public.remarcacao_historico FOR ALL USING (true);
+
 ALTER PUBLICATION supabase_realtime ADD TABLE public.remarcacoes;
-
--- ============================================================
--- COMENTÁRIOS (documentação inline)
--- ============================================================
-COMMENT ON TABLE  public.remarcacoes IS 'Registros de remarcação de preço de produtos — sem Storage externo';
-COMMENT ON COLUMN public.remarcacoes.label_photo_b64       IS 'Foto da etiqueta em base64 (data:image/jpeg;base64,...) — salvo direto na tabela';
-COMMENT ON COLUMN public.remarcacoes.manager_signature_b64 IS 'Assinatura do gerente em base64 (data:image/png;base64,...) — salvo direto na tabela';
-COMMENT ON COLUMN public.remarcacoes.status                IS 'draft | pending_approval | completed | cancelled';
-COMMENT ON COLUMN public.remarcacoes.deleted_at            IS 'Soft delete — NULL = não deletado';
-COMMENT ON TABLE  public.remarcacoes_historico IS 'Auditoria completa de todas as alterações nas remarcações';
+ALTER PUBLICATION supabase_realtime ADD TABLE public.remarcacao_itens;

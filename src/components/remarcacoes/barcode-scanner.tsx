@@ -270,8 +270,10 @@ export const BarcodeScanner = forwardRef<BarcodeScannerHandle, BarcodeScannerPro
               {/* Canvas oculto para captura */}
               <canvas ref={canvasRef} className="hidden" />
 
-              {/* Overlay escuro nas bordas */}
-              {!manualMode && (
+              {/* Overlays escuros para contraste */}
+              {manualMode ? (
+                <div className="absolute inset-0 z-10 bg-black/80 backdrop-blur-sm pointer-events-none" />
+              ) : (
                 <div className="absolute inset-0 z-10 pointer-events-none">
                   {/* Topo */}
                   <div className="absolute top-0 left-0 right-0 h-[22%] bg-black/60" />
@@ -287,17 +289,17 @@ export const BarcodeScanner = forwardRef<BarcodeScannerHandle, BarcodeScannerPro
               {/* Header */}
               <div className="relative z-20 flex items-center justify-between p-5 pt-safe">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-white/60">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#ffffff]/60">
                     {manualMode ? "Modo Manual" : "Scanner"}
                   </p>
-                  <h2 className="text-lg font-bold text-white">
+                  <h2 className="text-lg font-bold text-[#ffffff]">
                     {detectedCode ? "Código Detectado" : "Aponte para a etiqueta"}
                   </h2>
                 </div>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex size-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition hover:bg-white/25"
+                  className="flex size-10 items-center justify-center rounded-full bg-[#ffffff]/15 text-[#ffffff] backdrop-blur-sm transition hover:bg-[#ffffff]/25"
                 >
                   <X className="size-5" />
                 </button>
@@ -326,13 +328,14 @@ export const BarcodeScanner = forwardRef<BarcodeScannerHandle, BarcodeScannerPro
                       ].map((cls, i) => (
                         <motion.div
                           key={i}
-                          className={`absolute h-8 w-8 ${cls}`}
+                          className={`absolute ${cls}`}
+                          initial={{ width: "2rem", height: "2rem" }}
                           animate={{
-                            borderColor: isSuccess
-                              ? "#fbbf24" // amarelo ao detectar
-                              : "#ffffff",
+                            width: isSuccess ? "100%" : "2rem",
+                            height: isSuccess ? "100%" : "2rem",
+                            borderColor: isSuccess ? "#fbbf24" : "#ffffff",
                           }}
-                          transition={{ duration: 0.2 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
                         />
                       ))}
 
@@ -376,13 +379,13 @@ export const BarcodeScanner = forwardRef<BarcodeScannerHandle, BarcodeScannerPro
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 10 }}
                         >
-                          <div className="rounded-2xl bg-white/10 px-4 py-2 backdrop-blur-sm">
-                            <p className="text-center font-mono text-sm font-bold tracking-wider text-white">
+                          <div className="rounded-2xl bg-[#ffffff]/10 px-4 py-2 backdrop-blur-sm">
+                            <p className="text-center font-mono text-sm font-bold tracking-wider text-[#ffffff]">
                               {detectedCode}
                             </p>
                           </div>
-                          <p className="text-xs text-white/60">
-                            Agora tire a foto da etiqueta
+                          <p className="text-xs text-[#ffffff]/90 font-medium">
+                            Enquadre a etiqueta para a foto
                           </p>
                         </motion.div>
                       )}
@@ -393,11 +396,11 @@ export const BarcodeScanner = forwardRef<BarcodeScannerHandle, BarcodeScannerPro
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="flex flex-col items-center gap-3">
                           <motion.div
-                            className="h-8 w-8 rounded-full border-2 border-white/30 border-t-white"
+                            className="h-8 w-8 rounded-full border-2 border-[#ffffff]/30 border-t-white"
                             animate={{ rotate: 360 }}
                             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                           />
-                          <p className="text-sm text-white/70">Iniciando câmera...</p>
+                          <p className="text-sm text-[#ffffff]/70">Iniciando câmera...</p>
                         </div>
                       </div>
                     )}
@@ -414,8 +417,8 @@ export const BarcodeScanner = forwardRef<BarcodeScannerHandle, BarcodeScannerPro
                       <p className="text-sm text-rose-200">{cameraError}</p>
                     </div>
                   )}
-                  <div className="w-full rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                    <label className="mb-2 block text-sm font-semibold text-white">
+                  <div className="w-full rounded-2xl bg-[#ffffff]/10 p-4 backdrop-blur-sm">
+                    <label className="mb-2 block text-sm font-semibold text-[#ffffff]">
                       Digite o código de barras
                     </label>
                     <input
@@ -424,7 +427,7 @@ export const BarcodeScanner = forwardRef<BarcodeScannerHandle, BarcodeScannerPro
                       onChange={(e) => setManualInput(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") handleManualSubmit(); }}
                       placeholder="Ex: 7891234567890"
-                      className="w-full rounded-xl bg-white/10 px-4 py-3 font-mono text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-amber-400"
+                      className="w-full rounded-xl bg-[#ffffff]/10 px-4 py-3 font-mono text-[#ffffff] placeholder:text-[#ffffff]/40 outline-none focus:ring-2 focus:ring-amber-400"
                       autoFocus
                     />
                     <button
@@ -466,7 +469,7 @@ export const BarcodeScanner = forwardRef<BarcodeScannerHandle, BarcodeScannerPro
                     <button
                       type="button"
                       onClick={() => setManualMode(true)}
-                      className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-white/10 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20"
+                      className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#ffffff]/10 text-sm font-semibold text-[#ffffff] backdrop-blur-sm transition hover:bg-[#ffffff]/20"
                     >
                       <Keyboard className="size-4" />
                       Digitar manualmente
@@ -476,7 +479,7 @@ export const BarcodeScanner = forwardRef<BarcodeScannerHandle, BarcodeScannerPro
                     <button
                       type="button"
                       onClick={handleReset}
-                      className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-white/10 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20"
+                      className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#ffffff]/10 text-sm font-semibold text-[#ffffff] backdrop-blur-sm transition hover:bg-[#ffffff]/20"
                     >
                       <Scan className="size-4" />
                       Escanear novamente
