@@ -2,7 +2,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
-import { CreditCard, RefreshCw, TrendingUp, Users, Building, Target, Bug } from "lucide-react";
+import { CreditCard, RefreshCw, TrendingUp, Users, Building, Target, Bug, DollarSign } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { OperatorPieChart } from "@/components/charts/operator-pie-chart";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { useRecords } from "@/components/providers/records-provider";
@@ -38,6 +39,7 @@ export function HomeView() {
   } = useRecords();
   const { todayOperators: digitacaoOperators, todayCount: digitacaoCount, isLoading: digLoading } = useDigitacoes();
   const { user, selectedStoreId, setSelectedStoreId } = useAuth();
+  const router = useRouter();
   
   const isGlobalAdmin = user?.role === "GLOBAL_ADMIN";
   const isRegionalManager = user?.role === "REGIONAL_MANAGER" || user?.role === "TI_ADMIN";
@@ -271,7 +273,16 @@ export function HomeView() {
 
       {canRegister && (
         <>
-          {/* FAB abre o action sheet */}
+          {/* FAB vermelho — acesso ao módulo de Remarcações (offset 76 = acima do FAB preto) */}
+          <FloatingActionButton
+            onClick={() => router.push("/remarcacao")}
+            icon={<DollarSign aria-hidden="true" className="size-6" strokeWidth={2.2} />}
+            color="red"
+            offset={76}
+            ariaLabel="Módulo de Remarcações"
+          />
+
+          {/* FAB preto abre o action sheet */}
           <FloatingActionButton onClick={() => setSheetOpen(true)} />
 
           {/* Menu de seleção — Cartão ou Digitação */}
