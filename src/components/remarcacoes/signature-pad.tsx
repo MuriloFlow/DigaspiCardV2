@@ -132,7 +132,7 @@ export function SignaturePad({ open, onClose, onConfirm, managerName }: Signatur
       {open && (
         <motion.div
           key="signature-pad"
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-white"
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-zinc-950"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -143,17 +143,17 @@ export function SignaturePad({ open, onClose, onConfirm, managerName }: Signatur
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between px-6 py-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
                   Assinatura do Gerente
                 </p>
-                <h2 className="text-xl font-bold text-zinc-950">
+                <h2 className="text-xl font-bold text-zinc-50">
                   {managerName ? `Assinar como ${managerName}` : "Assine abaixo"}
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="flex size-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-900"
+                className="flex size-10 items-center justify-center rounded-full bg-zinc-900 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
               >
                 <X className="size-5" />
               </button>
@@ -188,13 +188,13 @@ export function SignaturePad({ open, onClose, onConfirm, managerName }: Signatur
                 type="button"
                 onClick={handleClear}
                 disabled={!hasSignature}
-                className="flex h-12 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-500 shadow-sm transition hover:border-zinc-300 hover:text-zinc-900 disabled:opacity-30"
+                className="flex h-12 items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-5 text-sm font-semibold text-zinc-400 shadow-sm transition hover:border-zinc-700 hover:text-white disabled:opacity-30"
               >
                 <RotateCcw className="size-4" />
                 Limpar
               </button>
 
-              <p className="text-xs text-zinc-600">
+              <p className="text-xs text-zinc-400">
                 Ao assinar, você aprova oficialmente esta remarcação
               </p>
 

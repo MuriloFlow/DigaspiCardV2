@@ -69,6 +69,7 @@ export function NewRemarcacaoFlow({
   const [selectedManagerId, setSelectedManagerId] = useState("");
   const [isLoadingManagers, setIsLoadingManagers] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [isManagerConfirmed, setIsManagerConfirmed] = useState(false);
 
   const scannerRef = useRef<BarcodeScannerHandle>(null);
 
@@ -94,6 +95,7 @@ export function NewRemarcacaoFlow({
     setCapturedPhotoUrl(null);
     setManagers([]);
     setSelectedManagerId("");
+    setIsManagerConfirmed(false);
     setErrorMsg(null);
     setIsFinalizing(false);
   }, [open, initialBatchId]);
@@ -388,7 +390,7 @@ export function NewRemarcacaoFlow({
     return (
       <>
         {/* Seletor de gerente (antes de assinar) */}
-        {managers.length >= 1 && (
+        {!isManagerConfirmed && managers.length >= 1 && (
           <AnimatePresence>
             <motion.div
               className="fixed inset-0 z-[88] flex items-end justify-center bg-black/80 backdrop-blur-md"
@@ -415,7 +417,7 @@ export function NewRemarcacaoFlow({
                 />
                 <button
                   type="button"
-                  onClick={() => setStep("signature")}
+                  onClick={() => setIsManagerConfirmed(true)}
                   disabled={!selectedManagerId}
                   className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 text-sm font-bold text-white disabled:opacity-40"
                 >
@@ -427,8 +429,11 @@ export function NewRemarcacaoFlow({
         )}
 
         <SignaturePad
-          open={!!selectedManagerId}
-          onClose={goBack}
+          open={isManagerConfirmed || managers.length === 0}
+          onClose={() => {
+            setIsManagerConfirmed(false);
+            goBack();
+          }}
           onConfirm={handleSignatureConfirm}
           managerName={manager?.name}
         />
