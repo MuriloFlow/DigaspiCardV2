@@ -12,23 +12,32 @@ import {
 import type {
   CreateRecordPayload,
   DashboardSummary,
+  DailySale,
+  MonthlyGoal,
   OperatorRecord,
   RecordsPayload,
 } from "@/lib/records/types";
 import { useAuth } from "@/components/providers/auth-provider";
 import { supabase } from "@/lib/supabase/client";
+import {
+  notifyRecordsChanged,
+  subscribeToLocalRecordChanges,
+} from "@/lib/records/realtime-client";
 
 type RecordsContextValue = RecordsPayload & {
   digitacoes: import("@/lib/records/digitacoes-repository").Digitacao[];
   dailyMetrics: import("@/lib/records/types").DailyMetric[];
   trocas: import("@/lib/records/trocas-repository").Troca[];
   viradasPu: import("@/lib/records/viradas-pu-repository").ViradaPu[];
+  monthlyGoals: MonthlyGoal[];
+  dailySales: DailySale[];
   isCreating: boolean;
   isLoading: boolean;
   isDeleting: string | null;
   error: string | null;
   createRecord: (payload: CreateRecordPayload) => Promise<OperatorRecord>;
   deleteRecord: (id: string) => Promise<void>;
+  applyPayload: (payload: Partial<RecordsPayload>) => void;
   refresh: () => Promise<void>;
 };
 
@@ -64,12 +73,25 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
   const [digitacoes, setDigitacoes] = useState<import("@/lib/records/digitacoes-repository").Digitacao[]>([]);
   const [dailyMetrics, setDailyMetrics] = useState<import("@/lib/records/types").DailyMetric[]>([]);
   const [trocas, setTrocas] = useState<import("@/lib/records/trocas-repository").Troca[]>([]);
-    const [viradasPu, setViradasPu] = useState<import("@/lib/records/viradas-pu-repository").ViradaPu[]>([]);
+  const [viradasPu, setViradasPu] = useState<import("@/lib/records/viradas-pu-repository").ViradaPu[]>([]);
+  const [monthlyGoals, setMonthlyGoals] = useState<MonthlyGoal[]>([]);
+  const [dailySales, setDailySales] = useState<DailySale[]>([]);
   const [summary, setSummary] = useState<DashboardSummary>(emptySummary);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const applyPayload = useCallback((data: Partial<RecordsPayload>) => {
+    if (data.records) setRecords(data.records);
+    if (data.digitacoes) setDigitacoes(data.digitacoes);
+    if (data.dailyMetrics) setDailyMetrics(data.dailyMetrics);
+    if (data.trocas) setTrocas(data.trocas);
+    if (data.viradasPu) setViradasPu(data.viradasPu);
+    if (data.monthlyGoals) setMonthlyGoals(data.monthlyGoals);
+    if (data.dailySales) setDailySales(data.dailySales);
+    if (data.summary) setSummary(data.summary);
+  }, []);
 
   const loadRecords = useCallback(async () => {
     setError(null);
@@ -88,12 +110,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       }
 
       const data = (await response.json()) as RecordsPayload;
-      setRecords(data.records);
-      setDigitacoes(data.digitacoes ?? []);
-      setDailyMetrics(data.dailyMetrics ?? []);
-      setTrocas(data.trocas ?? []);
-        setViradasPu(data.viradasPu ?? []);
-      setSummary(data.summary);
+      applyPayload(data);
     } catch (loadError) {
       let errorMessage = "Não foi possível carregar os registros.";
       if (loadError instanceof Error) {
@@ -105,7 +122,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedStoreId]);
+  }, [applyPayload, selectedStoreId]);
 
   useEffect(() => {
     void Promise.resolve().then(loadRecords);
@@ -126,6 +143,22 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
     return () => {
       void supabase.removeChannel(channel);
     };
+  }, [loadRecords]);
+
+  useEffect(() => {
+    return subscribeToLocalRecordChanges(() => {
+      void loadRecords();
+    });
+  }, [loadRecords]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadRecords();
+      }
+    }, 5000);
+
+    return () => window.clearInterval(interval);
   }, [loadRecords]);
 
   const createRecord = useCallback(async (payload: CreateRecordPayload) => {
@@ -153,18 +186,14 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
         record: OperatorRecord;
       };
 
-      setRecords(data.records);
-      setDigitacoes(data.digitacoes ?? []);
-      setDailyMetrics(data.dailyMetrics ?? []);
-      setTrocas(data.trocas ?? []);
-        setViradasPu(data.viradasPu ?? []);
-      setSummary(data.summary);
+      applyPayload(data);
+      notifyRecordsChanged();
 
       return data.record;
     } finally {
       setIsCreating(false);
     }
-  }, [selectedStoreId]);
+  }, [applyPayload, selectedStoreId]);
 
   const deleteRecord = useCallback(async (id: string) => {
     setIsDeleting(id);
@@ -184,12 +213,8 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       }
 
       const data = (await response.json()) as RecordsPayload;
-      setRecords(data.records);
-      setDigitacoes(data.digitacoes ?? []);
-      setDailyMetrics(data.dailyMetrics ?? []);
-      setTrocas(data.trocas ?? []);
-        setViradasPu(data.viradasPu ?? []);
-      setSummary(data.summary);
+      applyPayload(data);
+      notifyRecordsChanged();
     } catch (deleteError) {
       setError(
         deleteError instanceof Error
@@ -200,7 +225,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsDeleting(null);
     }
-  }, [selectedStoreId]);
+  }, [applyPayload, selectedStoreId]);
 
   const value = useMemo<RecordsContextValue>(
     () => ({
@@ -209,6 +234,8 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       dailyMetrics,
       trocas,
       viradasPu,
+      monthlyGoals,
+      dailySales,
       summary,
       isCreating,
       isLoading,
@@ -216,9 +243,27 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       error,
       createRecord,
       deleteRecord,
+      applyPayload,
       refresh: loadRecords,
     }),
-    [createRecord, deleteRecord, error, isCreating, isDeleting, isLoading, loadRecords, records, digitacoes, dailyMetrics, trocas, viradasPu, summary],
+    [
+      applyPayload,
+      createRecord,
+      dailyMetrics,
+      dailySales,
+      deleteRecord,
+      digitacoes,
+      error,
+      isCreating,
+      isDeleting,
+      isLoading,
+      loadRecords,
+      monthlyGoals,
+      records,
+      summary,
+      trocas,
+      viradasPu,
+    ],
   );
 
   return (

@@ -1,38 +1,51 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { upsertDailyMetric } from "@/lib/records/daily-metrics-repository";
+import { isValidDateKey } from "@/lib/records/planning-repository";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const noStore = { "Cache-Control": "no-store, max-age=0" };
+const elevatedRoles = ["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"];
+const allowedRoles = ["MANAGER", ...elevatedRoles];
+
 export async function POST(request: Request) {
   try {
     const session = await getSession();
-    if (!session || !["MANAGER", "GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) {
-      return NextResponse.json({ message: "Acesso negado." }, { status: 403 });
+    if (!session || !allowedRoles.includes(session.role)) {
+      return NextResponse.json({ message: "Acesso negado." }, { status: 403, headers: noStore });
     }
 
-    // We can't await request.json() twice. Read it once.
-    const body = await request.json();
-    const { dateKey, totalCustomers, storeId: payloadStoreId } = body;
+    const body = (await request.json()) as {
+      dateKey?: string;
+      totalCustomers?: number;
+      storeId?: string;
+    };
 
-    if (!dateKey || typeof totalCustomers !== "number" || totalCustomers < 0) {
-      return NextResponse.json({ message: "Dados inválidos." }, { status: 400 });
+    if (
+      !body.dateKey ||
+      !isValidDateKey(body.dateKey) ||
+      typeof body.totalCustomers !== "number" ||
+      !Number.isInteger(body.totalCustomers) ||
+      body.totalCustomers < 0 ||
+      body.totalCustomers > 200_000
+    ) {
+      return NextResponse.json({ message: "Dados invalidos." }, { status: 400, headers: noStore });
     }
 
-    const storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role)) ? payloadStoreId : session.storeId;
-    
+    const storeId = elevatedRoles.includes(session.role) ? body.storeId : session.storeId;
     if (!storeId) {
-       return NextResponse.json({ message: "Loja não identificada." }, { status: 400 });
+      return NextResponse.json({ message: "Loja nao identificada." }, { status: 400, headers: noStore });
     }
 
-    const metric = await upsertDailyMetric(storeId, dateKey, totalCustomers);
-    
-    return NextResponse.json({ metric, success: true }, { status: 201 });
+    const metric = await upsertDailyMetric(storeId, body.dateKey, body.totalCustomers);
+
+    return NextResponse.json({ metric, success: true }, { status: 201, headers: noStore });
   } catch (error) {
     return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Erro ao salvar métricas diárias." },
-      { status: 500 }
+      { message: error instanceof Error ? error.message : "Erro ao salvar metricas diarias." },
+      { status: 500, headers: noStore },
     );
   }
 }

@@ -14,6 +14,10 @@ import { getOperatorColor } from "@/lib/records/colors";
 import { toDateKey } from "@/lib/utils/format";
 import { useAuth } from "@/components/providers/auth-provider";
 import { getDigitacaoQuantity, sumDigitacoes } from "@/lib/records/digitacoes-utils";
+import {
+  notifyRecordsChanged,
+  subscribeToLocalRecordChanges,
+} from "@/lib/records/realtime-client";
 
 export type Digitacao = {
   id: string;
@@ -59,7 +63,13 @@ export function DigitacoesProvider({ children }: { children: ReactNode }) {
   }, [selectedStoreId]);
 
   useEffect(() => {
-    void load();
+    void Promise.resolve().then(load);
+  }, [load]);
+
+  useEffect(() => {
+    return subscribeToLocalRecordChanges(() => {
+      void load();
+    });
   }, [load]);
 
   const todayKey = toDateKey(new Date().toISOString());
@@ -92,7 +102,12 @@ export function DigitacoesProvider({ children }: { children: ReactNode }) {
   const createDigitacao = useCallback(async (collaboratorId: string, clientName: string, dateKey?: string): Promise<Digitacao> => {
     setIsCreating(true);
     try {
-      const payload: any = selectedStoreId 
+      const payload: {
+        collaboratorId: string;
+        clientName: string;
+        storeId?: string;
+        dateKey?: string;
+      } = selectedStoreId 
         ? { collaboratorId, clientName, storeId: selectedStoreId }
         : { collaboratorId, clientName };
       
@@ -109,6 +124,7 @@ export function DigitacoesProvider({ children }: { children: ReactNode }) {
       }
       const data = await res.json() as { digitacao: Digitacao; digitacoes: Digitacao[] };
       setDigitacoes(data.digitacoes);
+      notifyRecordsChanged();
       return data.digitacao;
     } finally {
       setIsCreating(false);

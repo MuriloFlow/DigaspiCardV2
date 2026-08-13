@@ -7,6 +7,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useDigitacoes } from "@/components/providers/digitacoes-provider";
 import { cn } from "@/lib/utils/cn";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { notifyRecordsChanged } from "@/lib/records/realtime-client";
 
 export function AddCaixaDigitacaoModal({
   open,
@@ -97,6 +98,7 @@ export function AddCaixaDigitacaoModal({
       if (!res.ok) throw new Error(data.message || "Erro ao registrar digitações.");
 
       await refresh();
+      notifyRecordsChanged();
       setSuccessFlash(true);
       setTimeout(() => {
         onClose();

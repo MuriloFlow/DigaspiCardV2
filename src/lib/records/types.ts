@@ -11,6 +11,7 @@ export type AppUser = {
 
 export type OperatorRecord = {
   id: string;
+  storeId?: string;
   collaboratorId: string;
   operatorName: string;
   clientName: string;
@@ -41,9 +42,27 @@ export type DateGroup = {
   records: OperatorRecord[];
   count: number;
   totalInCents: number;
+  salesInCents: number;
   totalUsedInCents: number;
   trocasCount: number;
   operators: OperatorSummary[];
+};
+
+export type MonthlyGoal = {
+  id: string;
+  storeId: string;
+  monthKey: string;
+  cardsGoal: number | null;
+  salesGoalInCents: number | null;
+  createdAt: string;
+};
+
+export type DailySale = {
+  id: string;
+  storeId: string;
+  dateKey: string;
+  amountInCents: number;
+  createdAt: string;
 };
 
 export type DailyMetric = {
@@ -65,9 +84,12 @@ export type MonthGroup = {
   activeCount: number;
   activeLaterCount: number;
   totalInCents: number;
+  salesInCents: number;
   totalUsedInCents: number;
   trocasCount: number;
   totalCustomers: number;
+  monthlyCardsGoal: number | null;
+  monthlySalesGoalInCents: number | null;
   dateGroups: DateGroup[];
 };
 
@@ -84,6 +106,8 @@ export type RecordsPayload = {
   dailyMetrics: import("./types").DailyMetric[];
   trocas: import("./trocas-repository").Troca[];
   viradasPu: import("./viradas-pu-repository").ViradaPu[];
+  monthlyGoals: MonthlyGoal[];
+  dailySales: DailySale[];
   summary: DashboardSummary;
 };
 
@@ -92,6 +116,8 @@ export type CreateRecordPayload = {
   clientName: string;
   amountInCents: number;
   activated: boolean;
+  dateKey?: string;
+  storeId?: string;
 };
 
 export type CollaboratorSubRole =
@@ -122,7 +148,7 @@ export type AuditLog = {
   action: string;
   entityType: string;
   entityId: string | null;
-  payload: any;
+  payload: unknown;
   ipAddress: string | null;
   createdAt: string;
 };

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip } from "recharts";
 import { motion } from "motion/react";
 import { formatInteger } from "@/lib/utils/format";
@@ -26,10 +27,34 @@ export function OperatorPieChart({
   bare = false,
 }: OperatorPieChartProps) {
   const hasData = operators.length > 0;
+  const chartRef = useRef<HTMLDivElement | null>(null);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+
+  useEffect(() => {
+    function closeTooltip(event: Event) {
+      const target = event.target;
+      if (target instanceof Node && chartRef.current?.contains(target)) return;
+      setTooltipOpen(false);
+    }
+
+    document.addEventListener("pointerdown", closeTooltip, true);
+    document.addEventListener("keydown", closeTooltip, true);
+    window.addEventListener("blur", closeTooltip);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeTooltip, true);
+      document.removeEventListener("keydown", closeTooltip, true);
+      window.removeEventListener("blur", closeTooltip);
+    };
+  }, []);
 
   const inner = (
     <>
-      <div className="relative mx-auto aspect-square w-full max-w-[280px] sm:max-w-[320px]">
+      <div
+        ref={chartRef}
+        className="relative mx-auto aspect-square w-full max-w-[280px] outline-none sm:max-w-[320px] [&_.recharts-layer]:outline-none [&_.recharts-sector]:outline-none [&_.recharts-sector:focus]:outline-none [&_.recharts-surface]:outline-none"
+        onMouseLeave={() => setTooltipOpen(false)}
+      >
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
           <div className="text-center">
             <p className={`font-semibold uppercase text-zinc-500 ${centerLabel.length > 5 ? "text-[9px]" : "text-xs"}`}>
@@ -45,6 +70,7 @@ export function OperatorPieChart({
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Tooltip
+                active={tooltipOpen}
                 cursor={false}
                 wrapperStyle={{ zIndex: 100 }}
                 formatter={(value, name) => [
@@ -69,9 +95,17 @@ export function OperatorPieChart({
                 animationDuration={900}
                 animationEasing="ease-out"
                 stroke="none"
+                onClick={() => setTooltipOpen(true)}
+                onMouseEnter={() => setTooltipOpen(true)}
+                onMouseMove={() => setTooltipOpen(true)}
+                onMouseLeave={() => setTooltipOpen(false)}
               >
                 {operators.map((operator) => (
-                  <Cell key={operator.operatorName} fill={operator.color} />
+                  <Cell
+                    key={operator.operatorName}
+                    fill={operator.color}
+                    className="outline-none focus:outline-none"
+                  />
                 ))}
               </Pie>
             </PieChart>

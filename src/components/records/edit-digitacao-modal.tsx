@@ -6,6 +6,7 @@ import { Check, Loader2, Trash2, X } from "lucide-react";
 import type { Digitacao } from "@/lib/records/digitacoes-repository";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRecords } from "@/components/providers/records-provider";
+import { notifyRecordsChanged } from "@/lib/records/realtime-client";
 
 type EditDigitacaoModalProps = {
   open: boolean;
@@ -54,6 +55,7 @@ export function EditDigitacaoModal({
         throw new Error(data?.message || "Erro ao deletar.");
       }
       await refresh();
+      notifyRecordsChanged();
       onClose();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Erro ao deletar.");
@@ -90,6 +92,7 @@ export function EditDigitacaoModal({
       }
 
       await refresh();
+      notifyRecordsChanged();
       onClose();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Erro inesperado ao atualizar.");

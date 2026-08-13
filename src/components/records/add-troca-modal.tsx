@@ -8,6 +8,7 @@ import { useDigitacoes } from "@/components/providers/digitacoes-provider";
 import { useRecords } from "@/components/providers/records-provider";
 import { cn } from "@/lib/utils/cn";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { notifyRecordsChanged } from "@/lib/records/realtime-client";
 
 export function AddTrocaModal({
   open,
@@ -149,6 +150,7 @@ export function AddTrocaModal({
         refreshDigitacoes(),
         refreshRecords()
       ]);
+      notifyRecordsChanged();
       setSuccessFlash(true);
       setTimeout(() => {
         onClose();

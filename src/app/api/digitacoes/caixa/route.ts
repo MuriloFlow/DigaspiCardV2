@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     const session = await getSession();
     if (!session) return forbidden("Sessão inválida.");
 
-    let storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role))
+    const storeId = (["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(session.role))
       ? (body.storeId ?? null)
       : session.storeId;
 
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
       dateKey: body.dateKey,
     });
 
-    const dateKey = new Date().toISOString().slice(0, 10);
+    const dateKey = body.dateKey || new Date().toISOString().slice(0, 10);
     try {
       const { data: existingMetric } = await supabaseAdmin
         .from("daily_metrics")

@@ -8,6 +8,7 @@ import { useRecords } from "@/components/providers/records-provider";
 import { cn } from "@/lib/utils/cn";
 import { CustomSelect } from "@/components/ui/custom-select";
 import type { Collaborator } from "@/lib/records/types";
+import { notifyRecordsChanged } from "@/lib/records/realtime-client";
 
 export function ViradaPuModal({
   open,
@@ -158,6 +159,7 @@ export function ViradaPuModal({
       if (!res.ok) throw new Error(data.message || "Erro ao registrar virada PU.");
 
       await refreshRecords();
+      notifyRecordsChanged();
       setSuccessFlash(true);
       setTimeout(() => {
         onClose();

@@ -20,6 +20,12 @@ type DailyMetricsModalProps = {
   crescimentoValor: number;
   trocasCount: number;
   totalUsedInCents: number;
+  cardsGoal?: number | null;
+  salesGoalInCents?: number | null;
+  salesInCents?: number;
+  cardsPerDayTarget?: number | null;
+  cardsPerDayRequired?: number | null;
+  cardsGoalRemaining?: number | null;
 };
 
 export function DailyMetricsModal({
@@ -38,6 +44,12 @@ export function DailyMetricsModal({
   crescimentoValor,
   trocasCount,
   totalUsedInCents,
+  cardsGoal,
+  salesGoalInCents,
+  salesInCents,
+  cardsPerDayTarget,
+  cardsPerDayRequired,
+  cardsGoalRemaining,
 }: DailyMetricsModalProps) {
   return (
     <AnimatePresence>
@@ -89,6 +101,12 @@ export function DailyMetricsModal({
                   crescimentoValor={crescimentoValor}
                   trocasCount={trocasCount}
                   totalUsedInCents={totalUsedInCents}
+                  cardsGoal={cardsGoal}
+                  salesGoalInCents={salesGoalInCents}
+                  salesInCents={salesInCents}
+                  cardsPerDayTarget={cardsPerDayTarget}
+                  cardsPerDayRequired={cardsPerDayRequired}
+                  cardsGoalRemaining={cardsGoalRemaining}
                 />
               </div>
             </motion.div>

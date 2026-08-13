@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   Search, Users, ChevronRight, Trash2, Edit3,
   GitMerge, Loader2, AlertTriangle, Check, X, ArrowLeft,
-  Timer, Calendar, UserCheck, UserMinus, RotateCcw, Plus, Building, Edit2, ShieldCheck, ShieldOff, Power
+  Timer, Calendar, UserCheck, UserMinus, RotateCcw, Plus, Building, Edit2, ShieldCheck, ShieldOff
 } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
@@ -59,8 +59,6 @@ function CreateCollaboratorModal({
       setIsLoading(false);
     }
   }
-
-  const selectedStore = stores.find(s => s.id === storeId);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-4">
@@ -261,7 +259,7 @@ function CollaboratorOptionsModal({
               {loadingAction === "hard-delete" ? <Loader2 className="size-5 animate-spin" /> : <Trash2 className="size-5" />}
               <div>
                 <p>Excluir Funcionário Permanentemente</p>
-                <p className="text-xs font-medium text-rose-600/70">Apenas se não possuir cartões vinculados.</p>
+                <p className="text-xs font-medium text-rose-600/70">Os cartoes vinculados serao transferidos para o CAIXA.</p>
               </div>
             </button>
           </div>
@@ -275,7 +273,7 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
   const { user } = useAuth();
   
   const isGlobalAdmin = props.isGlobalAdmin ?? !!(user?.role && ["GLOBAL_ADMIN", "TI_ADMIN", "REGIONAL_MANAGER"].includes(user.role));
-  const userStoreId = props.userStoreId ?? (user as any)?.store_id ?? null;
+  const userStoreId = props.userStoreId ?? user?.storeId ?? null;
 
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
@@ -302,7 +300,6 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
   const [mergeTarget, setMergeTarget] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteRecordId, setConfirmDeleteRecordId] = useState<string | null>(null);
-  const [transferTarget, setTransferTarget] = useState<string | null>(null);
   const [transferStoreId, setTransferStoreId] = useState("");
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -327,7 +324,11 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
     }
   }, []);
 
-  useEffect(() => { void loadCollaborators(); }, [loadCollaborators]);
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadCollaborators();
+    });
+  }, [loadCollaborators]);
 
   async function handleCreateCollaborator(name: string, storeId: string, subRole: string) {
     const d = (await apiRequest({ action: "create", name, storeId, subRole })) as { collaborators: Collaborator[] };
@@ -400,7 +401,6 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
     try {
       const data = await apiRequest({ action: "transfer", id, newStoreId: targetStoreId });
       if (data.collaborators) setCollaborators(data.collaborators);
-      setTransferTarget(null);
       setTransferStoreId("");
       showSuccess("Colaborador transferido com sucesso.");
     } catch (err: unknown) {
@@ -478,7 +478,7 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
       const res = await apiRequest({ action: "hard-delete", id: selectedId });
       const d = res as { collaborators: Collaborator[] };
       setCollaborators(d.collaborators);
-      showSuccess("Colaborador excluído.");
+      showSuccess("Colaborador excluido e cartoes transferidos para o CAIXA.");
       setSelectedId(null);
       setOptionsModalOpen(false);
     } catch (e) { setError(e instanceof Error ? e.message : "Erro."); }
@@ -800,8 +800,6 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
           const isRenaming = renameId === collab.id;
           const isConfirmingDelete = confirmDeleteId === collab.id;
           const isMergeSource = mergeTarget === collab.id;
-          const isTransferSource = transferTarget === collab.id;
-
           return (
             <motion.article key={collab.id}
               initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -891,7 +889,9 @@ export function CollaboratorsView(props: { isGlobalAdmin?: boolean; userStoreId?
                   <motion.div key={`merge-${collab.id}`} initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden border-t border-zinc-100">
                     <div className="p-4 bg-blue-50/50">
-                      <p className="mb-3 text-xs font-semibold text-blue-800">Selecione o perfil principal para unificar os registros de "{collab.name}":</p>
+                      <p className="mb-3 text-xs font-semibold text-blue-800">
+                        Selecione o perfil principal para unificar os registros de &quot;{collab.name}&quot;:
+                      </p>
                       <div className="grid max-h-40 gap-2 overflow-y-auto pr-2">
                         {collaborators.filter((c) => c.id !== collab.id && c.isActive).map((target) => (
                           <button key={target.id} type="button"

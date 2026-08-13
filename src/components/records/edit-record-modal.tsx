@@ -8,6 +8,7 @@ import { formatCurrencyInput, parseCurrencyInput } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRecords } from "@/components/providers/records-provider";
+import { notifyRecordsChanged } from "@/lib/records/realtime-client";
 
 type EditRecordModalProps = {
   open: boolean;
@@ -115,6 +116,7 @@ export function EditRecordModal({
       }
 
       await refresh();
+      notifyRecordsChanged();
       onClose();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Erro inesperado ao atualizar.");

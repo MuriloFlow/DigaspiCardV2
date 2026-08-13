@@ -133,7 +133,7 @@ export async function POST(request: Request) {
 
     if (action === "hard-delete") {
       if (isEmployee) return forbidden();
-      await hardDeleteCollaborator(body.id as string);
+      await hardDeleteCollaborator(body.id as string, storeId);
       const collaborators = await listCollaborators(storeId);
       return NextResponse.json({ collaborators, success: true }, { headers: noStore });
     }

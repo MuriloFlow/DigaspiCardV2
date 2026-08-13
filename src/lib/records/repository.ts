@@ -21,11 +21,13 @@ type DbRecord = {
   activated_later?: boolean;
   created_at: string;
   collaborators?: { sub_role: string } | null;
+  stores?: { name?: string | null } | null;
 };
 
 function toOperatorRecord(row: DbRecord): OperatorRecord {
   return {
     id: row.id,
+    storeId: row.store_id ?? undefined,
     collaboratorId: row.collaborator_id,
     operatorName: row.operator_name,
     clientName: row.client_name,
@@ -34,7 +36,7 @@ function toOperatorRecord(row: DbRecord): OperatorRecord {
     activated: row.activated,
     activatedLater: row.activated_later,
     createdAt: row.created_at,
-    storeName: (row as any).stores?.name,
+    storeName: row.stores?.name ?? undefined,
     subRole: row.collaborators?.sub_role ?? undefined,
   };
 }
@@ -60,6 +62,17 @@ export async function listRecords(storeId?: string | null): Promise<OperatorReco
   return (data as DbRecord[]).map(toOperatorRecord);
 }
 
+export async function getRecordById(id: string): Promise<OperatorRecord | null> {
+  const { data, error } = await supabaseAdmin
+    .from("records")
+    .select("*, stores(name), collaborators(sub_role)")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error(`Erro ao carregar registro: ${error.message}`);
+  return data ? toOperatorRecord(data as DbRecord) : null;
+}
+
 /**
  * Cria um registro. storeId é SEMPRE extraído do JWT no servidor, nunca do cliente.
  * Aceita tanto IDs de colaboradores quanto IDs de usuários MANAGER/VM (auto-cria colaborador se necessário).
@@ -69,11 +82,12 @@ export async function createRecord(input: unknown, storeId: string | null): Prom
   const clientName = normalizePersonName(payload.clientName);
 
   // ── Tenta buscar como colaborador normal ──────────────────────────────────
-  let { data: collab, error: collabError } = await supabaseAdmin
+  const { data: initialCollab } = await supabaseAdmin
     .from("collaborators")
     .select("id, name, is_active, store_id")
     .eq("id", payload.collaboratorId)
     .maybeSingle();
+  let collab = initialCollab;
 
   // ── Se não encontrou como colaborador, verifica se é um usuário MANAGER/VM ─
   if (!collab) {
@@ -134,7 +148,15 @@ export async function createRecord(input: unknown, storeId: string | null): Prom
     throw new Error("Acesso negado: colaborador pertence a outra unidade.");
   }
 
-  const insertPayload: any = {
+  const insertPayload: {
+    collaborator_id: string;
+    store_id: string | null;
+    operator_name: string;
+    client_name: string;
+    amount_in_cents: number;
+    activated: boolean;
+    created_at?: string;
+  } = {
     collaborator_id: collab.id,
     store_id: storeId ?? collab.store_id,
     operator_name: collab.name,
@@ -164,7 +186,16 @@ export async function deleteRecord(id: string, storeId?: string | null): Promise
   if (error) throw new Error(`Erro ao deletar registro: ${error.message}`);
 }
 
-export async function updateRecord(id: string, updates: { clientName?: string; activated?: boolean; amountInCents?: number; amountUsedInCents?: number | null }): Promise<void> {
+export async function updateRecord(
+  id: string,
+  updates: {
+    clientName?: string;
+    activated?: boolean;
+    amountInCents?: number;
+    amountUsedInCents?: number | null;
+  },
+  storeId?: string | null,
+): Promise<void> {
   const payload: Record<string, unknown> = {};
   if (updates.clientName !== undefined) payload.client_name = normalizePersonName(updates.clientName);
   if (updates.amountInCents !== undefined) payload.amount_in_cents = updates.amountInCents;
@@ -186,7 +217,10 @@ export async function updateRecord(id: string, updates: { clientName?: string; a
 
   if (Object.keys(payload).length === 0) return;
 
-  const { error } = await supabaseAdmin.from("records").update(payload).eq("id", id);
+  let query = supabaseAdmin.from("records").update(payload).eq("id", id);
+  if (storeId) query = query.eq("store_id", storeId);
+
+  const { error } = await query;
   if (error) throw new Error(`Erro ao atualizar registro: ${error.message}`);
 }
 
@@ -270,6 +304,67 @@ export async function createCollaborator(
     }
     throw new Error(`Erro ao criar colaborador: ${error.message}`);
   }
+}
+
+async function ensureCaixaCollaborator(storeId: string): Promise<string> {
+  if (!storeId) throw new Error("Unidade do colaborador nao encontrada.");
+
+  const { data: existing, error: findError } = await supabaseAdmin
+    .from("collaborators")
+    .select("id, is_active")
+    .eq("store_id", storeId)
+    .ilike("name", "CAIXA")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (findError) {
+    throw new Error(`Erro ao buscar colaborador CAIXA: ${findError.message}`);
+  }
+
+  if (existing?.id) {
+    if (!existing.is_active) {
+      const { error: activateError } = await supabaseAdmin
+        .from("collaborators")
+        .update({ is_active: true, merged_into_id: null })
+        .eq("id", existing.id);
+
+      if (activateError) {
+        throw new Error(`Erro ao reativar colaborador CAIXA: ${activateError.message}`);
+      }
+    }
+
+    return existing.id;
+  }
+
+  const { data: inserted, error: insertError } = await supabaseAdmin
+    .from("collaborators")
+    .insert({ name: "CAIXA", store_id: storeId, sub_role: "Caixa", is_active: true })
+    .select("id")
+    .single();
+
+  if (!insertError && inserted?.id) return inserted.id;
+
+  const { data: fallbackInserted, error: fallbackError } = await supabaseAdmin
+    .from("collaborators")
+    .insert({ name: "CAIXA", store_id: storeId, is_active: true })
+    .select("id")
+    .single();
+
+  if (!fallbackError && fallbackInserted?.id) return fallbackInserted.id;
+
+  const { data: rechecked } = await supabaseAdmin
+    .from("collaborators")
+    .select("id")
+    .eq("store_id", storeId)
+    .ilike("name", "CAIXA")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (rechecked?.id) return rechecked.id;
+
+  throw new Error(`Nao foi possivel criar/encontrar colaborador CAIXA: ${insertError?.message ?? fallbackError?.message}`);
 }
 
 export async function getCollaboratorRecords(collaboratorId: string): Promise<OperatorRecord[]> {
@@ -379,7 +474,68 @@ export async function toggleCollaboratorActive(id: string, isActive: boolean): P
   if (error) throw new Error(`Erro ao alterar status do colaborador: ${error.message}`);
 }
 
-export async function hardDeleteCollaborator(id: string): Promise<void> {
+export async function hardDeleteCollaborator(id: string, storeId?: string | null): Promise<void> {
+  let collaboratorQuery = supabaseAdmin
+    .from("collaborators")
+    .select("id, name, store_id")
+    .eq("id", id);
+
+  if (storeId) collaboratorQuery = collaboratorQuery.eq("store_id", storeId);
+
+  const { data: collaborator, error: collaboratorError } = await collaboratorQuery.maybeSingle();
+
+  if (collaboratorError) {
+    throw new Error(`Erro ao buscar colaborador: ${collaboratorError.message}`);
+  }
+
+  if (!collaborator) {
+    throw new Error("Colaborador nao encontrado ou sem permissao para esta unidade.");
+  }
+
+  if (normalizePersonName(collaborator.name).toUpperCase() === "CAIXA") {
+    throw new Error("O colaborador fixo CAIXA nao pode ser excluido.");
+  }
+
+  const caixaId = await ensureCaixaCollaborator(collaborator.store_id);
+
+  const { error: recordsError } = await supabaseAdmin
+    .from("records")
+    .update({ collaborator_id: caixaId, operator_name: "CAIXA" })
+    .eq("collaborator_id", id)
+    .eq("store_id", collaborator.store_id);
+
+  if (recordsError) {
+    throw new Error(`Erro ao transferir cartoes para o CAIXA: ${recordsError.message}`);
+  }
+
+  const optionalTransfers = [
+    supabaseAdmin
+      .from("digitacoes")
+      .update({ collaborator_id: caixaId, operator_name: "CAIXA" })
+      .eq("collaborator_id", id)
+      .eq("store_id", collaborator.store_id),
+    supabaseAdmin
+      .from("viradas_pu")
+      .update({ collaborator_id: caixaId, collaborator_name: "CAIXA" })
+      .eq("collaborator_id", id)
+      .eq("store_id", collaborator.store_id),
+    supabaseAdmin
+      .from("remarcacoes")
+      .update({ collaborator_id: caixaId, operator_name: "CAIXA" })
+      .eq("collaborator_id", id)
+      .eq("store_id", collaborator.store_id),
+  ];
+
+  const optionalResults = await Promise.all(optionalTransfers);
+  const optionalError = optionalResults.find((result) => {
+    const code = result.error?.code;
+    return result.error && code !== "42P01" && code !== "42703" && code !== "PGRST204";
+  })?.error;
+
+  if (optionalError) {
+    throw new Error(`Erro ao transferir dependencias para o CAIXA: ${optionalError.message}`);
+  }
+
   const { error } = await supabaseAdmin
     .from("collaborators")
     .delete()

@@ -17,6 +17,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { cn } from "@/lib/utils/cn";
 import { StoreSelector } from "./store-selector";
+import { notifyRecordsChanged } from "@/lib/records/realtime-client";
 
 type Step = "select-collab" | "add-clients";
 
@@ -177,7 +178,8 @@ export function AddDigitacaoModal({
       const res = await fetch(`/api/digitacoes?id=${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erro ao deletar");
       setRegisteredNames((prev) => prev.filter(item => item.id !== id));
-      refresh(); // Update the context state manually
+      await refresh();
+      notifyRecordsChanged();
     } catch (err) {
       console.error(err);
     } finally {

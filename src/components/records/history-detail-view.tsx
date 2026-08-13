@@ -2,7 +2,7 @@
 
 
 import Link from "next/link";
-import { ArrowLeft, ArrowRightLeft, CreditCard, ListChecks, Users } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, CreditCard, ListChecks, ShoppingCart, Users } from "lucide-react";
 import { OperatorPieChart } from "@/components/charts/operator-pie-chart";
 import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { useRecords } from "@/components/providers/records-provider";
@@ -30,11 +30,49 @@ import { AddRecordModal } from "./add-record-modal";
 import { AddDigitacaoModal } from "./add-digitacao-modal";
 import { AddCaixaDigitacaoModal } from "./add-caixa-digitacao-modal";
 import { AddTrocaModal } from "./add-troca-modal";
+import { PlanningValueModal } from "./planning-value-modal";
+
+function getMonthPlanning(monthKey: string, currentCards: number, cardsGoal: number | null) {
+  if (!cardsGoal || cardsGoal <= 0) {
+    return {
+      cardsPerDayTarget: null,
+      cardsPerDayRequired: null,
+      cardsGoalRemaining: null,
+    };
+  }
+
+  const [year, month] = monthKey.split("-").map(Number);
+  const totalDays = new Date(year, month, 0).getDate();
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === month;
+  const remainingDays = isCurrentMonth
+    ? Math.max(totalDays - today.getDate() + 1, 1)
+    : totalDays;
+  const remainingCards = Math.max(cardsGoal - currentCards, 0);
+
+  return {
+    cardsPerDayTarget: cardsGoal / totalDays,
+    cardsPerDayRequired: remainingCards / remainingDays,
+    cardsGoalRemaining: remainingCards,
+  };
+}
 
 export function HistoryDetailView({ dateKey }: { dateKey: string }) {
   const { user, selectedStoreId } = useAuth();
-  const { records, digitacoes, dailyMetrics, trocas, viradasPu, isLoading } = useRecords();
+  const {
+    records,
+    digitacoes,
+    dailyMetrics,
+    trocas,
+    viradasPu,
+    monthlyGoals,
+    dailySales,
+    isLoading,
+    createRecord,
+    isCreating,
+  } = useRecords();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [saleModalOpen, setSaleModalOpen] = useState(false);
   const [metricsModalOpen, setMetricsModalOpen] = useState(false);
   const [digitacoesModalOpen, setDigitacoesModalOpen] = useState(false);
   const [trocasModalOpen, setTrocasModalOpen] = useState(false);
@@ -47,9 +85,13 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
   const [trocaModalOpen, setTrocaModalOpenAction] = useState(false);
   const [viradaPuModalOpen, setViradaPuModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<"card" | "digitacao" | "caixa" | "troca" | "viradaPu" | null>(null);
-  const { createRecord, isCreating } = useRecords();
 
   const isGlobalOrRegional = user?.role === "GLOBAL_ADMIN" || user?.role === "TI_ADMIN" || user?.role === "REGIONAL_MANAGER";
+  const canManageDailyValue =
+    user?.role === "MANAGER" ||
+    user?.role === "GLOBAL_ADMIN" ||
+    user?.role === "TI_ADMIN" ||
+    user?.role === "REGIONAL_MANAGER";
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   useEffect(() => {
     if (isGlobalOrRegional) {
@@ -61,8 +103,39 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
   }, [isGlobalOrRegional]);
 
   const group = useMemo(
-    () => getDateGroup(records, dateKey, digitacoes, dailyMetrics, trocas, viradasPu),
-    [dateKey, records, digitacoes, dailyMetrics, trocas, viradasPu],
+    () => getDateGroup(records, dateKey, digitacoes, dailyMetrics, trocas, viradasPu, dailySales),
+    [dateKey, records, digitacoes, dailyMetrics, trocas, viradasPu, dailySales],
+  );
+
+  const monthKey = dateKey.slice(0, 7);
+  const monthCardsGoal = useMemo(
+    () =>
+      monthlyGoals
+        .filter((goal) => goal.monthKey === monthKey)
+        .reduce((total, goal) => total + (goal.cardsGoal ?? 0), 0) || null,
+    [monthKey, monthlyGoals],
+  );
+  const monthSalesGoalInCents = useMemo(
+    () =>
+      monthlyGoals
+        .filter((goal) => goal.monthKey === monthKey)
+        .reduce((total, goal) => total + (goal.salesGoalInCents ?? 0), 0) || null,
+    [monthKey, monthlyGoals],
+  );
+  const daySalesInCents = useMemo(
+    () =>
+      dailySales
+        .filter((sale) => sale.dateKey === dateKey)
+        .reduce((total, sale) => total + sale.amountInCents, 0),
+    [dailySales, dateKey],
+  );
+  const monthCardsCount = useMemo(
+    () => records.filter((record) => toDateKey(record.createdAt).startsWith(monthKey)).length,
+    [monthKey, records],
+  );
+  const monthPlanning = useMemo(
+    () => getMonthPlanning(monthKey, monthCardsCount, monthCardsGoal),
+    [monthCardsCount, monthCardsGoal, monthKey],
   );
 
   const dayDigitacoes = useMemo(() => {
@@ -146,6 +219,15 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
               Registrar Caixa
             </button>
           )}
+          {canManageDailyValue && (
+            <button
+              onClick={() => setSaleModalOpen(true)}
+              className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10"
+            >
+              <ShoppingCart className="size-4 text-lime-600" />
+              Adicionar Valor
+            </button>
+          )}
           <button
             onClick={() => setMetricsModalOpen(true)}
             className="group flex w-full sm:w-auto justify-center h-11 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 :bg-zinc-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-950/10 :ring-zinc-50/10"
@@ -183,6 +265,13 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
           dateKey={dateKey}
           storeId={isGlobalOrRegional ? (selectedStoreId ?? undefined) : (user?.storeId ?? undefined)}
         />
+      <PlanningValueModal
+        open={saleModalOpen}
+        mode="dailySale"
+        dateKey={dateKey}
+        currentValue={daySalesInCents}
+        onClose={() => setSaleModalOpen(false)}
+      />
 
       <TrocasListModal
         open={trocasModalOpen}
@@ -213,7 +302,7 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <MetricCard
             label="Valor do dia"
             value={formatCurrency(group.totalInCents)}
@@ -234,6 +323,13 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
             detail="Cartoes cadastrados"
             icon={ListChecks}
             tone="green"
+          />
+          <MetricCard
+            label="Venda do dia"
+            value={formatCurrency(daySalesInCents)}
+            detail={monthSalesGoalInCents ? "Soma para a meta mensal" : "Venda registrada"}
+            icon={ShoppingCart}
+            tone="amber"
           />
         </div>
       </section>
@@ -350,6 +446,12 @@ export function HistoryDetailView({ dateKey }: { dateKey: string }) {
               crescimentoValor={0}
               trocasCount={group.trocasCount ?? 0}
               totalUsedInCents={group.totalUsedInCents ?? 0}
+              cardsGoal={monthCardsGoal}
+              salesGoalInCents={monthSalesGoalInCents}
+              salesInCents={daySalesInCents}
+              cardsPerDayTarget={monthPlanning.cardsPerDayTarget}
+              cardsPerDayRequired={monthPlanning.cardsPerDayRequired}
+              cardsGoalRemaining={monthPlanning.cardsGoalRemaining}
             />
             <DigitacoesListModal
               open={digitacoesModalOpen}

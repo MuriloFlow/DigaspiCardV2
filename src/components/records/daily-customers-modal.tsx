@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, Loader2, Users, X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
-import { formatInteger } from "@/lib/utils/format";
 import { useRecords } from "@/components/providers/records-provider";
+import { notifyRecordsChanged } from "@/lib/records/realtime-client";
 
 type DailyCustomersModalProps = {
   open: boolean;
@@ -76,6 +76,7 @@ export function DailyCustomersModal({
       }
 
       await refresh();
+      notifyRecordsChanged();
       onClose();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Falha ao salvar.");
